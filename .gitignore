@@ -1,0 +1,7 @@
+# Build files
+*.o
+*.exe
+
+# Directories
+Results/
+Test/
