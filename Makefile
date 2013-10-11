@@ -9,7 +9,8 @@ CPPFLAGS = -I$(INCLUDE) -O3 -Wall $(DEFINEFLAGS)
 #CPPFLAGS = -I$(INCLUDE) -pg -Wall
 
 SRCS  = main.cpp \
-	focusMeasure.cpp
+	focusMeasure.cpp \
+	imageTools.cpp \
 
 OBJS  =	$(SRCS:.cpp=.o)
 
@@ -23,5 +24,5 @@ clean:	;rm -f $(OBJS) \
 	apply.exe.stackdump
 
 ###
-focusMeasure.o: focusMeasure.h
-main.o:         focusMeasure.h
+# focusMeasure.o: focusMeasure.h
+# main.o:         focusMeasure.h

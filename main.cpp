@@ -4,8 +4,7 @@
 #include <limits.h>
 #include <math.h>
 #include "focusMeasure.h"
-
-void readGray( char *fileName, int n, uchar *buffer );
+#include "imageTools.h"
 
 int
 main( int argc, char *argv[] )
@@ -22,7 +21,6 @@ main( int argc, char *argv[] )
     const int w = 1056;
     const int h =  704;
     const int n = w * h;
-    uchar buffer[n];
     double measure[argc];
 
     FocusMeasure focus;
@@ -32,7 +30,9 @@ main( int argc, char *argv[] )
     double min = HUGE_VAL;
     double max = 0;
     for( int i = 2; i < argc; i++ ) {
-	readGray( argv[i], n, buffer );
+    	uchar * buffer = new uchar[n];
+	ImageTools::readGray( argv[i], n, buffer );
+	
 	switch( apply ) {
 	    case  0: v = focus.firstorder3x3( buffer, w, h );	break;
 	    case  1: v = focus.roberts3x3( buffer, w, h );	break;
@@ -73,6 +73,8 @@ main( int argc, char *argv[] )
 	    min = v;
 	}
 	measure[i-2] = (double)v;
+
+    	delete [] buffer;
     }
 
     for( int i = 0; i < argc-2; i++ ) {
@@ -92,40 +94,3 @@ main( int argc, char *argv[] )
 
     return( 0 );
 }
-
-/*
- *  Read the gray values from a file into buffer.
- */
-void readGray( char *fileName, int n, uchar *buffer )
-{
-    FILE *fp;
-
-    fp = fopen( fileName, "rb" );
-    if( fp == NULL ) {
-	fprintf( stderr, "No such file: %s\n", fileName );
-	exit( 1 );
-    }
-
-    int result = fread( buffer, 1, n, fp );
-    if( result != n ) {
-	fprintf( stderr, "Wrong number of bytes: %s\n", fileName );
-	exit( 1 );
-    }
-
-// temporary: compute histogram
-/*
-int histogram[256];
-for( int i = 0; i < 256; i++ ) {
-  histogram[i] = 0;
-}
-for( int i = 0; i < n; i++ ) {
-  histogram[buffer[i]]++;
-}
-for( int i = 0; i < 256; i++ ) {
-  printf("%d\t%d\n",i,histogram[i]);
-}
-*/
-
-    fclose( fp );
-}
-
