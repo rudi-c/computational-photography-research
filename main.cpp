@@ -6,6 +6,10 @@
 #include "focusMeasure.h"
 #include "imageTools.h"
 
+#define DEFAULT_WIDTH 1056
+#define DEFAULT_HEIGHT 704
+#define RESIZE 1
+
 int
 main( int argc, char *argv[] )
 {
@@ -18,9 +22,6 @@ main( int argc, char *argv[] )
 
     int apply = atoi( argv[1] );
 
-    const int w = 1056;
-    const int h =  704;
-    const int n = w * h;
     double measure[argc];
 
     FocusMeasure focus;
@@ -30,8 +31,20 @@ main( int argc, char *argv[] )
     double min = HUGE_VAL;
     double max = 0;
     for( int i = 2; i < argc; i++ ) {
-    	uchar * buffer = new uchar[n];
-	ImageTools::readGray( argv[i], n, buffer );
+
+    	uchar * buffer = new uchar[DEFAULT_WIDTH * DEFAULT_HEIGHT];
+	ImageTools::readGray( argv[i], DEFAULT_WIDTH * DEFAULT_HEIGHT, buffer );
+
+	int w = DEFAULT_WIDTH;
+	int h = DEFAULT_HEIGHT;
+
+	if (RESIZE)
+	{
+		ImageTools::scale( buffer, w, h, w / 2, h / 2,
+			ImageTools::NearestNeighbor );
+		w /= 2;
+		h /= 2;
+	}
 	
 	switch( apply ) {
 	    case  0: v = focus.firstorder3x3( buffer, w, h );	break;
