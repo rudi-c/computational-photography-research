@@ -24,16 +24,16 @@ OBJS_RESIZE  =	$(SRCS_RESIZE:.cpp=.o)
 all: apply resize
 
 apply:	$(OBJS)
-	$(CC) $(CPPFLAGS) -o apply.exe $(OBJS) -lm
+	$(CC) $(CPPFLAGS) -g -o apply.exe $(OBJS) -lm
 	
 resize: $(OBJS_RESIZE)
-	$(CC) $(CPPFLAGS) -o resize.exe $(OBJS_RESIZE) -lm
+	$(CC) $(CPPFLAGS) -g -o resize.exe $(OBJS_RESIZE) -lm
 
 clean:	;rm -f $(OBJS) $(OBJS_RESIZE) \
 	apply \
 	apply.exe \
 	apply.exe.core \
-	apply.exe.stackdump
+	apply.exe.stackdump \
 	resize \
 	resize.exe \
 	resize.exe.core \
