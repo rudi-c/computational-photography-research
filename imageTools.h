@@ -43,6 +43,14 @@ private:
 	static uchar * scaleAreaAverage( uchar * image, int w, int h, 
 		int newW, int newH);
 
+	/*
+	 * Given (-1, p0), (0, p1), (1, p2), (2, p3), use cubic spline
+	 * interpolation to find the value y for point (x, y) on the curve.
+	 * It is assumed that 0 < x < 1. In other words, we are interpolating
+	 * between two points with values p1 and p2.
+	 */
+	static double cubicInterpolate( double p1, double p2, 
+		double p3, double p4, double x );
 };
 
 #endif

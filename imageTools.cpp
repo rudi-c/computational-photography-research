@@ -140,8 +140,44 @@ uchar *
 ImageTools::scaleBicubic( uchar * image, int w, int h, 
 	int newW, int newH)
 {
-	// To implement
-	return 0;
+	uchar * newImage = new uchar[newW * newH];
+
+	double xScale = (double)w / newW;
+	double yScale = (double)h / newH;
+
+	for ( int i = 0; i < newH; i++ )
+	for ( int j = 0; j < newW; j++ ) {
+		int k = i * newW + j;
+
+		double x = xScale * j;
+		double y = yScale * i;
+
+		int x1 = (int)x;
+		int y1 = (int)y;
+		int x0 = max(0, x1 - 1);
+		int y0 = max(0, y1 - 1);
+		int x2 = x1 + 1;
+		int y2 = y1 + 1;
+		int x3 = min(w - 1, x1 + 2);
+		int y3 = min(h - 1, y1 + 2);
+
+		double v0 = cubicInterpolate(
+			image[x0 + y0 * w], image[x1 + y0 * w],
+			image[x2 + y0 * w], image[x3 + y0 * w], x - x1);
+		double v1 = cubicInterpolate(
+			image[x0 + y1 * w], image[x1 + y1 * w],
+			image[x2 + y1 * w], image[x3 + y1 * w], x - x1);
+		double v2 = cubicInterpolate(
+			image[x0 + y2 * w], image[x1 + y2 * w],
+			image[x2 + y2 * w], image[x3 + y2 * w], x - x1);
+		double v3 = cubicInterpolate(
+			image[x0 + y3 * w], image[x1 + y3 * w],
+			image[x2 + y3 * w], image[x3 + y3 * w], x - x1);
+
+		newImage[k] = cubicInterpolate(v0, v1, v2, v3, y - y1);
+	}
+
+	return newImage;
 }
 
 uchar *
@@ -211,4 +247,25 @@ ImageTools::scaleAreaAverage( uchar * image, int w, int h,
 	}
 
 	return newImage;
+}
+
+double
+ImageTools::cubicInterpolate( double p0, double p1, 
+	double p2, double p3, double x )
+{
+	// See paulinternet.nl/?page=bicubic
+
+	// Want to find a, b, c, d for f(x) = ax^3 + bx^2 + cx + d
+	// 
+	// Solve the equations below.
+	// f(0)  = d             = p1
+	// f(1)  = a + b + c + d = p2
+	// f'(0) = c             = (p2-p0)/2
+	// f'(1) = 3a + 2b + c   = (p3-p1)/2
+	double a = -0.5 * p0 + 1.5 * p1 - 1.5 * p2 + 0.5 * p3;
+	double b = p0 - 2.5 * p1 + 2 * p2 - 0.5 * p3;
+	double c = -0.5 * p0 + 0.5 * p2;
+	double d = p1;
+
+	return d + x * (c + x * (b + x * a));
 }
