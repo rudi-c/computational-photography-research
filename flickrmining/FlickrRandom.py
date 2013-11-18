@@ -356,7 +356,7 @@ def main(argv):
 
     for opt, arg in opts:
         if opt in ("-f", "--folder"):
-            download_folder = "/" + arg + "/"
+            download_folder = arg + "/"
         elif opt in ("-n", "--num_pics"):
             num_pics_to_dl = int(arg)
         elif opt in ("-o", "--option"):
