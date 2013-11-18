@@ -34,6 +34,20 @@ def is_number(s):
         return False
 
 
+def save_to_file(data, file_path):
+
+    try:
+        f = open(file_path, 'w+')
+        f.write(json.dumps(data))
+
+        # Ending with a newline makes the file nicer to printout to terminal
+        f.write('\n')
+        
+    except Exception as e:
+        print "Failed to write file : "
+        print e
+
+
 def leading_numerics(string):
 
     # Returns all the leading digit characters and converts to number.
