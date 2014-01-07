@@ -1,5 +1,10 @@
 
-in="../Benchmarks"
+in=$1
+
+if [ $# -ne 1 ]; then
+  echo "Expected 1 argument (benchmark folder), received" $#. 1>&2
+  exit 1
+fi
 
 for b in \
 	LowLightCandle1 \
@@ -28,12 +33,18 @@ do
     ./apply.exe 27 $in/$b/*.gray > ../Results/$b/out_firstDerivGaussian.txt
     ./apply.exe 28 $in/$b/*.gray > ../Results/$b/out_LoG.txt
 
-    # highly ranked second deriv
+    # These are slow - uncomment only if needed.
+    # ./apply.exe 30 $in/$b/*.gray > ../Results/$b/out_firstDerivGaussian2.txt
+    # ./apply.exe 31 $in/$b/*.gray > ../Results/$b/out_firstDerivGaussian3.txt
+    # ./apply.exe 32 $in/$b/*.gray > ../Results/$b/out_LoG2.txt
+    # ./apply.exe 33 $in/$b/*.gray > ../Results/$b/out_LoG3.txt
+
+    # # highly ranked second deriv
     ./apply.exe  7 $in/$b/*.gray > ../Results/$b/out_laplacian5x5.txt
     ./apply.exe  9 $in/$b/*.gray > ../Results/$b/out_sobel5x5so.txt
     ./apply.exe 26 $in/$b/*.gray > ../Results/$b/out_sobel5x5soCross.txt
 
-    # not consistently good
+    # # not consistently good
     ./apply.exe  5 $in/$b/*.gray > ../Results/$b/out_sobel5x5.txt
     ./apply.exe  6 $in/$b/*.gray > ../Results/$b/out_laplacian3x3.txt
     ./apply.exe  8 $in/$b/*.gray > ../Results/$b/out_sobel3x3so.txt

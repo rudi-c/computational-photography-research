@@ -77,6 +77,10 @@ main( int argc, char *argv[] )
 	    case 27: v = focus.firstDerivGaussian( buffer, w, h ); break;
 	    case 28: v = focus.LoG( buffer, w, h ); break;
 	    case 29: v = focus.curvature( buffer, w, h ); break;
+	    case 30: v = focus.firstDerivGaussian2( buffer, w, h ); break;
+	    case 31: v = focus.firstDerivGaussian3( buffer, w, h ); break;
+	    case 32: v = focus.LoG2( buffer, w, h ); break;
+	    case 33: v = focus.LoG3( buffer, w, h ); break;
 	}
 
 	if( max < v ) {

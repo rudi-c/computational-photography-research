@@ -40,7 +40,11 @@ class FocusMeasure
 	double vollath5( uchar *f, int w, int h );
 	double autoCorrelation( uchar *f, int w, int h, int k = 0 );
 	double firstDerivGaussian( uchar *f, int w, int h );
+	double firstDerivGaussian2( uchar *f, int w, int h );
+	double firstDerivGaussian3( uchar *f, int w, int h );
 	double LoG( uchar *f, int w, int h );
+	double LoG2( uchar *f, int w, int h );
+	double LoG3( uchar *f, int w, int h );
 	double curvature( uchar *f, int w, int h );
 
     private:
