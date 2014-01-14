@@ -8,37 +8,32 @@ CPPFLAGS = -I$(INCLUDE) -O3 -Wall $(DEFINEFLAGS)
 #CPPFLAGS = -I$(INCLUDE) -g -Wall
 #CPPFLAGS = -I$(INCLUDE) -pg -Wall
 
-SRCS  = main.cpp \
-	focusMeasure.cpp \
+SRCS  = focusMeasure.cpp \
 	imageTools.cpp \
+    lodepng.cpp
 
-OBJS  =	$(SRCS:.cpp=.o) 
+SRCS_APPLY = main.cpp $(SRCS)
+OBJS_APPLY = $(SRCS_APPLY:.cpp=.o) 
 
-SRCS_RESIZE  = resize.cpp \
-	focusMeasure.cpp \
-	imageTools.cpp \
-    lodepng.cpp \
+SRCS_CONVOLVE = convolutions.cpp $(SRCS)
+OBJS_CONVOLVE = $(SRCS_CONVOLVE:.cpp=.o) 
 
+SRCS_RESIZE  = resize.cpp $(SRCS)
 OBJS_RESIZE  =	$(SRCS_RESIZE:.cpp=.o) 
 
-all: apply resize
+all: apply convolve resize
 
-apply:	$(OBJS)
-	$(CC) $(CPPFLAGS) -g -o apply.exe $(OBJS) -lm
+apply: $(OBJS_APPLY)
+	$(CC) $(CPPFLAGS) -o apply.exe $(OBJS_APPLY) -lm
+
+convolve: $(OBJS_CONVOLVE)
+	$(CC) $(CPPFLAGS) -o convolve.exe $(OBJS_CONVOLVE) -lm
 	
 resize: $(OBJS_RESIZE)
-	$(CC) $(CPPFLAGS) -g -o resize.exe $(OBJS_RESIZE) -lm
+	$(CC) $(CPPFLAGS) -o resize.exe $(OBJS_RESIZE) -lm
 
 clean:	;rm -f $(OBJS) $(OBJS_RESIZE) \
 	apply \
-	apply.exe \
-	apply.exe.core \
-	apply.exe.stackdump \
+	apply.exe* \
 	resize \
-	resize.exe \
-	resize.exe.core \
-	resize.exe.stackdump
-
-###
-# focusMeasure.o: focusMeasure.h
-# main.o:         focusMeasure.h
+	resize.exe* \
