@@ -10,35 +10,23 @@ using namespace std;
 void
 ImageTools::readGray( char *fileName, int n, uchar *buffer )
 {
-    FILE *fp;
-    
-    fp = fopen( fileName, "rb" );
-    if( fp == NULL ) {
-	fprintf( stderr, "No such file: %s\n", fileName );
-	exit( 1 );
-    }
+	FILE *fp;
 
-    int result = fread( buffer, 1, n, fp );
-    if( result != n ) {
-	fprintf( stderr, "Wrong number of bytes: %s\n", fileName );
-	exit( 1 );
-    }
+	fp = fopen( fileName, "rb" );
+	if( fp == NULL )
+	{
+		fprintf( stderr, "No such file: %s\n", fileName );
+		exit( 1 );
+	}
 
-// temporary: compute histogram
-/*
-int histogram[256];
-for( int i = 0; i < 256; i++ ) {
-  histogram[i] = 0;
-}
-for( int i = 0; i < n; i++ ) {
-  histogram[buffer[i]]++;
-}
-for( int i = 0; i < 256; i++ ) {
-  printf("%d\t%d\n",i,histogram[i]);
-}
-*/
+	int result = fread( buffer, 1, n, fp );
+	if( result != n ) 
+	{
+		fprintf( stderr, "Wrong number of bytes: %s\n", fileName );
+		exit( 1 );
+	}
 
-    fclose( fp );
+	fclose( fp );
 }
 
 void
