@@ -25,46 +25,45 @@ main( int argc, char *argv[] )
     int newW = (int)(w * scale);
     int newH = (int)(h * scale);
 
-    for( int i = 2; i < argc; i++ ) {
-    	uchar * buffer = new uchar[n];
-    	char * inputName = argv[i];
-	ImageTools::readGray( inputName, n, buffer );
+    for( int i = 2; i < argc; i++ ) 
+    {
+        uchar * buffer = new uchar[n];
+        char * inputName = argv[i];
+        ImageTools::readGray( inputName, n, buffer );
 
-	ImageTools::scale( buffer, w, h, newW, newH,
-		ImageTools::AreaAverage );
+        ImageTools::scale( buffer, w, h, newW, newH,
+                           ImageTools::AreaAverage );
 
-	// Need to convert the gray values to RGBA
-	vector<uchar> image(newW * newH * 4);
-	for (int y = 0; y < newH; y++)
-	{
-		for (int x = 0; x < newW; x++)
-		{
-			int index = x + y * newW;
-			int gray = buffer[index];
-			image[4 * index + 0] = gray;
-			image[4 * index + 1] = gray;
-			image[4 * index + 2] = gray;
-			image[4 * index + 3] = 255;
-		}
-	}
+        // Need to convert the gray values to RGBA
+        vector<uchar> image(newW * newH * 4);
+        for (int y = 0; y < newH; y++)
+        {
+            for (int x = 0; x < newW; x++)
+            {
+                int index = x + y * newW;
+                int gray = buffer[index];
+                image[4 * index + 0] = gray;
+                image[4 * index + 1] = gray;
+                image[4 * index + 2] = gray;
+                image[4 * index + 3] = 255;
+            }
+        }
 
-	// We're assuming that the file name from the input does indeed
-	// finish with .gray.
-	string outputName( inputName );
-	outputName = outputName.substr(0, outputName.length() - 4);
-	outputName += "png";
+        // We're assuming that the file name from the input does indeed
+        // finish with .gray.
+        string outputName( inputName );
+        outputName = outputName.substr(0, outputName.length() - 4);
+        outputName += "png";
 
-	unsigned error = lodepng::encode(outputName.c_str(), 
-		image, newW, newH);
+        unsigned error = lodepng::encode(outputName.c_str(), 
+                                         image, newW, newH);
 
-	if (error) 
-		cout << "encoder error " << error 
-			<< ": "<< lodepng_error_text(error) << endl;
+        if (error) 
+            cout << "encoder error " << error 
+                 << ": "<< lodepng_error_text(error) << endl;
 
-	delete [] buffer;
+        delete [] buffer;
     }
-
-
 
     return 0;
 }
