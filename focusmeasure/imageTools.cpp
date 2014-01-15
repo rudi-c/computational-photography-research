@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <vector>
 
+#include "lodepng.h"
+
 using namespace std;
 
 void
@@ -49,6 +51,32 @@ ImageTools::saveGray( char *fileName, int n, uchar *buffer )
 	}
 	
 	fclose( fp );
+}
+
+void
+ImageTools::saveGrayPng( const char *fileName, uchar *buffer, 
+					     int width, int height )
+{
+	// Need to convert the gray values to RGBA for the jpeg image.
+	vector<uchar> pngImg(width * height * 4);
+	for (int y = 0; y < height; y++)
+	{
+		for (int x = 0; x < width; x++)
+		{
+			int index = x + y * width;
+			int gray = buffer[index];
+			pngImg[4 * index + 0] = gray;
+			pngImg[4 * index + 1] = gray;
+			pngImg[4 * index + 2] = gray;
+			pngImg[4 * index + 3] = 255;
+		}
+	}
+
+	unsigned error = lodepng::encode(fileName, 
+									 pngImg, width, height);
+	if (error) 
+		cout << "encoder error " << error 
+			 << ": " << lodepng_error_text(error) << endl;
 }
 
 void

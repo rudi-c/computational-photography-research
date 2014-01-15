@@ -27,6 +27,12 @@ public:
 	static void saveGray( char *fileName, int n, uchar *buffer );
 
 	/*
+	 *  Save an image of gray values to .png
+	 */
+	static void saveGrayPng( const char *filename, uchar *buffer,
+							 int width, int height );
+
+	/*
 	 * Replaces an image of size (w, h) with a scaled version of size
 	 * (newW, newH)
 	 */
