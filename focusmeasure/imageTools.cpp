@@ -36,7 +36,7 @@ ImageTools::saveGray( const char *fileName, int n, uchar *buffer )
 {
 	FILE *fp;
     
-	fp = fopen( fileName, "rb" );
+	fp = fopen( fileName, "w" );
 	if( fp == NULL ) 
 	{
 		fprintf( stderr, "No such file: %s\n", fileName );
