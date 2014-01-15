@@ -45,7 +45,8 @@ resize: $(OBJS_RESIZE)
 	$(CC) $(CPPFLAGS) -o resize.exe $(OBJS_RESIZE) -lm
 
 clean:	;rm -f $(OBJS) $(OBJS_RESIZE) \
-	apply \
+	addlowlight.exe*\
 	apply.exe* \
-	resize \
+	convolve.exe* \
+	median.exe* \
 	resize.exe* \
