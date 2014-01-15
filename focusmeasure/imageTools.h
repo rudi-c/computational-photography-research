@@ -24,7 +24,7 @@ public:
 	/*
 	 *  Save the gray values from a buffer into a file.
 	 */
-	static void saveGray( char *filename, int n, uchar *buffer );
+	static void saveGray( char *fileName, int n, uchar *buffer );
 
 	/*
 	 * Replaces an image of size (w, h) with a scaled version of size

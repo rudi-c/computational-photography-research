@@ -30,7 +30,7 @@ ImageTools::readGray( char *fileName, int n, uchar *buffer )
 }
 
 void
-ImageTools::saveGray( char *filename, int n, uchar *buffer )
+ImageTools::saveGray( char *fileName, int n, uchar *buffer )
 {
 	FILE *fp;
     
@@ -46,7 +46,9 @@ ImageTools::saveGray( char *filename, int n, uchar *buffer )
 	{
 		fprintf( stderr, "Wrong number of bytes: %s\n", fileName );
 		exit( 1 );
-    }
+	}
+	
+	fclose( fp );
 }
 
 void
