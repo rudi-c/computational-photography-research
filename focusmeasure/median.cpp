@@ -79,35 +79,36 @@ void print_usage(char* progname)
 int
 main( int argc, char *argv[] )
 {
+    // Default image sizes.
     const int w = 1056;
     const int h =  704;
     const int n = w * h;
+
+    // Store input/output images.
     unsigned char buffer[n], result[n];
-    double measure[argc];
+
+    // Function to process the image with.
     int (*compute)(unsigned char*, int, int, int);
 
     string mode(argv[1]);
     string inputFile(argv[2]);
 
-    if (mode == "--median") {
-      compute = compute_median;
-    } else if (mode == "--adaptive-median") {
-      compute = compute_adaptive_median;
-    } else {
-      print_usage(argv[0]);
-    }
+    if (mode == "--median")
+        compute = compute_median;
+    else if (mode == "--adaptive-median")
+        compute = compute_adaptive_median;
+    else 
+        print_usage(argv[0]);
 
     ImageTools::readGray( inputFile.c_str(), n, buffer );
 
-    for (int i = 0; i < n; i++) {
-      result[i] = buffer[i];
-    }
+    // TODO: Is this loop needed?
+    for (int i = 0; i < n; i++)
+        result[i] = buffer[i];
 
-    for( int i = 1; i < h-1; i++ ) {
-      for( int j = 1; j < w-1; j++ ) {
-        result[i*w + j] = compute(buffer, i, j, 3);
-      }
-    }
+    for( int i = 1; i < h-1; i++ )
+        for( int j = 1; j < w-1; j++ )
+            result[i*w + j] = compute(buffer, i, j, 3);
 
     string outputFile = inputFile + ".median";
     ImageTools::saveGray( outputFile.c_str(), n, result );
