@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -7,7 +6,8 @@
 #include <algorithm>
 #include <string>
 #include <iostream>
-void readGray( char *fileName, int n, unsigned char *buffer );
+
+#include "imageTools.h"
 
 using namespace std;
 
@@ -85,7 +85,9 @@ main( int argc, char *argv[] )
     unsigned char buffer[n], result[n];
     double measure[argc];
     int (*compute)(unsigned char*, int, int, int);
+
     string mode(argv[1]);
+    string inputFile(argv[2]);
 
     if (mode == "--median") {
       compute = compute_median;
@@ -95,8 +97,8 @@ main( int argc, char *argv[] )
       print_usage(argv[0]);
     }
 
-    double v = 0;
-    readGray( argv[2], n, buffer );
+    ImageTools::readGray( inputFile.c_str(), n, buffer );
+
     for (int i = 0; i < n; i++) {
       result[i] = buffer[i];
     }
@@ -106,34 +108,7 @@ main( int argc, char *argv[] )
         result[i*w + j] = compute(buffer, i, j, 3);
       }
     }
-    FILE *fp;
-    string file(argv[2]);
-    file += ".median";
-    fp = fopen( file.c_str(), "w" );
-    fwrite( result, 1, n, fp );
-    fclose(fp);
+
+    string outputFile = inputFile + ".median";
+    ImageTools::saveGray( outputFile.c_str(), n, buffer );
 }
-
-/*
- *  Read the gray values from a file into buffer.
- */
-void readGray( char *fileName, int n, unsigned char *buffer )
-{
-    FILE *fp;
-
-    fp = fopen( fileName, "rb" );
-    if( fp == NULL ) {
-	fprintf( stderr, "No such file: %s\n", fileName );
-	exit( 1 );
-    }
-
-    int result = fread( buffer, 1, n, fp );
-    if( result != n ) {
-	fprintf( stderr, "Wrong number of bytes: %s\n", fileName );
-	exit( 1 );
-    }
-
-
-    fclose( fp );
-}
-
