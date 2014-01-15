@@ -110,5 +110,5 @@ main( int argc, char *argv[] )
     }
 
     string outputFile = inputFile + ".median";
-    ImageTools::saveGray( outputFile.c_str(), n, buffer );
+    ImageTools::saveGray( outputFile.c_str(), n, result );
 }
