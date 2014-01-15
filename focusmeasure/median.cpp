@@ -72,8 +72,10 @@ int compute_adaptive_median(unsigned char* buffer, int x, int y, int window_size
 
 void print_usage(char* progname)
 {
-  cerr << "Usage: " << progname << " mode filename" << endl;
-  exit(1);
+    cerr << "Usage: " << progname << " [OPTIONS] [FILES]" << endl;
+    cerr << "\t Valid options include --output-png --compute-median " << endl;
+    cerr << "\t --compute_adaptive_median" << endl;
+    exit(1);
 }
 
 int
@@ -88,28 +90,54 @@ main( int argc, char *argv[] )
     unsigned char buffer[n], result[n];
 
     // Function to process the image with.
-    int (*compute)(unsigned char*, int, int, int);
+    int (*compute)(unsigned char*, int, int, int) = compute_median;
 
-    string mode(argv[1]);
-    string inputFile(argv[2]);
+    // Number of command-line options passed onto this program
+    // (things that start with --)
+    int optionsCount = 0;
+    bool outputPNG = false;
 
-    if (mode == "--median")
-        compute = compute_median;
-    else if (mode == "--adaptive-median")
-        compute = compute_adaptive_median;
-    else 
-        print_usage(argv[0]);
+    for (int i = 1; i < argc; i++)
+    {
+        string option(argv[i]);
+        if (option == "--median")
+            compute = compute_median;
+        else if (option == "--adaptive-median")
+            compute = compute_adaptive_median;
+        else if (option == "--output-png")
+            outputPNG = true;
+        else if (option[0] == '-' && option[1] == '--')
+            // This option isn't recognized.
+            print_usage(argv[0]);
+        else
+            // A file - we can stop reading options now.
+            break;
 
-    ImageTools::readGray( inputFile.c_str(), n, buffer );
+        optionsCount++;
+    }
 
-    // TODO: Is this loop needed?
-    for (int i = 0; i < n; i++)
-        result[i] = buffer[i];
+    // Process all files passed to this program.
+    for (int i = 1 + optionsCount; i < argc; i++)
+    {
+        string inputFile(argv[i]);
 
-    for( int i = 1; i < h-1; i++ )
-        for( int j = 1; j < w-1; j++ )
-            result[i*w + j] = compute(buffer, i, j, 3);
+        ImageTools::readGray( inputFile.c_str(), n, buffer );
 
-    string outputFile = inputFile + ".median";
-    ImageTools::saveGray( outputFile.c_str(), n, result );
+        // TODO: Is this loop needed?
+        for (int i = 0; i < n; i++)
+            result[i] = buffer[i];
+
+        for( int i = 1; i < h-1; i++ )
+            for( int j = 1; j < w-1; j++ )
+                result[i*w + j] = compute(buffer, i, j, 3);
+
+        string outputFile = inputFile + ".median";
+        ImageTools::saveGray( outputFile.c_str(), n, result );
+
+        if (outputPNG)
+        {
+            string pngOutputFile = inputFile + ".png";
+            ImageTools::saveGrayPng( pngOutputFile.c_str(), result, w, h);
+        }
+    }
 }
