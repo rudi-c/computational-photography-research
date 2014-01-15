@@ -19,12 +19,12 @@ public:
 	/*
 	 *  Read the gray values from a file into buffer.
 	 */
-	static void readGray( char *fileName, int n, uchar *buffer );
+	static void readGray( const char *fileName, int n, uchar *buffer );
 
 	/*
 	 *  Save the gray values from a buffer into a file.
 	 */
-	static void saveGray( char *fileName, int n, uchar *buffer );
+	static void saveGray( const char *fileName, int n, uchar *buffer );
 
 	/*
 	 *  Save an image of gray values to .png

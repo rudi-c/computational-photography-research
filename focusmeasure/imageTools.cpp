@@ -10,7 +10,7 @@
 using namespace std;
 
 void
-ImageTools::readGray( char *fileName, int n, uchar *buffer )
+ImageTools::readGray( const char *fileName, int n, uchar *buffer )
 {
 	FILE *fp;
 
@@ -32,7 +32,7 @@ ImageTools::readGray( char *fileName, int n, uchar *buffer )
 }
 
 void
-ImageTools::saveGray( char *fileName, int n, uchar *buffer )
+ImageTools::saveGray( const char *fileName, int n, uchar *buffer )
 {
 	FILE *fp;
     
