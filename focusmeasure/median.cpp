@@ -106,7 +106,7 @@ main( int argc, char *argv[] )
             compute = compute_adaptive_median;
         else if (option == "--output-png")
             outputPNG = true;
-        else if (option[0] == '-' && option[1] == '--')
+        else if (option[0] == '-' && option[1] == '-')
             // This option isn't recognized.
             print_usage(argv[0]);
         else
