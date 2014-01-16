@@ -1,4 +1,5 @@
 #include "imageTools.h"
+#include <cassert>
 #include <cmath>
 #include <iostream>
 #include <stdio.h>
@@ -121,6 +122,24 @@ ImageTools::addLowLight( float darkenFactor, float noiseFactor,
 				    noise[x + y * w] * relativeNoiseFactor;
 		}
 	}
+}
+
+void 
+ImageTools::crop( uchar*& image, int w, int h, int left, int right,
+				  int top, int bottom)
+{
+	assert ( left < right && top < bottom );
+
+	int newW = right - left;
+	int newH = bottom - top;
+	uchar * newImage = new uchar[newW * newH];
+
+	for (int y = top; y < bottom; y++)
+		for (int x = left; x < right; x++)
+			newImage[(x - left) + (y - top) * newW] = image[x + y * w];
+
+	delete [] image;
+	image = newImage;
 }
 
 void 

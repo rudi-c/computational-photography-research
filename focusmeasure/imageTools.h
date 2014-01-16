@@ -33,17 +33,24 @@ public:
 							 int width, int height );
 
 	/*
+	 * Replaces an image of size (w, h) with subset of it.
+	 */
+	static void crop( uchar*&image, int w, int h, int left, int right,
+		int top, int bottom );
+
+	/*
 	 * Replaces an image of size (w, h) with a scaled version of size
 	 * (newW, newH)
 	 */
-	static void  scale( uchar *&image, int w, int h, 
-		int newW, int newH, ScalingMethod method = NearestNeighbor);
+	static void scale( uchar *&image, int w, int h, 
+		int newW, int newH, ScalingMethod method = NearestNeighbor );
+
 	/*
 	 * Returns a a scale version of size (newW, newH) of an image 
 	 * of size (w, h).
 	 */
 	static unsigned char * scaleCopy ( uchar *image, int w, int h,
-		int newW, int newH, ScalingMethod method);
+		int newW, int newH, ScalingMethod method );
 
 	/*
 	 * Reduces the brightness of an image and add low-light noise.
