@@ -8,37 +8,48 @@ CPPFLAGS = -I$(INCLUDE) -O3 -Wall $(DEFINEFLAGS)
 #CPPFLAGS = -I$(INCLUDE) -g -Wall
 #CPPFLAGS = -I$(INCLUDE) -pg -Wall
 
-SRCS  = main.cpp \
-	focusMeasure.cpp \
+SRCS  = focusMeasure.cpp \
 	imageTools.cpp \
+	lodepng.cpp
 
-OBJS  =	$(SRCS:.cpp=.o) 
+SRCS_ADDLOWLIGHT = addlowlight.cpp $(SRCS)
+OBJS_ADDLOWLIGHT = $(SRCS_APPLY:.cpp=.o) 
 
-SRCS_RESIZE  = resize.cpp \
-	focusMeasure.cpp \
-	imageTools.cpp \
-    lodepng.cpp \
+SRCS_APPLY = main.cpp $(SRCS)
+OBJS_APPLY = $(SRCS_APPLY:.cpp=.o) 
 
+SRCS_CONVOLVE = convolutions.cpp $(SRCS)
+OBJS_CONVOLVE = $(SRCS_CONVOLVE:.cpp=.o) 
+
+SRCS_MEDIAN = median.cpp $(SRCS)
+OBJS_MEDIAN = $(SRCS_MEDIAN:.cpp=.o) 
+
+SRCS_RESIZE  = resize.cpp $(SRCS)
 OBJS_RESIZE  =	$(SRCS_RESIZE:.cpp=.o) 
+ 
+ALL_OBJS = $(OBJS_ADDLOWLIGHT) $(OBJS_APPLY) $(OBJS_CONVOLVE) \
+		   $(OBJS_MEDIAN) $(OBJS_RESIZE)
 
-all: apply resize
+all: addlowlight apply convolve median resize
 
-apply:	$(OBJS)
-	$(CC) $(CPPFLAGS) -g -o apply.exe $(OBJS) -lm
+addlowlight: $(OBJS_ADDLOWLIGHT)
+	$(CC) $(CPPFLAGS) -o addlowlight.exe $(OBJS_ADDLOWLIGHT) -lm
+
+apply: $(OBJS_APPLY)
+	$(CC) $(CPPFLAGS) -o apply.exe $(OBJS_APPLY) -lm
+
+convolve: $(OBJS_CONVOLVE)
+	$(CC) $(CPPFLAGS) -o convolve.exe $(OBJS_CONVOLVE) -lm
+
+median: $(OBJS_MEDIAN)
+	$(CC) $(CPPFLAGS) -o median.exe $(OBJS_MEDIAN) -lm
 	
 resize: $(OBJS_RESIZE)
-	$(CC) $(CPPFLAGS) -g -o resize.exe $(OBJS_RESIZE) -lm
+	$(CC) $(CPPFLAGS) -o resize.exe $(OBJS_RESIZE) -lm
 
-clean:	;rm -f $(OBJS) $(OBJS_RESIZE) \
-	apply \
+clean:	;rm -f $(ALL_OBJS) \
+	addlowlight.exe \
 	apply.exe \
-	apply.exe.core \
-	apply.exe.stackdump \
-	resize \
+	convolve.exe \
+	median.exe \
 	resize.exe \
-	resize.exe.core \
-	resize.exe.stackdump
-
-###
-# focusMeasure.o: focusMeasure.h
-# main.o:         focusMeasure.h

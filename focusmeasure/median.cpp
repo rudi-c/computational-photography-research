@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -7,7 +6,8 @@
 #include <algorithm>
 #include <string>
 #include <iostream>
-void readGray( char *fileName, int n, unsigned char *buffer );
+
+#include "imageTools.h"
 
 using namespace std;
 
@@ -72,68 +72,72 @@ int compute_adaptive_median(unsigned char* buffer, int x, int y, int window_size
 
 void print_usage(char* progname)
 {
-  cerr << "Usage: " << progname << " mode filename" << endl;
-  exit(1);
+    cerr << "Usage: " << progname << " [OPTIONS] [FILES]" << endl;
+    cerr << "\t Valid options include --output-png --compute-median " << endl;
+    cerr << "\t --compute_adaptive_median" << endl;
+    exit(1);
 }
 
 int
 main( int argc, char *argv[] )
 {
+    // Default image sizes.
     const int w = 1056;
     const int h =  704;
     const int n = w * h;
+
+    // Store input/output images.
     unsigned char buffer[n], result[n];
-    double measure[argc];
-    int (*compute)(unsigned char*, int, int, int);
-    string mode(argv[1]);
 
-    if (mode == "--median") {
-      compute = compute_median;
-    } else if (mode == "--adaptive-median") {
-      compute = compute_adaptive_median;
-    } else {
-      print_usage(argv[0]);
+    // Function to process the image with.
+    int (*compute)(unsigned char*, int, int, int) = compute_median;
+
+    // Number of command-line options passed onto this program
+    // (things that start with --)
+    int optionsCount = 0;
+    bool outputPNG = false;
+
+    for (int i = 1; i < argc; i++)
+    {
+        string option(argv[i]);
+        if (option == "--median")
+            compute = compute_median;
+        else if (option == "--adaptive-median")
+            compute = compute_adaptive_median;
+        else if (option == "--output-png")
+            outputPNG = true;
+        else if (option[0] == '-' && option[1] == '-')
+            // This option isn't recognized.
+            print_usage(argv[0]);
+        else
+            // A file - we can stop reading options now.
+            break;
+
+        optionsCount++;
     }
 
-    double v = 0;
-    readGray( argv[2], n, buffer );
-    for (int i = 0; i < n; i++) {
-      result[i] = buffer[i];
-    }
+    // Process all files passed to this program.
+    for (int i = 1 + optionsCount; i < argc; i++)
+    {
+        string inputFile(argv[i]);
 
-    for( int i = 1; i < h-1; i++ ) {
-      for( int j = 1; j < w-1; j++ ) {
-        result[i*w + j] = compute(buffer, i, j, 3);
-      }
+        ImageTools::readGray( inputFile.c_str(), n, buffer );
+
+        // TODO: Is this loop needed?
+        for (int i = 0; i < n; i++)
+            result[i] = buffer[i];
+
+        for( int i = 1; i < h-1; i++ )
+            for( int j = 1; j < w-1; j++ )
+                result[i*w + j] = compute(buffer, i, j, 3);
+
+        string outputFile = inputFile + ".median";
+        ImageTools::saveGray( outputFile.c_str(), n, result );
+
+        if (outputPNG)
+        {
+            string pngOutputFile = inputFile + ".png";
+            ImageTools::saveGrayPng( pngOutputFile.c_str(), result, w, h);
+        }
     }
-    FILE *fp;
-    string file(argv[2]);
-    file += ".median";
-    fp = fopen( file.c_str(), "w" );
-    fwrite( result, 1, n, fp );
-    fclose(fp);
 }
-
-/*
- *  Read the gray values from a file into buffer.
- */
-void readGray( char *fileName, int n, unsigned char *buffer )
-{
-    FILE *fp;
-
-    fp = fopen( fileName, "rb" );
-    if( fp == NULL ) {
-	fprintf( stderr, "No such file: %s\n", fileName );
-	exit( 1 );
-    }
-
-    int result = fread( buffer, 1, n, fp );
-    if( result != n ) {
-	fprintf( stderr, "Wrong number of bytes: %s\n", fileName );
-	exit( 1 );
-    }
-
-
-    fclose( fp );
-}
-
