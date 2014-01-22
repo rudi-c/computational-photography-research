@@ -81,6 +81,36 @@ ImageTools::saveGrayPng( const char *fileName, uchar *buffer,
 }
 
 void
+ImageTools::changeBrightness( float factor, int w, int h, uchar * buffer )
+{
+	assert (factor >= -1.0f && factor <= 1.0f);
+
+	if ( factor < 0.0f )
+	{
+		// Darken (bring values closer to 0 proportionally)
+		for (int y = 0; y < h; y++)
+			for (int x = 0; x < w; x++)
+			{
+				float val = buffer[x + y * w] * (1.0f + factor);
+				assert (val >= 0.0f && val <= 255.0f);
+				buffer[x + y * w] = (uchar)val;
+			}
+	}
+	else
+	{
+		// Brighten (bring values closer to 255 proportionally)
+		for (int y = 0; y < h; y++)
+			for (int x = 0; x < w; x++)
+			{
+				float val = 255.0f - 
+					(255.0f - buffer[x + y * w] * (1.0f - factor));
+				assert (val >= 0.0f && val <= 255.0f);
+				buffer[x + y * w] = (uchar)val;
+			}
+	}
+}
+
+void
 ImageTools::addLowLight( float darkenFactor, float noiseFactor, 
 							  int w, int h, uchar * buffer )
 {

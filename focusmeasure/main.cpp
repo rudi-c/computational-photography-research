@@ -20,7 +20,10 @@ void print_usage()
 {
     cerr << "Usage: apply measure [OPTIONS] [FILES]" << endl;
     cerr << "\t measure -- focus measure to apply to image (0-33) " << endl;
-    cerr << "\t Valid options include --scalehalf --crop " << endl;
+    cerr << "\t Valid options include :" << endl;
+    cerr << "\t --scalehalf : reduce each dimension of the image by 1/2" << endl;
+    cerr << "\t --crop : keep only a small center portion of the image" << endl;
+    cerr << "\t --varylight : randomly uniformly darken/brighten image at each step" << endl;
     exit(1);
 }
 
@@ -28,13 +31,14 @@ int
 main( int argc, char *argv[] )
 {
     if ( argc <= 3 )
-    	print_usage();
+        print_usage();
 
     int apply = atoi( argv[1] );
 
     int optionsCount = 0;
     bool optionScaleHalf = false;
     bool optionCrop = false;
+    bool optionVaryLight = false;
 
     for (int i = 2; i < argc; i++)
     {
@@ -43,6 +47,8 @@ main( int argc, char *argv[] )
             optionScaleHalf = true;
         else if (option == "--crop")
             optionCrop = true;
+        else if (option == "--varylight")
+            optionVaryLight = true;
         else if (option[0] == '-' && option[1] == '-')
             // This option isn't recognized.
             print_usage();
@@ -87,6 +93,15 @@ main( int argc, char *argv[] )
             ImageTools::crop( buffer, w, h, left, right, top, bottom );
             w = right - left;
             h = bottom - top;
+        }
+
+        if (optionVaryLight)
+        {
+            // In an experimental setup, we found a case where the average
+            // pixel brightness for an outlier was 30% lower (and the median
+            // was 50% lower). So we use a factor that's between -0.3 and 0.3
+            float factor = (float)rand() / RAND_MAX * 0.6f - 0.3f;
+            ImageTools::changeBrightness( factor, w, h, buffer );
         }
         
         switch( apply )

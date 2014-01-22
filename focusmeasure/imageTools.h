@@ -53,6 +53,13 @@ public:
 		int newW, int newH, ScalingMethod method );
 
 	/*
+	 * Change the brightness of the image by some factor in [-1, 1]
+	 * Negative values mean to darken the image.
+	 * Positive values mean to brighten the image.
+	 */
+	static void changeBrightness( float factor, int w, int h, uchar * buffer );
+
+	/*
 	 * Reduces the brightness of an image and add low-light noise.
 	 */
 	static void addLowLight( float darkenFactor, float noiseFactor, 
