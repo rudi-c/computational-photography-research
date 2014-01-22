@@ -1,0 +1,50 @@
+backyard.txt
+ 156
+bench.txt
+ 154
+book.txt
+ 23
+bridge.txt
+ 163
+building1.txt
+ 163
+building2.txt
+ 162
+building3.txt
+ 161
+cat.txt
+ 67 175
+cup1.txt
+ 104
+cup2.txt
+ 99 106
+cup3.txt
+ 102 124
+cup4.txt
+ 88 137 160
+fabric.txt
+ 102
+flower.txt
+ 25 109
+interior1.txt
+ 150
+interior2.txt
+ 105 135 140 153
+lamp.txt
+ 63 107 134 159
+landscape1.txt
+ 162
+landscape2.txt
+ 163
+landscape3.txt
+ 165
+moon.txt
+ 225
+screen.txt
+ 20 157
+snails.txt
+ 97
+stillLife.txt
+ 137
+vase.txt
+ 82
