@@ -60,7 +60,7 @@ def load_maxima_into_measures(scenes):
         scene = scenes_dict[filename]
 
         # Peaks are normalized to a range [0, 1]
-        scene.maxima = maxima
+        scene.maxima = [ int(position) for position in maxima ]
         scene.norm_maxima = [ float(position) / scene.measuresCount for 
                               position in maxima ]
 

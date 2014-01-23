@@ -111,6 +111,27 @@ def probability_most_right(lens_pos, scenes):
     """P( most peaks to the left | lens position )"""
     return probability_most_peaks(lens_pos, scenes, smaller)
 
+def probability_nearest(lens_pos, scenes, comparator):
+    assert valid_comparator(comparator)
+
+    count = 0
+    for scene in scenes:
+        nearest = scene.norm_maxima[0]
+        for n_maximum in scene.norm_maxima:
+            if abs(lens_pos - n_maximum) < abs(lens_pos - nearest):
+                nearest = n_maximum
+        if comparator(nearest, lens_pos):
+            count += 1
+    return float(count) / len(scenes)
+
+def probability_nearest_left(lens_pos, scenes):
+    """P( nearest peak to the left | lens position )"""
+    return probability_nearest(lens_pos, scenes, left)
+
+def probability_nearest_right(lens_pos, scenes):
+    """P( nearest peak to the right | lens position )"""
+    return probability_nearest(lens_pos, scenes, right)
+
 
 def print_statistics(scenes, lens_positions, function):
     print "# " + function.__doc__
@@ -148,6 +169,9 @@ def main(argv):
     
     print_statistics(scenes, lens_positions, probability_most_left)
     print_statistics(scenes, lens_positions, probability_most_right)
+    
+    print_statistics(scenes, lens_positions, probability_nearest_left)
+    print_statistics(scenes, lens_positions, probability_nearest_right)
 
 
 # Entry point.
