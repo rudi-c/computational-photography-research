@@ -1,3 +1,6 @@
+# Data structure for storing the focus measures at each lens position
+# for each scene.
+
 # Where to find the data.
 scenes_folder = "focusmeasures/"
 maxima_file = "maxima.txt"
