@@ -57,8 +57,9 @@ def load_maxima_into_measures(scenes):
         maxima = lines[i + 1].split()
 
         if not scenes_dict.has_key(filename):
-            print "Warning : " + filename + " was found in " + maxima_file \
-                  + " but not in " + scenes_folder
+            # print "Warning : " + filename + " was found in " + maxima_file \
+            #       + " but not in " + scenes_folder
+            continue
 
         scene = scenes_dict[filename]
 

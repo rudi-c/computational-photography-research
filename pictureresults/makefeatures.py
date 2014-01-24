@@ -15,40 +15,7 @@
 import os
 import sys
 
-from scene import *
 from features import *
-
-### Classifiers ###
-
-def highest_on_left(scene, lens_pos):
-    # Find the location of the highest peak
-    highest = 0
-    for maxima in scene.maxima:
-        if scene.measuresValues[maxima] > scene.measuresValues[highest]:
-            highest = maxima
-    return highest < lens_pos
-
-def nearest_on_left(scene, lens_pos):
-    # Find the location of the nearest peak
-    nearest = 0
-    for maxima in scene.maxima:
-        if abs(lens_pos - maxima) < abs(lens_pos - nearest):
-            nearest = maxima
-    return nearest < lens_pos
-
-def highest_and_near_on_left(scene, lens_pos):
-    # Find the location of the peak that maximizes height
-    # and distance, equally weighted in a product
-    best = 0
-    for maxima in scene.maxima:
-        # Need to add a + 1 to the distance to avoid division by zero.
-        if scene.measuresValues[maxima] / (abs(lens_pos - maxima) + 1) > \
-           scene.measuresValues[best] / (abs(lens_pos - best) + 1):
-            best = maxima
-    return best < lens_pos
-
-
-####
 
 def get_arff_header(filters, include_three_features=False):
     """Return a string representing the header of the ARFF file"""
@@ -97,6 +64,26 @@ def main(argv):
         print scenes_folder + " folder not found."
         return
 
+    filters = []
+    three_measures = False
+    classifier = highest_on_left
+
+    # Process command line options. Anything remaining will be considered
+    # to be filters for features.
+    for arg in argv:
+        if arg == "--three-measures":
+            three_measures = True
+        elif arg == "--highest"
+            # Default
+            pass
+        elif arg == "--nearest"
+            classifier = nearest_on_left
+        elif arg == "--high-and-near"
+            classifier = highest_and_near_on_left
+        else
+            filters.append(arg)
+
+
     scenes = [ Scene(f) 
                for f in os.listdir(scenes_folder) 
                if os.path.isfile(scenes_folder + f) ]
@@ -105,9 +92,9 @@ def main(argv):
 
     # Print the contents of the ARFF file to screen (use output
     # redirection to save to file)
-    print get_arff_header(argv, True)
+    print get_arff_header(argv, three_measures)
     print "@DATA"
-    for line in get_data_lines(scenes, highest_and_near_on_left, argv, True):
+    for line in get_data_lines(scenes, classifier, argv, three_measures):
         print line
 
 

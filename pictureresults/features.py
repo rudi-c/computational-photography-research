@@ -2,6 +2,8 @@
 
 from math import log
 
+from scene import *
+
 def safeRatioLessThan(a, b, k):
     """Compare the ratio of a, b with k and handle division by zero."""
     return b != 0 and float(a) / b < k
@@ -121,3 +123,32 @@ def three_measure_features(filters=[]):
                 if name in filters]
     else:
         return features
+
+### Classifiers ###
+
+def highest_on_left(scene, lens_pos):
+    # Find the location of the highest peak
+    highest = 0
+    for maxima in scene.maxima:
+        if scene.measuresValues[maxima] > scene.measuresValues[highest]:
+            highest = maxima
+    return highest < lens_pos
+
+def nearest_on_left(scene, lens_pos):
+    # Find the location of the nearest peak
+    nearest = 0
+    for maxima in scene.maxima:
+        if abs(lens_pos - maxima) < abs(lens_pos - nearest):
+            nearest = maxima
+    return nearest < lens_pos
+
+def highest_and_near_on_left(scene, lens_pos):
+    # Find the location of the peak that maximizes height
+    # and distance, equally weighted in a product
+    best = 0
+    for maxima in scene.maxima:
+        # Need to add a + 1 to the distance to avoid division by zero.
+        if scene.measuresValues[maxima] / (abs(lens_pos - maxima) + 1) > \
+           scene.measuresValues[best] / (abs(lens_pos - best) + 1):
+            best = maxima
+    return best < lens_pos
