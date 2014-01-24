@@ -97,7 +97,7 @@ def print_R_script(scene, tree, classifier):
     print_array_assignment("focusmeasures", scene.measuresValues)
 
     # Then the correct classifications.
-    classes = [ 1 if classifier(scene, lens_pos) else 0
+    classes = [ 0 if classifier(scene, lens_pos) else 1
                 for lens_pos in range(2, scene.measuresCount) ]
     print_array_assignment("classes", classes)
 
@@ -108,8 +108,23 @@ def print_R_script(scene, tree, classifier):
 
     # Some R functions for plotting.
     print "plot(focusmeasures, pch=8)"
+
+    # Axis to indicate that the bottom points mean left and
+    # the top points means right.
+    print "axis(2, at=0, labels=\"left\", padj=-2)"
+    print "axis(2, at=0, labels=\"right\", padj=-2)"
+
+    # Legend to differentiate correct and predicted.
+    # pch indicates the shape of the points 
+    print "legend(\"left\", pch=c(25, 22), col=c(\"brown\", \"blue\"), " \
+          "legend=c(\"correct\", \"predicted\"))"
+
     print "lines(focusmeasures)"
-    print "points(classes - 0.02, pch=25, bg=\"brown\")"
+
+    # Indicate the correct classes (left or right) and
+    # the predicted classes. The predicted classes is
+    # slightly offset to avoid overlapping.
+    print "points(classes, pch=25, bg=\"brown\")"
     print "points(results - 0.02, pch=22, bg=\"blue\")"
     print "# Plot me!\n"
 

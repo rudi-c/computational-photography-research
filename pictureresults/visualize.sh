@@ -1,5 +1,9 @@
-TREE="(ratio2Inverse_8 right left)"
-CLASSIFIER=highest
+
+# TREE="(ratio2Inverse_8 right left)"
+TREE="(upTrend right (ratio2Inverse_8 right left))"
+
+# CLASSIFIER=highest
+CLASSIFIER=nearest
 
 # Empty what's in the file previously (we need to do that because
 # we will be appending to the file multiple times)
@@ -32,5 +36,5 @@ for file in \
     stillLife.txt \
     vase.txt
 do
-    ./evaluatetree.py -s $file -t "$TREE" -c $CLASSIFIER > out.R
+    ./evaluatetree.py -s $file -t "$TREE" -c $CLASSIFIER >> out.R
 done

@@ -128,7 +128,7 @@ def three_measure_features(filters=[]):
 
 def highest_on_left(scene, lens_pos):
     # Find the location of the highest peak
-    highest = 0
+    highest = scene.maxima[0]
     for maxima in scene.maxima:
         if scene.measuresValues[maxima] > scene.measuresValues[highest]:
             highest = maxima
@@ -136,7 +136,7 @@ def highest_on_left(scene, lens_pos):
 
 def nearest_on_left(scene, lens_pos):
     # Find the location of the nearest peak
-    nearest = 0
+    nearest = scene.maxima[0]
     for maxima in scene.maxima:
         if abs(lens_pos - maxima) < abs(lens_pos - nearest):
             nearest = maxima
@@ -145,7 +145,7 @@ def nearest_on_left(scene, lens_pos):
 def highest_and_near_on_left(scene, lens_pos):
     # Find the location of the peak that maximizes height
     # and distance, equally weighted in a product
-    best = 0
+    best = scene.maxima[0]
     for maxima in scene.maxima:
         # Need to add a + 1 to the distance to avoid division by zero.
         if scene.measuresValues[maxima] / (abs(lens_pos - maxima) + 1) > \
