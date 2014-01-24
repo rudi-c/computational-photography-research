@@ -7,8 +7,8 @@
 #
 # The tree should be of the form :
 # node = | (function_name falsetree truetree)
-#        | leaf (0 or 1)
-# Example : (ratio2_7 (upTrend 0 1) 1)
+#        | leaf (left or right)
+# Example : (ratio2_7 (upTrend left right) left)
 
 import getopt
 import inspect
@@ -26,10 +26,14 @@ def parse_tree(input, functions, current_index = 0):
         current_index += 1
         first_char = input[current_index]
 
-    assert first_char == '(' or first_char == "0" or first_char == "1"
+    assert first_char == '(' or input[current_index:].startswith("left") \
+                             or input[current_index:].startswith("right")
 
     if not first_char == '(':
-        return (int(first_char), current_index + 1)
+        if input[current_index:].startswith("left"):
+            return (0, current_index + 4)
+        else:
+            return (1, current_index + 5)
 
     # Parse function name.
     next_whitespace = input.find(' ', current_index)
@@ -87,6 +91,8 @@ def print_array_assignment(var_name, array):
 
 def print_R_script(scene, tree, classifier):
 
+    print "# " + scene.fileName + "\n"
+
     # Print the focus measures first.
     print_array_assignment("focusmeasures", scene.measuresValues)
 
@@ -105,7 +111,7 @@ def print_R_script(scene, tree, classifier):
     print "lines(focusmeasures)"
     print "points(classes - 0.02, pch=25, bg=\"brown\")"
     print "points(results - 0.02, pch=22, bg=\"blue\")"
-    print "# Plot me!"
+    print "# Plot me!\n"
 
 
 def main(argv):
