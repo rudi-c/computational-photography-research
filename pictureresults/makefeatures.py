@@ -73,16 +73,15 @@ def main(argv):
     for arg in argv:
         if arg == "--three-measures":
             three_measures = True
-        elif arg == "--highest"
+        elif arg == "--highest":
             # Default
             pass
-        elif arg == "--nearest"
+        elif arg == "--nearest":
             classifier = nearest_on_left
-        elif arg == "--high-and-near"
+        elif arg == "--high-and-near":
             classifier = highest_and_near_on_left
-        else
+        else:
             filters.append(arg)
-
 
     scenes = [ Scene(f) 
                for f in os.listdir(scenes_folder) 
@@ -92,9 +91,9 @@ def main(argv):
 
     # Print the contents of the ARFF file to screen (use output
     # redirection to save to file)
-    print get_arff_header(argv, three_measures)
+    print get_arff_header(filters, three_measures)
     print "@DATA"
-    for line in get_data_lines(scenes, classifier, argv, three_measures):
+    for line in get_data_lines(scenes, classifier, filters, three_measures):
         print line
 
 
