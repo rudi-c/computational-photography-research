@@ -17,44 +17,39 @@ import sys
 
 from features import *
 
-def get_arff_header(filters, include_three_features=False):
+def get_arff_header(features):
     """Return a string representing the header of the ARFF file"""
 
-    if include_three_features:
-        return "@RELATION autofocus_dir\n\n" \
-               + ''.join([ "@ATTRIBUTE " + attr + " {0, 1} \n" 
-                         for attr, _ in two_measure_features(filters)]) \
-               + ''.join([ "@ATTRIBUTE " + attr + " {0, 1} \n" 
-                         for attr, _ in three_measure_features(filters)]) \
-               + "@ATTRIBUTE direction {left, right} \n"
+    return "@RELATION autofocus_dir\n\n" \
+           + ''.join([ "@ATTRIBUTE " + attr + " " + values + " \n" 
+                     for attr, values, _ in features]) \
+           + "@ATTRIBUTE direction {left, right} \n"
+
+def convert_true_false(value):
+    """Convert True to 1, False to 0 and leave everything else as it is."""
+    if value is True:
+        return 1
+    elif value is False:
+        return 0
     else:
-        return "@RELATION autofocus_dir\n\n" \
-               + ''.join([ "@ATTRIBUTE " + attr + " {0, 1}\n" 
-                         for attr, _ in two_measure_features(filters)]) \
-               + "@ATTRIBUTE direction {left, right} \n"
+        return value
 
-def get_data_lines(scenes, classifier, filters,
-                   include_three_features=False):
+def get_data_lines(scenes, classifier, features):
     lines = []
-
-    two_features = two_measure_features(filters)
-    three_features = three_measure_features(filters)
 
     for scene in scenes:
         for lens_pos in range(2, scene.measuresCount):
-            features = [feature(scene.measuresValues[lens_pos - 1],
-                                scene.measuresValues[lens_pos])
-                        for _, feature in two_features]
-            if include_three_features:
-                features += [feature(scene.measuresValues[lens_pos - 2],
-                                     scene.measuresValues[lens_pos - 1],
-                                     scene.measuresValues[lens_pos])
-                             for _, feature in three_features]
+            values = [feature(
+                first  = scene.measuresValues[lens_pos - 2],
+                second = scene.measuresValues[lens_pos - 1],
+                third  = scene.measuresValues[lens_pos],
+                lens_pos = float(lens_pos) / (scene.measuresCount - 1))
+                      for _, _, feature in features]
 
-            classification = "left" if classifier(scene, lens_pos) \
-                                    else "right"
-            lines.append(''.join(["1," if feature else "0,"
-                                  for feature in features])
+            classification = ",left" if classifier(scene, lens_pos) \
+                                    else ",right"
+            lines.append(','.join([str(convert_true_false(value))
+                                  for value in values])
                       + classification)
 
     return lines
@@ -65,14 +60,16 @@ def main(argv):
         return
 
     filters = []
-    three_measures = False
+    features = two_measure_features
     classifier = highest_on_left
 
     # Process command line options. Anything remaining will be considered
     # to be filters for features.
     for arg in argv:
         if arg == "--three-measures":
-            three_measures = True
+            features = measure_features
+        elif arg == "--all-features":
+            features = all_features
         elif arg == "--highest":
             # Default
             pass
@@ -91,9 +88,9 @@ def main(argv):
 
     # Print the contents of the ARFF file to screen (use output
     # redirection to save to file)
-    print get_arff_header(filters, three_measures)
+    print get_arff_header(features(filters))
     print "@DATA"
-    for line in get_data_lines(scenes, classifier, filters, three_measures):
+    for line in get_data_lines(scenes, classifier, features(filters)):
         print line
 
 

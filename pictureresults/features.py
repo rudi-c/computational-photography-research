@@ -1,5 +1,12 @@
 # Functions that evaluate features.
 
+# Features are lambda expressions taking an arbitrary number of
+# keyword arguments. Current arguments used include :
+# first (first focus measurement, [0, 1])
+# second (second focus measurement, [0, 1])
+# third (third focus measurement, [0, 1])
+# lens_pos (0 for the first lens position, 1 for the last lens position)
+
 from math import log
 
 from scene import *
@@ -12,45 +19,49 @@ def safeRatioLessThan(a, b, k):
 
 def ratio2(k):
     # positive numbers for k only
-    def r(first, second):
+    def r(**kwargs):
+        first, second = kwargs["first"], kwargs["second"]
         return safeRatioLessThan(first, second, k)
     return r
 
 def ratio2Inverse(k):
     # positive numbers for k only
-    def r(first, second):
+    def r(**kwargs):
+        first, second = kwargs["first"], kwargs["second"]
         return safeRatioLessThan(second, first, k)
     return r
 
 def logRatio2(k):
     # positive numbers for k only
-    def r(first, second):
+    def r(**kwargs):
+        first, second = kwargs["first"], kwargs["second"]
         return safeRatioLessThan(log(first + 1.0), log(second + 1.0), k)
     return r
 
 def logRatio2Inverse(k):
     # positive numbers for k only
-    def r(first, second):
+    def r(**kwargs):
+        first, second = kwargs["first"], kwargs["second"]
         return safeRatioLessThan(log(second + 1.0), log(first + 1.0), k)
     return r
 
 def two_measure_features(filters=[]):
-    """ Returns an array of (attribute name, function) where the functions
-        take two arguments."""
+    """ Returns an array of (attribute name, attribute range, function) 
+        where the functions take two arguments."""
 
     # We're using arrays instead of dicts to maintain a constant order.
     features = []
-    features += [("ratio2_" + str(k), ratio2(k / 8.0) )
+    features += [("ratio2_" + str(k), "{0,1}", ratio2(k / 8.0) )
                  for k in range(1, 16)]
-    features += [("ratio2Inverse_" + str(k), ratio2Inverse(k / 8.0) )
+    features += [("ratio2Inverse_" + str(k), "{0,1}", ratio2Inverse(k / 8.0) )
                  for k in range(1, 16)]
-    features += [("logRatio2_" + str(k), logRatio2(k / 8.0) )
+    features += [("logRatio2_" + str(k), "{0,1}", logRatio2(k / 8.0) )
                  for k in range(1, 16)]
-    features += [("logRatio2Inverse_" + str(k), logRatio2Inverse(k / 8.0) )
+    features += [("logRatio2Inverse_" + str(k), "{0,1}", logRatio2Inverse(k / 8.0) )
                  for k in range(1, 16)]
 
     if len(filters) > 0:
-        return [(name, feature) for name, feature in features 
+        return [(name, values, feature) for name, values, feature in features 
                 if name in filters]
     else:
         return features
@@ -59,70 +70,126 @@ def two_measure_features(filters=[]):
 
 def ratio3(k):
     # positive numbers for k only
-    def r(first, second, third):
-        return safeRatioLessThan(float(first), third, k)
+    def r(**kwargs):
+        fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
+        return safeRatioLessThan(float(fst), trd, k)
     return r
 
 def ratio3Inverse(k):
     # positive numbers for k only
-    def r(first, second, third):
-        return safeRatioLessThan(float(third), first, k)
+    def r(**kwargs):
+        fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
+        return safeRatioLessThan(float(trd), fst, k)
     return r
 
 def logRatio3(k):
     # positive numbers for k only
-    def r(first, second, third):
-        return safeRatioLessThan(log(first + 1.0), log(third + 1.0), k)
+    def r(**kwargs):
+        fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
+        return safeRatioLessThan(log(fst + 1.0), log(trd + 1.0), k)
     return r
 
 def logRatio3Inverse(k):
     # positive numbers for k only
-    def r(first, second, third):
-        return safeRatioLessThan(log(third + 1.0), log(first + 1.0), k)
+    def r(**kwargs):
+        fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
+        return safeRatioLessThan(log(trd + 1.0), log(fst + 1.0), k)
     return r
 
 def curving(k):
     # positive and negative numbers for k alike
-    def r(first, second, third):
-        return safeRatioLessThan(first + third - 2 * second, second, k)
+    def r(**kwargs):
+        fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
+        return safeRatioLessThan(fst + trd - 2 * snd, snd, k)
     return r
 
 def curvingRatio(k):
     # positive and negative numbers for k alike
-    def r(first, second, third):
-        return safeRatioLessThan(first - second, second - third, k)
+    def r(**kwargs):
+        fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
+        return safeRatioLessThan(fst - snd, snd - trd, k)
     return r
 
-def downTrend(first, second, third):
-    return first <= second and second <= third
+def downTrend(**kwargs):
+    fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
+    return fst <= snd and snd <= trd
 
-def upTrend(first, second, third):
-    return first >= second and second >= third
+def upTrend(**kwargs):
+    fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
+    return fst >= snd and snd >= trd
 
 def three_measure_features(filters=[]):
-    """ Returns an array of (attribute name, function) where the functions
-        take three arguments."""
+    """ Returns an array of (attribute name, attribute range, function) 
+        where the functions take three arguments."""
 
     # We're using arrays instead of dicts to maintain a constant order.
-    features = [ ("downTrend", downTrend), ("upTrend", upTrend) ]
-    features += [("ratio3_" + str(k), ratio3(k / 8.0) )
+    features = [ ("downTrend", "{0,1}", downTrend), 
+                 ("upTrend"  , "{0,1}", upTrend) ]
+
+    features += [("ratio3_" + str(k), "{0,1}", ratio3(k / 8.0) )
                  for k in range(1, 16)]
-    features += [("ratio3Inverse_" + str(k), ratio3Inverse(k / 8.0) )
+    features += [("ratio3Inverse_" + str(k), "{0,1}", ratio3Inverse(k / 8.0) )
                  for k in range(1, 16)]
-    features += [("logRatio3_" + str(k), logRatio3(k / 8.0) )
+    features += [("logRatio3_" + str(k), "{0,1}", logRatio3(k / 8.0) )
                  for k in range(1, 16)]
-    features += [("logRatio3Inverse_" + str(k), logRatio3Inverse(k / 8.0) )
+    features += [("logRatio3Inverse_" + str(k), "{0,1}", logRatio3Inverse(k / 8.0) )
                  for k in range(1, 16)]
-    features += [("curving_" + str(k), curving((k - 8.0) / 4.0) )
+    features += [("curving_" + str(k), "{0,1}", curving((k - 8.0) / 4.0) )
                  for k in range(1, 16)]
-    features += [("curvingRatio_" + str(k), curving((k - 8.0) / 4.0) )
+    features += [("curvingRatio_" + str(k), "{0,1}", curving((k - 8.0) / 4.0) )
                  for k in range(1, 16)]
 
     if len(filters) > 0:
-        return [(name, feature) for name, feature in features 
+        return [(name, values, feature) for name, values, feature in features 
                 if name in filters]
     else:
         return features
+
+### Other features ###
+
+def bracket(brackets):
+    # start and end to be numbers from 0 to 1
+    def f(**kwargs):
+        lens_pos = kwargs["lens_pos"]
+        assert lens_pos >= brackets[0]
+
+        # Return the index corresponding to the correct bracket
+        for i in range(0, len(brackets) - 1):
+            if lens_pos >= brackets[i] and lens_pos < brackets[i + 1]:
+                return i
+        return len(brackets) - 1
+
+    return f
+
+def other_features(filters=[]):
+    """ Returns an array of (attribute name, attribute range, function)"""
+
+    # I've decided not to distribute the brackets evenly because it matters
+    # less if the lens is near the center than if it is near the end
+    brackets = [ 0.0, 0.05, 0.10, 0.15, 0.25, 0.35, 0.50, 0.65, 0.75, 0.85, 0.90, 0.95 ]
+    bracket_range = "{" + \
+        ",".join([str(i) for i in range(0, len(brackets))]) + "}"
+
+    features = [ ( "bracket", bracket_range, bracket(brackets) )]
+
+    if len(filters) > 0:
+        return [(name, values, feature) for name, values, feature in features 
+                if name in filters]
+    else:
+        return features
+
+###
+
+def measure_features(filters=[]):
+    """ Returns an array of (attribute name, attribute range, function)"""
+    return two_measure_features(filters) + three_measure_features(filters)
+
+def all_features(filters=[]):
+    """ Returns an array of (attribute name, attribute range, function)"""
+
+    return two_measure_features(filters) + three_measure_features(filters) + \
+           other_features(filters)
+
 
 ### Classifiers ###
 
