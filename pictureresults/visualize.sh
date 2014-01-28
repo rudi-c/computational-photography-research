@@ -1,16 +1,16 @@
 
 # TREE="(ratio2Inverse_8 right left)"
-# TREE="(upTrend right (ratio2Inverse_8 right left))"
+# TREE="(downTrend right (ratio2Inverse_8 right left))"
 
 # New features, nearest, 3 measures with brackets, step size 1
-TREE="(upTrend (diffRatioMin3_5 right 
+TREE="(downTrend (diffRatioMin3_5 right 
                                 (bracket right right right left left)) 
-               (bracket right 
-                        (diffRatioMin2_5 right
-                                         (diffRatioMin3_6 right left))
-                        (ratio3_19 left right)
-                        left
-                        left))"
+                 (bracket right 
+                          (diffRatioMin2_5 right
+                                           (diffRatioMin3_6 right left))
+                          (ratio3_19 left right)
+                          left
+                          left))"
 
 
 # CLASSIFIER=highest

@@ -167,11 +167,11 @@ def curvingRatio(k):
 
 def downTrend(**kwargs):
     fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
-    return fst <= snd and snd <= trd
+    return fst >= snd and snd >= trd
 
 def upTrend(**kwargs):
     fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
-    return fst >= snd and snd >= trd
+    return fst <= snd and snd <= trd
 
 def three_measure_features(filters=[]):
     """ Returns an array of (attribute name, attribute range, function) 

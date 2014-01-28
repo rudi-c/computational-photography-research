@@ -34,14 +34,14 @@ def convert_true_false(value):
     else:
         return value
 
-def get_data_lines(scenes, classifier, features):
+def get_data_lines(scenes, classifier, features, step_size):
     lines = []
 
     for scene in scenes:
-        for lens_pos in range(2, scene.measuresCount):
+        for lens_pos in range(step_size * 2, scene.measuresCount):
             values = [feature(
-                first  = scene.measuresValues[lens_pos - 2],
-                second = scene.measuresValues[lens_pos - 1],
+                first  = scene.measuresValues[lens_pos - 2 * step_size],
+                second = scene.measuresValues[lens_pos - 1 * step_size],
                 third  = scene.measuresValues[lens_pos],
                 lens_pos = float(lens_pos) / (scene.measuresCount - 1))
                       for _, _, feature in features]
@@ -62,6 +62,7 @@ def main(argv):
     filters = []
     features = two_measure_features
     classifier = highest_on_left
+    step_size = 1
 
     # Process command line options. Anything remaining will be considered
     # to be filters for features.
@@ -77,6 +78,8 @@ def main(argv):
             classifier = nearest_on_left
         elif arg == "--high-and-near":
             classifier = highest_and_near_on_left
+        elif arg == "--double-step":
+            step_size = 2
         else:
             filters.append(arg)
 
@@ -90,7 +93,8 @@ def main(argv):
     # redirection to save to file)
     print get_arff_header(features(filters))
     print "@DATA"
-    for line in get_data_lines(scenes, classifier, features(filters)):
+    for line in get_data_lines(scenes, classifier, 
+                               features(filters), step_size):
         print line
 
 

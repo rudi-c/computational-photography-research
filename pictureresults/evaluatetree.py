@@ -97,7 +97,7 @@ def parse_tree(input, functions, current_index = 0):
     else:
         return ((function, children), next_index + 1)
 
-def tree_eval(scene, lens_pos, tree):
+def tree_eval(scene, lens_pos, tree, step_size):
     # Reached a leaf.
     if tree == 0 or tree == 1:
         return tree
@@ -106,8 +106,8 @@ def tree_eval(scene, lens_pos, tree):
     function, children = tree
 
     node_value = function(
-        first  = scene.measuresValues[lens_pos - 2],
-        second = scene.measuresValues[lens_pos - 1],
+        first  = scene.measuresValues[lens_pos - 2 * step_size],
+        second = scene.measuresValues[lens_pos - 1 * step_size],
         third  = scene.measuresValues[lens_pos],
         lens_pos = float(lens_pos) / (scene.measuresCount - 1))
 
@@ -134,7 +134,7 @@ def print_array_assignment(var_name, array):
     print var_name + " <- c(" + \
           str(array).translate(None, '[] ') + ")"
 
-def print_R_script(scene, tree, classifier):
+def print_R_script(scene, tree, classifier, step_size):
 
     print "# " + scene.fileName + "\n"
 
@@ -143,12 +143,12 @@ def print_R_script(scene, tree, classifier):
 
     # Then the correct classifications.
     classes = [ 0 if classifier(scene, lens_pos) else 1
-                for lens_pos in range(2, scene.measuresCount) ]
+                for lens_pos in range(2 * step_size, scene.measuresCount) ]
     print_array_assignment("classes", classes)
 
     # Then what we actually get.
     results = [ tree_eval(scene, lens_pos, tree)
-                for lens_pos in range(2, scene.measuresCount) ]
+                for lens_pos in range(2 * step_size, scene.measuresCount) ]
     print_array_assignment("results", results)
 
     # Some R functions for plotting.
@@ -178,8 +178,9 @@ def main(argv):
 
     # Parse script arguments
     try:
-        opts, args = getopt.getopt(argv,"s:t:c:",
-                                  ["scene=", "tree=", "classifier="])
+        opts, args = getopt.getopt(argv,"s:t:c:d",
+                                  ["scene=", "tree=", "classifier=",
+                                   "double"])
     except getopt.GetoptError:
         print_script_usage
         sys.exit(2)
@@ -189,6 +190,7 @@ def main(argv):
     scene = None
     tree = None
     classifier = None
+    step_size = 1
 
     for opt, arg in opts:
         if opt in ("-s", "--scene"):
@@ -203,13 +205,15 @@ def main(argv):
                 classifier = nearest_on_left
             elif arg == "near_high":
                 classifier = highest_and_near_on_left
+        elif opt in ("-d", "--double-step")
+            step_size = 2
 
     if scene == None or tree == None:
         print_script_usage()
         sys.exit(2)
 
     load_maxima_into_measures([scene])
-    print_R_script(scene, tree, classifier)
+    print_R_script(scene, tree, classifier, step_size)
 
 
 
