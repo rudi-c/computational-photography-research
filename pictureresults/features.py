@@ -24,12 +24,12 @@ def ratio2(k):
         return safeRatioLessThan(first, second, k)
     return r
 
-def ratio2Inverse(k):
-    # positive numbers for k only
-    def r(**kwargs):
-        first, second = kwargs["first"], kwargs["second"]
-        return safeRatioLessThan(second, first, k)
-    return r
+# def ratio2Inverse(k):
+#     # positive numbers for k only
+#     def r(**kwargs):
+#         first, second = kwargs["first"], kwargs["second"]
+#         return safeRatioLessThan(second, first, k)
+#     return r
 
 def logRatio2(k):
     # positive numbers for k only
@@ -38,11 +38,32 @@ def logRatio2(k):
         return safeRatioLessThan(log(first + 1.0), log(second + 1.0), k)
     return r
 
-def logRatio2Inverse(k):
-    # positive numbers for k only
+# def logRatio2Inverse(k):
+#     # positive numbers for k only
+#     def r(**kwargs):
+#         first, second = kwargs["first"], kwargs["second"]
+#         return safeRatioLessThan(log(second + 1.0), log(first + 1.0), k)
+#     return r
+
+def diffRatioAvg2(k):
+    # numbers from -1 to 1 for k (in practice, -0.5 to 0.5)
     def r(**kwargs):
         first, second = kwargs["first"], kwargs["second"]
-        return safeRatioLessThan(log(second + 1.0), log(first + 1.0), k)
+        return safeRatioLessThan(2.0 * (second - first), (second + first), k)
+    return r
+
+def diffRatioMin2(k):
+    # numbers from -1 to 1 for k (in practice, -0.5 to 0.5)
+    def r(**kwargs):
+        first, second = kwargs["first"], kwargs["second"]
+        return safeRatioLessThan(second - first, min(second, first), k)
+    return r
+
+def diffRatioMax2(k):
+    # numbers from -1 to 1 for k (in practice, -0.5 to 0.5)
+    def r(**kwargs):
+        first, second = kwargs["first"], kwargs["second"]
+        return safeRatioLessThan(second - first, max(second, first), k)
     return r
 
 def two_measure_features(filters=[]):
@@ -51,14 +72,27 @@ def two_measure_features(filters=[]):
 
     # We're using arrays instead of dicts to maintain a constant order.
     features = []
-    features += [("ratio2_" + str(k), "{0,1}", ratio2(k / 8.0) )
-                 for k in range(1, 16)]
-    features += [("ratio2Inverse_" + str(k), "{0,1}", ratio2Inverse(k / 8.0) )
-                 for k in range(1, 16)]
-    features += [("logRatio2_" + str(k), "{0,1}", logRatio2(k / 8.0) )
-                 for k in range(1, 16)]
-    features += [("logRatio2Inverse_" + str(k), "{0,1}", logRatio2Inverse(k / 8.0) )
-                 for k in range(1, 16)]
+
+    # Ratio calculations are split in two to maintain symmetry.
+    # e.g. 0.75 and 1.25 are not symmetrical ratios, but 0.75 and 1.333 are
+    features += [("ratio2_" + str(k), "{0,1}", ratio2((10 + k) / 20.0) )
+                 for k in range(0, 11)] \
+             +  [("ratio2_" + str(k + 10), "{0,1}", ratio2(20.0 / (10 + k)) )
+                 for k in range(1, 11)]
+    features += [("logRatio2_" + str(k), "{0,1}", logRatio2((10 + k) / 20.0) )
+                 for k in range(0, 11)] \
+             +  [("logRatio2_" + str(k + 10), "{0,1}", logRatio2(20.0 / (10 + k)) )
+                 for k in range(1, 11)]
+
+    features += [("diffRatioAvg2_" + str(k), "{0,1}", 
+                   diffRatioAvg2((5 - k) / 10.0) )
+                 for k in range(0, 11)]
+    features += [("diffRatioMin2_" + str(k), "{0,1}", 
+                   diffRatioMin2((5 - k) / 10.0) )
+                 for k in range(0, 11)]
+    features += [("diffRatioMax2_" + str(k), "{0,1}", 
+                   diffRatioMax2((5 - k) / 10.0) )
+                 for k in range(0, 11)]
 
     if len(filters) > 0:
         return [(name, values, feature) for name, values, feature in features 
@@ -75,12 +109,12 @@ def ratio3(k):
         return safeRatioLessThan(float(fst), trd, k)
     return r
 
-def ratio3Inverse(k):
-    # positive numbers for k only
-    def r(**kwargs):
-        fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
-        return safeRatioLessThan(float(trd), fst, k)
-    return r
+# def ratio3Inverse(k):
+#     # positive numbers for k only
+#     def r(**kwargs):
+#         fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
+#         return safeRatioLessThan(float(trd), fst, k)
+#     return r
 
 def logRatio3(k):
     # positive numbers for k only
@@ -89,11 +123,32 @@ def logRatio3(k):
         return safeRatioLessThan(log(fst + 1.0), log(trd + 1.0), k)
     return r
 
-def logRatio3Inverse(k):
-    # positive numbers for k only
+# def logRatio3Inverse(k):
+#     # positive numbers for k only
+#     def r(**kwargs):
+#         fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
+#         return safeRatioLessThan(log(trd + 1.0), log(fst + 1.0), k)
+#     return r
+
+def diffRatioAvg3(k):
+    # numbers from -1 to 1 for k (in practice, -0.5 to 0.5)
     def r(**kwargs):
         fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
-        return safeRatioLessThan(log(trd + 1.0), log(fst + 1.0), k)
+        return safeRatioLessThan(2.0 * (trd - fst), (trd + fst), k)
+    return r
+
+def diffRatioMin3(k):
+    # numbers from -1 to 1 for k (in practice, -0.5 to 0.5)
+    def r(**kwargs):
+        fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
+        return safeRatioLessThan(trd - fst, min(trd, fst), k)
+    return r
+
+def diffRatioMax3(k):
+    # numbers from -1 to 1 for k (in practice, -0.5 to 0.5)
+    def r(**kwargs):
+        fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
+        return safeRatioLessThan(trd - fst, max(trd, fst), k)
     return r
 
 def curving(k):
@@ -126,14 +181,27 @@ def three_measure_features(filters=[]):
     features = [ ("downTrend", "{0,1}", downTrend), 
                  ("upTrend"  , "{0,1}", upTrend) ]
 
-    features += [("ratio3_" + str(k), "{0,1}", ratio3(k / 8.0) )
-                 for k in range(1, 16)]
-    features += [("ratio3Inverse_" + str(k), "{0,1}", ratio3Inverse(k / 8.0) )
-                 for k in range(1, 16)]
-    features += [("logRatio3_" + str(k), "{0,1}", logRatio3(k / 8.0) )
-                 for k in range(1, 16)]
-    features += [("logRatio3Inverse_" + str(k), "{0,1}", logRatio3Inverse(k / 8.0) )
-                 for k in range(1, 16)]
+    # Ratio calculations are split in two to maintain symmetry.
+    # e.g. 0.75 and 1.25 are not symmetrical ratios, but 0.75 and 1.333 are
+    features += [("ratio3_" + str(k), "{0,1}", ratio3((10 + k) / 20.0) )
+                 for k in range(0, 11)] \
+             +  [("ratio3_" + str(k + 10), "{0,1}", ratio3(20.0 / (10 + k)) )
+                 for k in range(1, 11)]
+    features += [("logRatio3_" + str(k), "{0,1}", logRatio3((10 + k) / 20.0) )
+                 for k in range(0, 11)] \
+             +  [("logRatio3_" + str(k + 10), "{0,1}", logRatio3(20.0 / (10 + k)) )
+                 for k in range(1, 11)]
+
+    features += [("diffRatioAvg3_" + str(k), "{0,1}", 
+                   diffRatioAvg3((5 - k) / 10.0) )
+                 for k in range(0, 11)]
+    features += [("diffRatioMin3_" + str(k), "{0,1}", 
+                   diffRatioMin3((5 - k) / 10.0) )
+                 for k in range(0, 11)]
+    features += [("diffRatioMax3_" + str(k), "{0,1}", 
+                   diffRatioMax3((5 - k) / 10.0) )
+                 for k in range(0, 11)]
+
     features += [("curving_" + str(k), "{0,1}", curving((k - 8.0) / 4.0) )
                  for k in range(1, 16)]
     features += [("curvingRatio_" + str(k), "{0,1}", curving((k - 8.0) / 4.0) )
@@ -166,7 +234,15 @@ def other_features(filters=[]):
 
     # I've decided not to distribute the brackets evenly because it matters
     # less if the lens is near the center than if it is near the end
-    brackets = [ 0.0, 0.05, 0.10, 0.15, 0.25, 0.35, 0.50, 0.65, 0.75, 0.85, 0.90, 0.95 ]
+
+    # Twelve brackets
+    # brackets = [ 0.0, 0.05, 0.10, 0.15, 0.25, 0.35, 0.50, 0.65, 0.75, 0.85, 0.90, 0.95 ]
+    
+    # Five brackets. Experiments seem to suggest this is sufficient. Twelve
+    # may lead to overfitting. Three might be to restrictive for the leftmost
+    # and rightmost peaks.
+    brackets = [ 0.0, 0.08, 0.20, 0.80, 0.92 ]
+
     bracket_range = "{" + \
         ",".join([str(i) for i in range(0, len(brackets))]) + "}"
 
