@@ -18,41 +18,84 @@ import sys
 from scene    import *
 from features import *
 
+def find_next_whitespace(string, start_index = 0):
+    """Finds the first occurence of whitespace (space, tab or newline)
+    after start_index. Return -1 if non"""
+    next_space   = string.find(' ',  start_index)
+    next_tab     = string.find('\t', start_index)
+    next_newline = string.find('\n', start_index)
+    earliest = max(next_space, next_tab, next_newline)
+    if next_space > 0:
+        earliest = min(earliest, next_space)
+    if next_tab > 0:
+        earliest = min(earliest, next_tab)
+    if next_newline > 0:
+        earliest = min(earliest, next_newline)
+    return earliest
+
+def check_brackets(input):
+    """Ensures that the brackets match (every opening bracket has a
+    corresponding closing bracket)"""
+    n_pairs = 0
+    for i in range(0, len(input)):
+        if input[i] == '(':
+            n_pairs += 1
+        elif input[i] == ')':
+            if n_pairs == 0:
+                raise Exception("Closing bracket without opening bracket : \n"
+                                + input[:(i+1)])
+            else:
+                n_pairs -= 1
+    if n_pairs != 0:
+        raise Exception(str(n_pairs) + 
+                        " opening brackets have not been closed")
+
+
 def parse_tree(input, functions, current_index = 0):
-    """Parse a string into tree form, as a nested array."""
+    """Parse a string into tree form, as a tuple of function
+    and an array of children."""
     
+    # Skip extra leading whitespaces
     first_char = input[current_index]
-    while first_char == ' ':
+    while first_char == ' ' or first_char == '\t' or first_char == '\n':
         current_index += 1
         first_char = input[current_index]
 
-    assert first_char == '(' or input[current_index:].startswith("left") \
-                             or input[current_index:].startswith("right")
+    if not (first_char == '(' or input[current_index:].startswith("left") \
+                              or input[current_index:].startswith("right")):
+        raise Exception("Every child should either be a subtree, a "
+                        "\"left\" leaf or a \"right\" leaf :\n"
+                        + input[:(current_index+1)])
 
+    # This is a leaf node.
     if not first_char == '(':
         if input[current_index:].startswith("left"):
-            return (0, current_index + 4)
+            return (0, current_index + len("left"))
         else:
-            return (1, current_index + 5)
+            return (1, current_index + len("right"))
 
     # Parse function name.
-    next_whitespace = input.find(' ', current_index)
+    next_whitespace = find_next_whitespace(input, current_index)
     function_name = input[current_index + 1 : next_whitespace]
     function = functions[function_name]
 
-    # Parse left node.
-    left_tree, next_index = parse_tree(input, functions, next_whitespace + 1)
+    next_index = next_whitespace + 1
 
-    # Parse right node.
-    right_tree, next_index = parse_tree(input, functions, next_index)
+    # Recursively parse all child nodes.
+    children = []
+    while input[next_index] != ')':
+        child, next_index = parse_tree(input, functions, next_index)
+        children.append(child)
 
-    assert input[next_index] == ')'
+    if len(children) <= 0:
+        raise Exception("Every non-leaf node should have at "
+                        "least one child : \n" + input[:(next_index+1)])
 
     if current_index == 0:
         # Return root
-        return [function, left_tree, right_tree]
+        return (function, children)
     else:
-        return ([function, left_tree, right_tree], next_index + 1)
+        return ((function, children), next_index + 1)
 
 def tree_eval(scene, lens_pos, tree):
     # Reached a leaf.
@@ -60,24 +103,26 @@ def tree_eval(scene, lens_pos, tree):
         return tree
 
     # Pattern matching is so convenient.
-    [ function, left_tree, right_tree ] = tree
+    function, children = tree
 
-    arg_count = len(inspect.getargspec(function)[0])
-    if arg_count == 2:
-        if function(scene.measuresValues[lens_pos - 1],
-                    scene.measuresValues[lens_pos]):
-            return tree_eval(scene, lens_pos, right_tree)
-        else:
-            return tree_eval(scene, lens_pos, left_tree)
-    elif arg_count == 3:
-        if function(scene.measuresValues[lens_pos - 2],
-                    scene.measuresValues[lens_pos - 1],
-                    scene.measuresValues[lens_pos]):
-            return tree_eval(scene, lens_pos, right_tree)
-        else:
-            return tree_eval(scene, lens_pos, left_tree)
+    node_value = function(
+        first  = scene.measuresValues[lens_pos - 2],
+        second = scene.measuresValues[lens_pos - 1],
+        third  = scene.measuresValues[lens_pos],
+        lens_pos = float(lens_pos) / (scene.measuresCount - 1))
+
+    if node_value is True:
+        return tree_eval(scene, lens_pos, children[1])
+    elif node_value is False:
+        return tree_eval(scene, lens_pos, children[0])
+    elif isinstance(node_value, int):
+        try:
+            return tree_eval(scene, lens_pos, children[node_value])
+        except IndexError:
+            raise Exception("Insufficient number of children for a " \
+                            "feature with integer values.")
     else:
-        raise Exception("Function should have exactly 2 or 3 arguments")
+        raise Exception("Features should produce a boolean or an integer.")
 
 def print_script_usage():
    print  """Script usage : ./FlickrRandom 
@@ -112,7 +157,7 @@ def print_R_script(scene, tree, classifier):
     # Axis to indicate that the bottom points mean left and
     # the top points means right.
     print "axis(2, at=0, labels=\"left\", padj=-2)"
-    print "axis(2, at=0, labels=\"right\", padj=-2)"
+    print "axis(2, at=1.0, labels=\"right\", padj=-2)"
 
     # Legend to differentiate correct and predicted.
     # pch indicates the shape of the points 
@@ -139,8 +184,7 @@ def main(argv):
         print_script_usage
         sys.exit(2)
 
-    functions = { key : value for (key, value) 
-                  in two_measure_features() + three_measure_features() }
+    functions = { key : value for (key, _, value) in all_features() }
 
     scene = None
     tree = None
@@ -150,6 +194,7 @@ def main(argv):
         if opt in ("-s", "--scene"):
             scene = Scene(arg)
         elif opt in ("-t", "--tree"):
+            check_brackets(arg)
             tree = parse_tree(arg, functions)
         elif opt in ("-c", "--classifier"):
             if arg == "highest":
