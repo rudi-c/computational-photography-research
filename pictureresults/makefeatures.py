@@ -83,9 +83,7 @@ def main(argv):
         else:
             filters.append(arg)
 
-    scenes = [ Scene(f) 
-               for f in os.listdir(scenes_folder) 
-               if os.path.isfile(scenes_folder + f) ]
+    scenes = load_scenes()
 
     load_maxima_into_measures(scenes)
 

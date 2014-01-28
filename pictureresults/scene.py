@@ -1,6 +1,8 @@
 # Data structure for storing the focus measures at each lens position
 # for each scene.
 
+import os
+
 # Where to find the data.
 scenes_folder = "focusmeasures/"
 maxima_file = "maxima.txt"
@@ -33,6 +35,10 @@ class Scene:
         self.__load_file()
         self.maxima = []
 
+def load_scenes():
+    return [ Scene(f) 
+             for f in os.listdir(scenes_folder) 
+             if os.path.isfile(scenes_folder + f) ]
 
 def load_maxima_into_measures(scenes):
     try:
