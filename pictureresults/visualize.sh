@@ -3,15 +3,27 @@
 # TREE="(downTrend right (ratio2Inverse_8 right left))"
 
 # New features, nearest, 3 measures with brackets, step size 1
-TREE="(downTrend (diffRatioMin3_5 right 
-                                (bracket right right right left left)) 
-                 (bracket right 
-                          (diffRatioMin2_5 right
-                                           (diffRatioMin3_6 right left))
-                          (ratio3_19 left right)
-                          left
-                          left))"
+# TREE="(downTrend (diffRatioMin3_5 right 
+#                                 (bracket right right right left left)) 
+#                  (bracket right 
+#                           (diffRatioMin2_5 right
+#                                            (diffRatioMin3_6 right left))
+#                           (ratio3_19 left right)
+#                           left
+#                           left))"
 
+# New features and dataset, nearest, 3 measures with brackets, step size 1
+TREE="(diffRatioAvg3_5 (upTrend (bracket right right right left left)
+                                (bracket right right right right
+                                        (ratio3_9 left right)))
+                       (downTrend (bracket right right left left left)
+                                  (bracket (diffRatioMin2_5 right
+                                                            (diffRatioMin3_5 right
+                                                                             (ratio3_19 left right)))
+                                           (ratio3_19 (diffRatioMin2_5 right left)
+                                                      right)
+                                           (diffRatioMin3_5 right left)
+                                           left left)))"
 
 # CLASSIFIER=highest
 CLASSIFIER=nearest
@@ -45,7 +57,16 @@ for file in \
     screen.txt \
     snails.txt \
     stillLife.txt \
-    vase.txt
+    vase.txt \
+    books1.txt \
+    books2.txt \
+    books3.txt \
+    books4.txt \
+    gametree.txt \
+    gorillapod.txt \
+    granola.txt \
+    timbuk.txt \
+    ubuntu.txt
 do
     ./evaluatetree.py -s $file -t "$TREE" -c $CLASSIFIER >> out.R
 done
