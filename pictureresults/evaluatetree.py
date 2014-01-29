@@ -112,12 +112,12 @@ def tree_eval(scene, lens_pos, tree, step_size):
         lens_pos = float(lens_pos) / (scene.measuresCount - 1))
 
     if node_value is True:
-        return tree_eval(scene, lens_pos, children[1])
+        return tree_eval(scene, lens_pos, children[1], step_size)
     elif node_value is False:
-        return tree_eval(scene, lens_pos, children[0])
+        return tree_eval(scene, lens_pos, children[0], step_size)
     elif isinstance(node_value, int):
         try:
-            return tree_eval(scene, lens_pos, children[node_value])
+            return tree_eval(scene, lens_pos, children[node_value], step_size)
         except IndexError:
             raise Exception("Insufficient number of children for a " \
                             "feature with integer values.")
@@ -147,7 +147,7 @@ def print_R_script(scene, tree, classifier, step_size):
     print_array_assignment("classes", classes)
 
     # Then what we actually get.
-    results = [ tree_eval(scene, lens_pos, tree)
+    results = [ tree_eval(scene, lens_pos, tree, step_size)
                 for lens_pos in range(2 * step_size, scene.measuresCount) ]
     print_array_assignment("results", results)
 
@@ -205,7 +205,7 @@ def main(argv):
                 classifier = nearest_on_left
             elif arg == "near_high":
                 classifier = highest_and_near_on_left
-        elif opt in ("-d", "--double-step")
+        elif opt in ("-d", "--double-step"):
             step_size = 2
 
     if scene == None or tree == None:
