@@ -48,3 +48,21 @@ stillLife.txt
  137
 vase.txt
  82
+books1.txt
+ 21
+books2.txt
+ 10
+books3.txt
+ 6
+books4.txt
+ 4
+gametree.txt
+ 27 62 79
+gorillapod.txt
+ 0 24 47 69
+granola.txt
+ 22 52 71 105
+timbuk.txt
+ 0
+ubuntu.txt
+ 66

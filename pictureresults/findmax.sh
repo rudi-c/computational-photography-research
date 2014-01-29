@@ -33,7 +33,16 @@ for file in \
 	screen.txt \
 	snails.txt \
 	stillLife.txt \
-	vase.txt
+	vase.txt \
+	books1.txt \
+	books2.txt \
+	books3.txt \
+	books4.txt \
+	gametree.txt \
+	gorillapod.txt \
+	granola.txt \
+	timbuk.txt \
+	ubuntu.txt
 do
 	echo $file >> $maximaFile
 	./localMax.exe < focusmeasures/$file >> $maximaFile
