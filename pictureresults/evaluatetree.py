@@ -152,6 +152,7 @@ def print_R_script(scene, tree, classifier, step_size):
     print_array_assignment("results", results)
 
     # Some R functions for plotting.
+    print "library(scales)" # for alpha blending
     print "plot(focusmeasures, pch=8)"
 
     # Axis to indicate that the bottom points mean left and
@@ -169,8 +170,10 @@ def print_R_script(scene, tree, classifier, step_size):
     # Indicate the correct classes (left or right) and
     # the predicted classes. The predicted classes is
     # slightly offset to avoid overlapping.
-    print "points(classes, pch=25, bg=\"brown\")"
-    print "points(results - 0.02, pch=22, bg=\"blue\")"
+    print "points(classes, pch=25, col=alpha(\"black\", 0.3), " \
+          "bg=alpha(\"brown\", 0.5))"
+    print "points(results - 0.02, pch=22, col=alpha(\"black\", 0.3), " \
+          "bg=alpha(\"blue\", 0.5))"
     print "# Plot me!\n"
 
 
