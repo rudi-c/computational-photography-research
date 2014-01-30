@@ -15,6 +15,10 @@ def safeRatioLessThan(a, b, k):
     """Compare the ratio of a, b with k and handle division by zero."""
     return b != 0 and float(a) / b < k
 
+def safeRatioMoreThan(a, b, k):
+    """Compare the ratio of a, b with k and handle division by zero."""
+    return b != 0 and float(a) / b > k
+
 ### Features taking the focus measure value at two lens positions ###
 
 def ratio2(k):
@@ -265,6 +269,68 @@ def all_features(filters=[]):
 
     return two_measure_features(filters) + three_measure_features(filters) + \
            other_features(filters)
+
+### Coarse vs Fine ###
+
+def coarse_if_previously_fine(f_cur, f_prev, f_prev2):
+    """Assumes the previous step taken was a fine step. Return true
+    if the next step should be a coarse step."""
+    if not safeRatioMoreThan(f_cur, f_prev, 8.0 / 8.0):
+        return True
+    else:
+        return False
+
+def coarse_if_previously_coarse(f_cur, f_prev, f_prev2):
+    """Assumes the previous step taken was a coarse step. Return true
+    if the next step should be a coarse step."""
+
+    # Using 'if not' instead of 'if' to follow the layout of the algorithm
+    # as written in the paper.
+
+    # ratio(10, 8)
+    if not safeRatioMoreThan(f_cur, f_prev, 10.0 / 8.0):
+        # downSlope(9, 8)
+        if not safeRatioMoreThan(f_prev2 * f_cur, f_prev * f_prev, 9.0 / 8.0):
+            # Coarse
+            return True
+        else:
+            # ratioI(9, 8)
+            if not safeRatioMoreThan(f_prev, f_cur, 9.0 / 8.0):
+                # logDiff(6, 8)
+                if not safeRatioMoreThan(log(f_cur - f_prev), 
+                                         log(f_prev), 6.0 / 8.0):
+                    # upSlope(8, 4)
+                    if not safeRatioMoreThan(f_cur * f_prev2, 
+                                             f_prev * f_prev, 8.0 / 4.0):
+                        # Coarse
+                        return True
+                    else:
+                        # Fine
+                        return False
+                else:
+                    # upTrend
+                    if not f_cur >= f_prev >= f_prev2:
+                        # Fine
+                        return False
+                    else:
+                        # Coarse
+                        return True
+            else:
+                # Coarse
+                return True
+    else:
+        # downSlope(9, 8)
+        if not safeRatioMoreThan(f_prev2 * f_cur, f_prev * f_prev, 9.0 / 8.0):
+            # ratio(11, 8)
+            if safeRatioMoreThan(f_prev, f_cur, 11.0 / 8.0):
+                # Coarse
+                return True
+            else:
+                # Fine
+                return False
+        else:
+            # Fine
+            return False
 
 
 ### Classifiers ###
