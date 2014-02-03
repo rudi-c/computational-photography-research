@@ -38,11 +38,11 @@ CLASSIFIER=highest
 #CLASSIFIER=near_high
 
 ./makegroundtruthcomparison.py -t "$TREE" -c $CLASSIFIER > ground.R
-exit 0
+
 # Empty what's in the file previously (we need to do that because
 # we will be appending to the file multiple times)
-cat /dev/null > out.R
-cat /dev/null > out2.R
+cat /dev/null > classification.R
+cat /dev/null > stepsizes.R
 
 for file in \
     backyard.txt \
@@ -80,6 +80,6 @@ for file in \
     timbuk.txt \
     ubuntu.txt
 do
-    ./makeclassifierplot.py -s $file -t "$TREE" -c $CLASSIFIER >> out.R
-    ./evaluatestepsize.py -s $file >> out2.R
+    ./makeclassifierplot.py -s $file -t "$TREE" -c $CLASSIFIER >> classification.R
+    ./evaluatestepsize.py -s $file >> stepsizes.R
 done

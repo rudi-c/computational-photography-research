@@ -20,7 +20,7 @@ from features import *
 from evaluatetree import *
 
 def print_script_usage():
-   print  """Script usage : ./FlickrRandom 
+   print  """Script usage : ./makeclassifierplot.py 
              [-s <scene to load (.txt)>]
              [-t <decision tree to evaluate>]
              [-c <classifier (highest, nearest, near_high)>]

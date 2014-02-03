@@ -79,7 +79,21 @@ def print_R_script(scene):
     # slightly offset to avoid overlapping.
     print "points(xs, ys, pch=22, col=alpha(\"black\", 0.3), " \
           "bg=alpha(\"blue\", 0.5))"
+
+    # In the title, indicate how many steps are used.
+    print "title(main=paste(\"coarse steps:\", %d, " \
+                           "\"fine steps:\", %d, " \
+                           "\"total steps:\", %d))" \
+          % (ys.count(0), ys.count(1), len(ys))
+
     print "# Plot me!\n"
+
+
+def print_script_usage():
+   print  """Script usage : ./evaluatestepsize.py 
+             [-t <decision tree to evaluate>]
+             [-c <classifier (highest, nearest, near_high)>]
+             [-d <double step size used>]"""
 
 
 def main(argv):
@@ -89,7 +103,7 @@ def main(argv):
         opts, args = getopt.getopt(argv,"s:",
                                   ["scene="])
     except getopt.GetoptError:
-        print_script_usage
+        print_script_usage()
         sys.exit(2)
 
     scene = None
