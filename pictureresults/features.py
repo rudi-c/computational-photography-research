@@ -284,6 +284,15 @@ def coarse_if_previously_coarse(f_cur, f_prev, f_prev2):
     """Assumes the previous step taken was a coarse step. Return true
     if the next step should be a coarse step."""
 
+    def log_feature():
+        if f_cur <= f_prev:
+            return False
+        elif f_prev == 0:
+            return f_cur - f_prev > 1
+        else:
+            return safeRatioMoreThan(log(f_cur - f_prev), 
+                log(f_prev), 6.0 / 8.0)
+
     # Using 'if not' instead of 'if' to follow the layout of the algorithm
     # as written in the paper.
 
@@ -297,8 +306,7 @@ def coarse_if_previously_coarse(f_cur, f_prev, f_prev2):
             # ratioI(9, 8)
             if not safeRatioMoreThan(f_prev, f_cur, 9.0 / 8.0):
                 # logDiff(6, 8)
-                if not safeRatioMoreThan(log(f_cur - f_prev), 
-                                         log(f_prev), 6.0 / 8.0):
+                if not log_feature():
                     # upSlope(8, 4)
                     if not safeRatioMoreThan(f_cur * f_prev2, 
                                              f_prev * f_prev, 8.0 / 4.0):
@@ -309,7 +317,7 @@ def coarse_if_previously_coarse(f_cur, f_prev, f_prev2):
                         return False
                 else:
                     # upTrend
-                    if not f_cur >= f_prev >= f_prev2:
+                    if not (f_cur >= f_prev >= f_prev2):
                         # Fine
                         return False
                     else:
@@ -322,7 +330,7 @@ def coarse_if_previously_coarse(f_cur, f_prev, f_prev2):
         # downSlope(9, 8)
         if not safeRatioMoreThan(f_prev2 * f_cur, f_prev * f_prev, 9.0 / 8.0):
             # ratio(11, 8)
-            if safeRatioMoreThan(f_prev, f_cur, 11.0 / 8.0):
+            if not safeRatioMoreThan(f_cur, f_prev, 11.0 / 8.0):
                 # Coarse
                 return True
             else:

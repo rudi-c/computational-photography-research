@@ -12,25 +12,37 @@
 #                           left
 #                           left))"
 
-# New features and dataset, nearest, 3 measures with brackets, step size 1
-TREE="(diffRatioAvg3_5 (upTrend (bracket right right right left left)
-                                (bracket right right right right
-                                        (ratio3_9 left right)))
+# New features and dataset, highest, 3 measures with brackets, 
+# step size 1, min 10 nodes per leaf
+TREE="(diffRatioAvg3_5 (bracket right right right
+                                (logRatio3_9 left
+                                             (upTrend left right))
+                                (upTrend left
+                                         (logRatio3_9 left right)))
                        (downTrend (bracket right right left left left)
-                                  (bracket (diffRatioMin2_5 right
-                                                            (diffRatioMin3_5 right
-                                                                             (ratio3_19 left right)))
-                                           (ratio3_19 (diffRatioMin2_5 right left)
-                                                      right)
-                                           (diffRatioMin3_5 right left)
-                                           left left)))"
+                                  (bracket (diffRatioMin2_5 right left)
+                                           left left left left)))"
 
-# CLASSIFIER=highest
-CLASSIFIER=nearest
+# New features and dataset, nearest or near_high (same result), 
+# 3 measures with brackets, step size 1, min 10 nodes per leaf
+# TREE="(diffRatioAvg3_5 (upTrend (bracket right right right left left)
+#                                 (bracket right right right right
+#                                         (ratio3_9 left right)))
+#                        (downTrend (bracket right right left left left)
+#                                   (bracket (diffRatioMin2_5 right left)
+#                                            (ratio3_19 left right)
+#                                            left left left)))"
 
+CLASSIFIER=highest
+#CLASSIFIER=nearest
+#CLASSIFIER=near_high
+
+./makegroundtruthcomparison.py -t "$TREE" -c $CLASSIFIER > ground.R
+exit 0
 # Empty what's in the file previously (we need to do that because
 # we will be appending to the file multiple times)
 cat /dev/null > out.R
+cat /dev/null > out2.R
 
 for file in \
     backyard.txt \
@@ -68,5 +80,6 @@ for file in \
     timbuk.txt \
     ubuntu.txt
 do
-    ./evaluatetree.py -s $file -t "$TREE" -c $CLASSIFIER >> out.R
+    ./makeclassifierplot.py -s $file -t "$TREE" -c $CLASSIFIER >> out.R
+    ./evaluatestepsize.py -s $file >> out2.R
 done
