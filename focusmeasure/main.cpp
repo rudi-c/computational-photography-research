@@ -24,6 +24,8 @@ void print_usage()
     cerr << "\t --scalehalf : reduce each dimension of the image by 1/2" << endl;
     cerr << "\t --crop : keep only a small center portion of the image" << endl;
     cerr << "\t --varylight : randomly uniformly darken/brighten image at each step" << endl;
+    cerr << "\t --raw : output the raw (non-normalized) the data" << endl;
+    cerr << "\t --norm-and-raw : output both raw and normalized data" << endl;
     exit(1);
 }
 
@@ -39,6 +41,8 @@ main( int argc, char *argv[] )
     bool optionScaleHalf = false;
     bool optionCrop = false;
     bool optionVaryLight = false;
+    bool printRaw = false;
+    bool printRawAndNorm = false;
 
     for (int i = 2; i < argc; i++)
     {
@@ -49,6 +53,10 @@ main( int argc, char *argv[] )
             optionCrop = true;
         else if (option == "--varylight")
             optionVaryLight = true;
+        else if (option == "--raw")
+            printRaw = true;
+        else if (option == "--norm-and-raw")
+            printRawAndNorm = true;
         else if (option[0] == '-' && option[1] == '-')
             // This option isn't recognized.
             print_usage();
@@ -156,21 +164,26 @@ main( int argc, char *argv[] )
     }
 
     int fileCount = argc - 2 - optionsCount;
-    for (int i = 0; i < fileCount; i++)
-    {
-        /*
-         *  Normalized focus measure.
-         */
-        printf( "%d %0.5f\n", i, (measure[i] - min)/(double)(max - min) );
+
+    if (printRaw)
         /*
          *  Raw focus measure.
          */
-        //printf( "%d %0.0f\n", i, measure[i] );
+        for (int i = 0; i < fileCount; i++)
+            printf( "%d %0.0f\n", i, measure[i] );
+    else if (printRawAndNorm)
         /*
          *  Both raw and normalized focus measure.
          */
-        //printf( "%d %0.0f %0.5f\n", i, measure[i], (measure[i] - min)/(double)(max - min) );
-    }
+        for (int i = 0; i < fileCount; i++)
+            printf( "%d %0.0f %0.5f\n", i, measure[i], 
+                (measure[i] - min)/(double)(max - min) );
+    else
+        /*
+         *  Normalized focus measure.
+         */
+        for (int i = 0; i < fileCount; i++)
+            printf( "%d %0.5f\n", i, (measure[i] - min)/(double)(max - min) );
 
     return( 0 );
 }
