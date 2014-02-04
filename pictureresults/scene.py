@@ -4,15 +4,15 @@
 import os
 
 # Where to find the data.
-scenes_folder = "focusmeasures/"
+scenes_folder = "focusraw/"
 maxima_file = "maxima.txt"
 
 class Scene:
     def __get_focus_value(self, string):
         parts = string.split()
         if len(parts) != 2:
-            print "Lines in focus measures files should only have two columns."
-            raise
+            raise Exception("Lines in focus measures files " \
+                            "should only have two columns.")
         return float(parts[1])
 
     def __load_file(self):
@@ -29,6 +29,8 @@ class Scene:
         # Normalized version as tuples.
         # self.measuresValues = [(float(i) / self.measuresCount, focus_values[i]) 
         #                       for i in range(0, len(focus_values)) ]
+
+        assert self.measuresCount > 0
 
     def __init__(self, file_name):
         self.fileName = file_name

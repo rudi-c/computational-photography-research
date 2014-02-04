@@ -77,26 +77,23 @@ def two_measure_features(filters=[]):
     # We're using arrays instead of dicts to maintain a constant order.
     features = []
 
-    # Ratio calculations are split in two to maintain symmetry.
+    # Ratio are chosen to be symmetrical.
     # e.g. 0.75 and 1.25 are not symmetrical ratios, but 0.75 and 1.333 are
-    features += [("ratio2_" + str(k), "{0,1}", ratio2((10 + k) / 20.0) )
-                 for k in range(0, 11)] \
-             +  [("ratio2_" + str(k + 10), "{0,1}", ratio2(20.0 / (10 + k)) )
-                 for k in range(1, 11)]
-    features += [("logRatio2_" + str(k), "{0,1}", logRatio2((10 + k) / 20.0) )
-                 for k in range(0, 11)] \
-             +  [("logRatio2_" + str(k + 10), "{0,1}", logRatio2(20.0 / (10 + k)) )
-                 for k in range(1, 11)]
+    ratios = [ 1.64, 1.32, 1.16, 1.08, 1.04, 1.02, 1.01, 1.00,
+               1/1.01, 1/1.02, 1/1.04, 1/1.08, 1/1.16, 1/1.32, 1/1.64 ]
+    features += [("ratio2_" + str(k), "{0,1}", ratio2(ratios[k]) )
+                 for k in range(0, len(ratios))]
+    features += [("logRatio2_" + str(k), "{0,1}", logRatio2(ratios[k]) )
+                 for k in range(0, len(ratios))]
 
-    features += [("diffRatioAvg2_" + str(k), "{0,1}", 
-                   diffRatioAvg2((5 - k) / 10.0) )
-                 for k in range(0, 11)]
-    features += [("diffRatioMin2_" + str(k), "{0,1}", 
-                   diffRatioMin2((5 - k) / 10.0) )
-                 for k in range(0, 11)]
-    features += [("diffRatioMax2_" + str(k), "{0,1}", 
-                   diffRatioMax2((5 - k) / 10.0) )
-                 for k in range(0, 11)]
+    ratios = [ -0.64, -0.32, -0.16, -0.08, -0.04, -0.02, -0.01, 0.0,
+                0.01,  0.02,  0.04,  0.08,  0.16,  0.32,  0.64 ]
+    features += [("diffRatioAvg2_" + str(k), "{0,1}", diffRatioAvg2(ratios[k]) )
+                 for k in range(0, len(ratios))]
+    features += [("diffRatioMin2_" + str(k), "{0,1}", diffRatioMin2(ratios[k]) )
+                 for k in range(0, len(ratios))]
+    features += [("diffRatioMax2_" + str(k), "{0,1}", diffRatioMax2(ratios[k]) )
+                 for k in range(0, len(ratios))]
 
     if len(filters) > 0:
         return [(name, values, feature) for name, values, feature in features 
@@ -185,31 +182,28 @@ def three_measure_features(filters=[]):
     features = [ ("downTrend", "{0,1}", downTrend), 
                  ("upTrend"  , "{0,1}", upTrend) ]
 
-    # Ratio calculations are split in two to maintain symmetry.
+    # Ratio are chosen to be symmetrical.
     # e.g. 0.75 and 1.25 are not symmetrical ratios, but 0.75 and 1.333 are
-    features += [("ratio3_" + str(k), "{0,1}", ratio3((10 + k) / 20.0) )
-                 for k in range(0, 11)] \
-             +  [("ratio3_" + str(k + 10), "{0,1}", ratio3(20.0 / (10 + k)) )
-                 for k in range(1, 11)]
-    features += [("logRatio3_" + str(k), "{0,1}", logRatio3((10 + k) / 20.0) )
-                 for k in range(0, 11)] \
-             +  [("logRatio3_" + str(k + 10), "{0,1}", logRatio3(20.0 / (10 + k)) )
-                 for k in range(1, 11)]
+    ratios = [ 1.64, 1.32, 1.16, 1.08, 1.04, 1.02, 1.01, 1.00,
+               1/1.01, 1/1.02, 1/1.04, 1/1.08, 1/1.16, 1/1.32, 1/1.64 ]
+    features += [("ratio3_" + str(k), "{0,1}", ratio3(ratios[k]) )
+                 for k in range(0, len(ratios))]
+    features += [("logRatio3_" + str(k), "{0,1}", logRatio3(ratios[k]) )
+                 for k in range(0, len(ratios))]
 
-    features += [("diffRatioAvg3_" + str(k), "{0,1}", 
-                   diffRatioAvg3((5 - k) / 10.0) )
-                 for k in range(0, 11)]
-    features += [("diffRatioMin3_" + str(k), "{0,1}", 
-                   diffRatioMin3((5 - k) / 10.0) )
-                 for k in range(0, 11)]
-    features += [("diffRatioMax3_" + str(k), "{0,1}", 
-                   diffRatioMax3((5 - k) / 10.0) )
-                 for k in range(0, 11)]
+    ratios = [ -0.64, -0.32, -0.16, -0.08, -0.04, -0.02, -0.01, 0.0,
+                0.01,  0.02,  0.04,  0.08,  0.16,  0.32,  0.64 ]
+    features += [("diffRatioAvg3_" + str(k), "{0,1}", diffRatioAvg3(ratios[k]) )
+                 for k in range(0, len(ratios))]
+    features += [("diffRatioMin3_" + str(k), "{0,1}", diffRatioMin3(ratios[k]) )
+                 for k in range(0, len(ratios))]
+    features += [("diffRatioMax3_" + str(k), "{0,1}", diffRatioMax3(ratios[k]) )
+                 for k in range(0, len(ratios))]
 
-    features += [("curving_" + str(k), "{0,1}", curving((k - 8.0) / 4.0) )
-                 for k in range(1, 16)]
-    features += [("curvingRatio_" + str(k), "{0,1}", curving((k - 8.0) / 4.0) )
-                 for k in range(1, 16)]
+    features += [("curving_" + str(k), "{0,1}", curving(ratios[k]) )
+                 for k in range(0, len(ratios))]
+    features += [("curvingRatio_" + str(k), "{0,1}", curvingRatio(ratios[k]) )
+                 for k in range(0, len(ratios))]
 
     if len(filters) > 0:
         return [(name, values, feature) for name, values, feature in features 

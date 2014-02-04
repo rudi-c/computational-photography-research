@@ -14,14 +14,14 @@
 
 # New features and dataset, highest, 3 measures with brackets, 
 # step size 1, min 10 nodes per leaf
-TREE="(diffRatioAvg3_5 (bracket right right right
-                                (logRatio3_9 left
-                                             (upTrend left right))
-                                (upTrend left
-                                         (logRatio3_9 left right)))
-                       (downTrend (bracket right right left left left)
-                                  (bracket (diffRatioMin2_5 right left)
-                                           left left left left)))"
+# TREE="(diffRatioAvg3_5 (bracket right right right
+#                                 (logRatio3_9 left
+#                                              (upTrend left right))
+#                                 (upTrend left
+#                                          (logRatio3_9 left right)))
+#                        (downTrend (bracket right right left left left)
+#                                   (bracket (diffRatioMin2_5 right left)
+#                                            left left left left)))"
 
 # New features and dataset, nearest or near_high (same result), 
 # 3 measures with brackets, step size 1, min 10 nodes per leaf
@@ -33,8 +33,42 @@ TREE="(diffRatioAvg3_5 (bracket right right right
 #                                            (ratio3_19 left right)
 #                                            left left left)))"
 
-CLASSIFIER=highest
-#CLASSIFIER=nearest
+# New features 2 and raw data, highest, 3 measures with brackets
+# TREE="(downTrend (ratio3_7 (bracket right right
+#                                     (ratio3_6 right left)
+#                                     left left)
+#                            (bracket right right right
+#                                     (ratio3_8 left right)
+#                                     (ratio3_8 left right)))
+#                  (bracket (ratio3_6 left right)
+#                           (ratio3_6 left right)
+#                           left left left))"
+
+# New features 2 and raw data, nearest, 3 measures with brackets
+TREE="(ratio3_7 (downTrend (bracket right right 
+                                   (diffRatioMax3_6 left right)
+                                   left left)
+                           (bracket (diffRatioMax3_3 right left)
+                                    (diffRatioMax3_3 (diffRatioMax3_6 right left)
+                                                     left)
+                                    left left left))
+                (ratio3_8 (bracket right right right left left)
+                          (upTrend (bracket right right right right left)
+                                   right)))"
+
+# New features 2 and raw data, near-highest, 3 measures with brackets
+# TREE="(ratio3_7 (downTrend (bracket right right 
+#                                    (diffRatioMax3_6 left right)
+#                                    left left)
+#                            (diffRatioMax3_6 (bracket right right left left left)
+#                                             left))
+#                 (ratio3_8 (bracket right right right left left)
+#                           (upTrend (bracket right right right right left)
+#                                    right)))"
+
+
+#CLASSIFIER=highest
+CLASSIFIER=nearest
 #CLASSIFIER=near_high
 
 ./makegroundtruthcomparison.py -t "$TREE" -c $CLASSIFIER > ground.R

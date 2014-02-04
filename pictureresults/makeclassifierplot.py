@@ -34,8 +34,11 @@ def print_R_script(scene, tree, classifier, step_size):
 
     print "# " + scene.fileName + "\n"
 
-    # Print the focus measures first.
-    print_array_assignment("focusmeasures", scene.measuresValues)
+    # Print the focus measures first. Normalize so that the maximum is 1 (but
+    # without touching the minimum!) these so that they fit on the graph.
+    maximum = max(scene.measuresValues)
+    print_array_assignment("focusmeasures", [ float(v) / maximum for v in
+                                              scene.measuresValues ] )
 
     # Then the correct classifications.
     classes = [ 0 if classifier(scene, lens_pos) else 1
@@ -49,7 +52,7 @@ def print_R_script(scene, tree, classifier, step_size):
 
     # Some R functions for plotting.
     print "library(scales)" # for alpha blending
-    print "plot(focusmeasures, pch=8)"
+    print "plot(focusmeasures, pch=8, ylim=c(0,1))"
 
     # Axis to indicate that the bottom points mean left and
     # the top points means right.

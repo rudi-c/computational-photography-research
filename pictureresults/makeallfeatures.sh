@@ -12,81 +12,175 @@ mkdir -p results
 # After running the output of the above in weka's feature selection
 # Selected with CfsSubsetEval, BestFirst -D 1 -N 5
 
-# all at 10/10
+##############################################################################
+# NEW FEATURES 2, NEW DATASET, RAW (NON-NORMALIZED), WITH STEP SIZE 1
+##############################################################################
+
+# ratio2_4, diffRatioMin2_8, diffRatioMax2_3, diffRatioMax2_6, 
+# diffRatioMax2_7 at 2/10, diffRatioAvg2_3 at 5/10, diffRatioMin2_7 at 6/10,
+# ratio2_5 at 7/10, diffRatioAvg2_7, diffRatioMin2_6 at 9/10, rest at 10/10
 ./makefeatures.py --dup-edges --highest \
-    ratio2_10 diffRatioAvg2_5 diffRatioMin2_5 \
+    ratio2_5 diffRatioAvg2_3 diffRatioAvg2_7 diffRatioMin2_6 diffRatioMin2_7 \
+    ratio2_6 ratio2_7 ratio2_8 logRatio2_7 \
     > results/highest2_filtered.arff
 
-# upTrend at 5/10, rest at 10/10
+# diffRatioAvg3_7 at 1/10, ratio3_6 at 3/10, ratio2_7 at 5/10
+# logRatio3_7 at 9/10, rest at 10/10
 ./makefeatures.py --dup-edges --highest --three-measures \
-    diffRatioMin2_5 downTrend upTrend ratio3_19 logRatio3_9 diffRatioAvg3_5 \
-    diffRatioMin3_5 > results/highest3_filtered.arff
+    ratio2_7 logRatio3_7 \
+    downTrend ratio3_7 ratio3_8 diffRatioMax3_6 \
+    > results/highest3_filtered.arff
 
-# upTrend at 6/10, rest at 10/10
+# upTrend at 1/10, ratio3_6 at 5/10, ratio3_8, ratio2_7 at 9/10, rest at 1/10
 ./makefeatures.py --dup-edges --highest --all-features \
-    diffRatioMin2_5 downTrend upTrend ratio3_19 logRatio3_9 diffRatioAvg3_5 \
-    diffRatioMin3_5 bracket > results/highestall_filtered.arff
+    ratio2_7 ratio3_6 ratio3_8 \
+    downTrend ratio3_7 logRatio3_7 diffRatioMax3_6 bracket \
+    > results/highestall_filtered.arff
 
-# logRatio2_9 at 1/10, ratio2_20 at 8/10, ratio2_9 at 9/10, rest at 10/10
+# ratio2_8 at 2/10, diffRatioMax2_8 at 8/10, rest at 10/10
 ./makefeatures.py --dup-edges --nearest \
-    ratio2_20 ratio2_9 ratio2_10 ratio2_19 diffRatioAvg2_5 diffRatioMin2_5 \
-    diffRatioMax2_5 > results/nearest2_filtered.arff
+    diffRatioMax2_8 ratio2_4 ratio2_6 ratio2_7 logRatio2_7 \
+    > results/nearest2_filtered.arff
 
 # all at 10/10
 ./makefeatures.py --dup-edges --nearest --three-measures \
-    diffRatioMin2_5 downTrend upTrend ratio3_9 ratio3_19 diffRatioAvg3_5 \
-    diffRatioMin3_5 > results/nearest3_filtered.arff
+    downTrend upTrend ratio3_7 ratio3_8 logRatio3_7 diffRatioMax3_3 \
+    diffRatioMax3_6 > results/nearest3_filtered.arff 
 
 # all at 10/10
 ./makefeatures.py --dup-edges --nearest --all-features \
-    diffRatioMin2_5 downTrend upTrend ratio3_9 ratio3_19 diffRatioAvg3_5 \
-    diffRatioMin3_5 bracket > results/nearestall_filtered.arff
-
-# ratio2_19, logRatio2_9 at 1/10, ratio2_20 at 4/10,
-# ratio2_9 at 7/10, diffRatioMax2_5 at 8/10
-# rest at 10/10
-./makefeatures.py --dup-edges --high-and-near \
-    ratio2_9 diffRatioMax2_5 ratio2_10 diffRatioAvg2_5 diffRatioMin2_5 \
-    > results/highnear2_filtered.arff
-
-# diffRatioMin2_5, ratio3_19, diffRatioMin3_5 at 9/10
-# rest at 10/10
-./makefeatures.py --dup-edges --high-and-near --three-measures \
-    diffRatioMin2_5 ratio3_19 diffRatioMin3_5 upTrend downTrend ratio3_9 \
-    diffRatioAvg3_5 > results/highnear3_filtered.arff
+    downTrend upTrend ratio3_7 ratio3_8 logRatio3_7 \
+    diffRatioMax3_3 diffRatioMax3_6 bracket > results/nearestall_filtered.arff
 
 # all at 10/10
-./makefeatures.py --dup-edges --high-and-near --all-features  \
-    diffRatioMin2_5 downTrend upTrend ratio3_9 ratio3_19 diffRatioAvg3_5 \
-    diffRatioMin3_5 bracket > results/highnearall_filtered.arff
+./makefeatures.py --dup-edges --high-and-near \
+    ratio2_4 ratio2_6 ratio2_7 ratio2_8 logRatio2_7 \
+    > results/highnear2_filtered.arff
 
-# WITH STEP SIZE 2
+# curving_3 at 3/10, upTrend, logRatio3_7, diffRatioMax3_3 at 6/10
+# rest at 10/10
+./makefeatures.py --dup-edges --high-and-near --three-measures \
+    upTrend logRatio3_7 diffRatioMax3_3 \
+    downTrend ratio3_7 ratio3_8 diffRatioMax3_6 \
+    > results/highnear3_filtered.arff
+
+# ratio3_3 at 1/10, diffRatioMax3_3 at 9/10, rest at 10/10
+./makefeatures.py --dup-edges --high-and-near --all-features  \
+    diffRatioMax3_3 \
+    downTrend upTrend ratio3_7 ratio3_8 logRatio3_7 diffRatioMax3_6 bracket \
+    > results/highnearall_filtered.arff
+
+##############################################################################
+# NEW FEATURES 2, NEW DATASET, RAW (NON-NORMALIZED), WITH STEP SIZE 2
+##############################################################################
 ./makefeatures.py --dup-edges --double-step --highest --three-measures > results/highest3.arff
 ./makefeatures.py --dup-edges --double-step --highest --all-features > results/highestall.arff
 ./makefeatures.py --dup-edges --double-step --nearest --three-measures > results/nearest3.arff
 ./makefeatures.py --dup-edges --double-step --nearest --all-features > results/nearestall.arff
 
-# ratio3_19 at 1/10, rest at 10/10
+# logRatio3_7 at 7/10, rest at 10/10
 ./makefeatures.py --dup-edges --double-step --highest --three-measures \
-    downTrend upTrend logRatio3_9 diffRatioAvg3_5 diffRatioMin3_6 \
+    downTrend upTrend ratio3_6 ratio3_7 curving_2 \
     > results/highest3_filtered.arff
 # all at 10/10
 ./makefeatures.py --dup-edges --double-step --highest --all-features \
-    downTrend upTrend ratio3_19 logRatio3_9 diffRatioAvg3_5 \
+    downTrend upTrend ratio3_6 ratio3_7 logRatio3_7 curving_2 bracket \
     diffRatioMin3_6 bracket > results/highestall_filtered.arff
-# all at 10/10
+# ratio3_2 at 1/10, ratio3_8, diffRatioAvg3_3 at 2/10, 
+# diffRatioMax3_3 at 4/10, all at 10/10
 ./makefeatures.py --dup-edges --double-step --nearest --three-measures \
-    downTrend upTrend logRatio3_9 diffRatioAvg3_5 diffRatioMin3_6 \
+    downTrend upTrend ratio3_6 ratio3_7 logRatio3_7 curving_2 \
     > results/nearest3_filtered.arff
-# diffRatioMin3_4, diffRatioMin3_5 at 1/10
-# ratio3_19 at 9/10, rest at 10/10
+# diffRatioAvg3_3 at 3/10, diffRatioMax3_3 at 7/10, rest at 10/10
 ./makefeatures.py --dup-edges --double-step --nearest --all-features \
-    ratio3_19 downTrend upTrend logRatio3_9 diffRatioAvg3_5 diffRatioMin3_6 \
-    bracket > results/nearestall_filtered.arff
+    diffRatioMax3_3 \
+    downTrend upTrend ratio3_6 ratio3_7 ratio3_8 logRatio3_7 \
+    curving_2 bracket > results/nearestall_filtered.arff
+
+##############################################################################
+# NEW FEATURES, NEW DATASET, WITH STEP SIZE 1
+##############################################################################
+
+# # all at 10/10
+# ./makefeatures.py --dup-edges --highest \
+#     ratio2_10 diffRatioAvg2_5 diffRatioMin2_5 \
+#     > results/highest2_filtered.arff
+
+# # upTrend at 5/10, rest at 10/10
+# ./makefeatures.py --dup-edges --highest --three-measures \
+#     diffRatioMin2_5 downTrend upTrend ratio3_19 logRatio3_9 diffRatioAvg3_5 \
+#     diffRatioMin3_5 > results/highest3_filtered.arff
+
+# # upTrend at 6/10, rest at 10/10
+# ./makefeatures.py --dup-edges --highest --all-features \
+#     diffRatioMin2_5 downTrend upTrend ratio3_19 logRatio3_9 diffRatioAvg3_5 \
+#     diffRatioMin3_5 bracket > results/highestall_filtered.arff
+
+# # logRatio2_9 at 1/10, ratio2_20 at 8/10, ratio2_9 at 9/10, rest at 10/10
+# ./makefeatures.py --dup-edges --nearest \
+#     ratio2_20 ratio2_9 ratio2_10 ratio2_19 diffRatioAvg2_5 diffRatioMin2_5 \
+#     diffRatioMax2_5 > results/nearest2_filtered.arff
+
+# # all at 10/10
+# ./makefeatures.py --dup-edges --nearest --three-measures \
+#     diffRatioMin2_5 downTrend upTrend ratio3_9 ratio3_19 diffRatioAvg3_5 \
+#     diffRatioMin3_5 > results/nearest3_filtered.arff
+
+# # all at 10/10
+# ./makefeatures.py --dup-edges --nearest --all-features \
+#     diffRatioMin2_5 downTrend upTrend ratio3_9 ratio3_19 diffRatioAvg3_5 \
+#     diffRatioMin3_5 bracket > results/nearestall_filtered.arff
+
+# # ratio2_19, logRatio2_9 at 1/10, ratio2_20 at 4/10,
+# # ratio2_9 at 7/10, diffRatioMax2_5 at 8/10
+# # rest at 10/10
+# ./makefeatures.py --dup-edges --high-and-near \
+#     ratio2_9 diffRatioMax2_5 ratio2_10 diffRatioAvg2_5 diffRatioMin2_5 \
+#     > results/highnear2_filtered.arff
+
+# # diffRatioMin2_5, ratio3_19, diffRatioMin3_5 at 9/10
+# # rest at 10/10
+# ./makefeatures.py --dup-edges --high-and-near --three-measures \
+#     diffRatioMin2_5 ratio3_19 diffRatioMin3_5 upTrend downTrend ratio3_9 \
+#     diffRatioAvg3_5 > results/highnear3_filtered.arff
+
+# # all at 10/10
+# ./makefeatures.py --dup-edges --high-and-near --all-features  \
+#     diffRatioMin2_5 downTrend upTrend ratio3_9 ratio3_19 diffRatioAvg3_5 \
+#     diffRatioMin3_5 bracket > results/highnearall_filtered.arff
+
+##############################################################################
+# NEW FEATURES, NEW DATASET, WITH STEP SIZE 2
+##############################################################################
+
+# ./makefeatures.py --dup-edges --double-step --highest --three-measures > results/highest3.arff
+# ./makefeatures.py --dup-edges --double-step --highest --all-features > results/highestall.arff
+# ./makefeatures.py --dup-edges --double-step --nearest --three-measures > results/nearest3.arff
+# ./makefeatures.py --dup-edges --double-step --nearest --all-features > results/nearestall.arff
+
+# # ratio3_19 at 1/10, rest at 10/10
+# ./makefeatures.py --dup-edges --double-step --highest --three-measures \
+#     downTrend upTrend logRatio3_9 diffRatioAvg3_5 diffRatioMin3_6 \
+#     > results/highest3_filtered.arff
+# # all at 10/10
+# ./makefeatures.py --dup-edges --double-step --highest --all-features \
+#     downTrend upTrend ratio3_19 logRatio3_9 diffRatioAvg3_5 \
+#     diffRatioMin3_6 bracket > results/highestall_filtered.arff
+# # all at 10/10
+# ./makefeatures.py --dup-edges --double-step --nearest --three-measures \
+#     downTrend upTrend logRatio3_9 diffRatioAvg3_5 diffRatioMin3_6 \
+#     > results/nearest3_filtered.arff
+# # diffRatioMin3_4, diffRatioMin3_5 at 1/10
+# # ratio3_19 at 9/10, rest at 10/10
+# ./makefeatures.py --dup-edges --double-step --nearest --all-features \
+#     ratio3_19 downTrend upTrend logRatio3_9 diffRatioAvg3_5 diffRatioMin3_6 \
+#     bracket > results/nearestall_filtered.arff
 
 
 
-# WITHOuT NEW DATASET
+##############################################################################
+# NEW FEATURES, OLD DATASET, WITH STEP SIZE 1
+##############################################################################
 
 # # diffRatioMin2_5, ratio2_19 at 10/10, diffRatioAvg2_5 at 7/10, ratio2_10 at 6/10
 # ./makefeatures.py --highest diffRatioMin2_5 ratio2_19 diffRatioAvg2_5 ratio2_10 > results/highest2_filtered.arff
@@ -116,6 +210,10 @@ mkdir -p results
 # ./makefeatures.py --high-and-near --all-features diffRatioMin2_5 downTrend ratio3_19 diffRatioMin3_5 bracket > results/highnearall_filtered.arff
 
 
+##############################################################################
+# NEW FEATURES, OLD DATASET, WITH STEP SIZE 2
+##############################################################################
+
 # # WITH STEP SIZE 2
 # ./makefeatures.py --double-step --highest --three-measures > results/highest3.arff
 # ./makefeatures.py --double-step --highest --all-features > results/highestall.arff
@@ -138,8 +236,9 @@ mkdir -p results
 # # upTrend, downTrend, diffRatioMin3_7, bracket at 10/10
 # ./makefeatures.py --double-step --nearest --all-features upTrend downTrend diffRatioMin3_7 bracket diffRatioMin3_7 diffRatioMin3_5 > results/nearestall_filtered.arff
 
-
-# WITH OLD FEATURES
+##############################################################################
+# OLD FEATURES, OLD DATASET
+##############################################################################
 
 # # all at 10/10
 # ./makefeatures.py --highest ratio2_8 ratio2Inverse_8 logRatio2Inverse_8 > results/highest2_filtered.arff

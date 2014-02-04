@@ -1,44 +1,167 @@
-
-in=$1
-
-if [ $# -ne 1 ]; then
-  echo "Expected 1 argument (benchmark folder), received" $#. 1>&2
-  exit 1
-fi
-
-for b in \
-    books3 books4
-do
-    echo $b
-
-    # ''> Results/$b/*.txt' doesn't work if the 
-    # directory Results/$b doesn't exist
-    mkdir -p ../Results/$b
-
-    # highly ranked first deriv
-    #./apply.exe  0 $in/$b/*.gray > ../Results/$b/out_firstorder3x3.txt
-    #./apply.exe  1 $in/$b/*.gray > ../Results/$b/out_roberts3x3.txt
-    #./apply.exe  2 $in/$b/*.gray > ../Results/$b/out_prewitt3x3.txt
-    #./apply.exe  3 $in/$b/*.gray > ../Results/$b/out_scharr3x3.txt
-    #./apply.exe  4 $in/$b/*.gray > ../Results/$b/out_sobel3x3.txt
-    #./apply.exe 10 $in/$b/*.gray > ../Results/$b/out_brenner.txt
-    ./apply.exe 12 $in/$b/*.gray > ../Results/$b/out_squaredGradient.txt
-    #./apply.exe 27 --varylight $in/$b/*.gray > ../Results/$b/out_firstDerivGaussian.txt
-    #./apply.exe 28 --varylight $in/$b/*.gray > ../Results/$b/out_LoG.txt
-
-    # These are slow - uncomment only if needed.
-    #./apply.exe 30 --varylight $in/$b/*.gray > ../Results/$b/out_firstDerivGaussian2.txt
-    #./apply.exe 31 --varylight $in/$b/*.gray > ../Results/$b/out_firstDerivGaussian3.txt
-    #./apply.exe 32 --varylight $in/$b/*.gray > ../Results/$b/out_LoG2.txt
-    #./apply.exe 33 --varylight $in/$b/*.gray > ../Results/$b/out_LoG3.txt
-
-    # # highly ranked second deriv
-    #./apply.exe  7 $in/$b/*.gray > ../Results/$b/out_laplacian5x5.txt
-    #./apply.exe  9 $in/$b/*.gray > ../Results/$b/out_sobel5x5so.txt
-    #./apply.exe 26 $in/$b/*.gray > ../Results/$b/out_sobel5x5soCross.txt
-
-    # # not consistently good
-    #./apply.exe  5 $in/$b/*.gray > ../Results/$b/out_sobel5x5.txt
-    #./apply.exe  6 $in/$b/*.gray > ../Results/$b/out_laplacian3x3.txt
-    #./apply.exe  8 $in/$b/*.gray > ../Results/$b/out_sobel3x3so.txt
-    #./apply.exe 11 $in/$b/*.gray > ../Results/$b/out_thresholdGradien
+0 39608430
+1 42436194
+2 47354035
+3 51005671
+4 51841312
+5 49495902
+6 44904398
+7 39249794
+8 33835020
+9 28808080
+10 24818099
+11 21531847
+12 18941422
+13 16501649
+14 14522901
+15 12755470
+16 11299276
+17 10048399
+18 8974383
+19 8140895
+20 7357216
+21 6730128
+22 6204304
+23 5746870
+24 5353354
+25 4992847
+26 4716001
+27 4433660
+28 4191370
+29 3957806
+30 3750312
+31 3563460
+32 3400196
+33 3266224
+34 3117250
+35 2992123
+36 2855041
+37 2753697
+38 2645297
+39 2536787
+40 2461024
+41 2379355
+42 2287281
+43 2212448
+44 2144904
+45 2077586
+46 2021797
+47 1970910
+48 1922536
+49 1875200
+50 1819048
+51 1789668
+52 1747423
+53 1710376
+54 1679536
+55 1652915
+56 1625737
+57 1597646
+58 1567551
+59 1567702
+60 1545772
+61 1522011
+62 1506965
+63 1486566
+64 1454995
+65 1449307
+66 1422689
+67 1410711
+68 1394472
+69 1385457
+70 1362348
+71 1357616
+72 1342108
+73 1327782
+74 1319411
+75 1302721
+76 1293395
+77 1286994
+78 1273108
+79 1262435
+80 1249756
+81 1247610
+82 1232753
+83 1228415
+84 1223248
+85 1212733
+86 1210657
+87 1201213
+88 1196250
+89 1192369
+90 1183673
+91 1180933
+92 1168448
+93 1161150
+94 1156987
+95 1147447
+96 1145527
+97 1135225
+98 1125449
+99 1123721
+100 1117145
+101 1110770
+102 1108682
+103 1103539
+104 1099337
+105 1085374
+106 1079995
+107 1087576
+108 1086885
+109 1075893
+110 1081619
+111 1070688
+112 1071521
+113 1068946
+114 1068187
+115 1072015
+116 1073850
+117 1074329
+118 1055253
+119 1053972
+120 1046702
+121 1046855
+122 1047939
+123 1049983
+124 1051988
+125 1042793
+126 1041627
+127 1043194
+128 1037433
+129 1036654
+130 1039704
+131 1032146
+132 1031153
+133 1028861
+134 1023683
+135 1031044
+136 1021293
+137 1014093
+138 1015358
+139 1013476
+140 1014871
+141 1006226
+142 1003130
+143 1004648
+144 1003186
+145 999518
+146 948496
+147 946472
+148 938875
+149 940007
+150 935751
+151 937089
+152 935499
+153 930315
+154 930785
+155 931279
+156 926944
+157 928532
+158 919884
+159 917898
+160 921165
+161 918950
+162 916807
+163 910870
+164 907905
+165 900240
+166 916357
