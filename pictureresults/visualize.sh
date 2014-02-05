@@ -45,31 +45,31 @@
 #                           left left left))"
 
 # New features 2 and raw data, nearest, 3 measures with brackets
-TREE="(ratio3_7 (downTrend (bracket right right 
-                                   (diffRatioMax3_6 left right)
-                                   left left)
-                           (bracket (diffRatioMax3_3 right left)
-                                    (diffRatioMax3_3 (diffRatioMax3_6 right left)
-                                                     left)
-                                    left left left))
-                (ratio3_8 (bracket right right right left left)
-                          (upTrend (bracket right right right right left)
-                                   right)))"
-
-# New features 2 and raw data, near-highest, 3 measures with brackets
 # TREE="(ratio3_7 (downTrend (bracket right right 
 #                                    (diffRatioMax3_6 left right)
 #                                    left left)
-#                            (diffRatioMax3_6 (bracket right right left left left)
-#                                             left))
+#                            (bracket (diffRatioMax3_3 right left)
+#                                     (diffRatioMax3_3 (diffRatioMax3_6 right left)
+#                                                      left)
+#                                     left left left))
 #                 (ratio3_8 (bracket right right right left left)
 #                           (upTrend (bracket right right right right left)
 #                                    right)))"
 
+# New features 2 and raw data, near-highest, 3 measures with brackets
+TREE="(ratio3_7 (downTrend (bracket right right 
+                                   (diffRatioMax3_6 left right)
+                                   left left)
+                           (diffRatioMax3_6 (bracket right right left left left)
+                                            left))
+                (ratio3_8 (bracket right right right left left)
+                          (upTrend (bracket right right right right left)
+                                   right)))"
+
 
 #CLASSIFIER=highest
-CLASSIFIER=nearest
-#CLASSIFIER=near_high
+#CLASSIFIER=nearest
+CLASSIFIER=near_high
 
 ./makegroundtruthcomparison.py -t "$TREE" -c $CLASSIFIER > ground.R
 

@@ -77,6 +77,8 @@ mkdir -p results
 ./makefeatures.py --dup-edges --double-step --highest --all-features > results/highestall.arff
 ./makefeatures.py --dup-edges --double-step --nearest --three-measures > results/nearest3.arff
 ./makefeatures.py --dup-edges --double-step --nearest --all-features > results/nearestall.arff
+./makefeatures.py --dup-edges --double-step --high-and-near --three-measures > results/highnear3.arff
+./makefeatures.py --dup-edges --double-step --high-and-near --all-features > results/highnearall.arff
 
 # logRatio3_7 at 7/10, rest at 10/10
 ./makefeatures.py --dup-edges --double-step --highest --three-measures \
@@ -87,7 +89,7 @@ mkdir -p results
     downTrend upTrend ratio3_6 ratio3_7 logRatio3_7 curving_2 bracket \
     diffRatioMin3_6 bracket > results/highestall_filtered.arff
 # ratio3_2 at 1/10, ratio3_8, diffRatioAvg3_3 at 2/10, 
-# diffRatioMax3_3 at 4/10, all at 10/10
+# diffRatioMax3_3 at 4/10, rest at 10/10
 ./makefeatures.py --dup-edges --double-step --nearest --three-measures \
     downTrend upTrend ratio3_6 ratio3_7 logRatio3_7 curving_2 \
     > results/nearest3_filtered.arff
@@ -96,6 +98,15 @@ mkdir -p results
     diffRatioMax3_3 \
     downTrend upTrend ratio3_6 ratio3_7 ratio3_8 logRatio3_7 \
     curving_2 bracket > results/nearestall_filtered.arff
+# diffRatioMax3_3 at 3/10, logRatio3_7 at 5/10, rest at 10/10
+./makefeatures.py --dup-edges --double-step --nearest --three-measures \
+    logRatio3_7 downTrend upTrend ratio3_6 ratio3_7 curving_2 \
+    > results/highnear3_filtered.arff
+# ratio3_8, diffRatioMax3_3 at 7/10, logRatio3_7 at 8/10, rest at 10/10
+./makefeatures.py --dup-edges --double-step --nearest --all-features \
+    ratio3_8 logRatio3_7 diffRatioMax3_3 \
+    downTrend upTrend ratio3_6 ratio3_7 curving_2 bracket \
+    curving_2 bracket > results/highneartall_filtered.arff
 
 ##############################################################################
 # NEW FEATURES, NEW DATASET, WITH STEP SIZE 1
