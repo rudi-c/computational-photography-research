@@ -26,7 +26,7 @@
 import os
 import sys
 
-from features import *
+from featuresleftright import *
 
 def get_arff_header(features):
     """Return a string representing the header of the ARFF file"""

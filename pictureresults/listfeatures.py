@@ -5,7 +5,7 @@
 import os
 import sys
 
-from features import *
+from featuresleftright import *
 
 def main(argv):
     print "# Features taking 2 focus measures :"

@@ -15,10 +15,10 @@ import inspect
 import os
 import sys
 
-from scene    import *
-from features import *
-from statistics import *
-from evaluatetree import *
+from scene             import *
+from statistics        import *
+from evaluatetree      import *
+from featuresleftright import *
 
 def print_array_assignment(var_name, array):
     print var_name + " <- c(" + \

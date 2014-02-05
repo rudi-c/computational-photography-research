@@ -15,9 +15,9 @@ import inspect
 import os
 import sys
 
-from scene    import *
-from features import *
-from evaluatetree import *
+from scene             import *
+from featuresleftright import *
+from evaluatetree      import *
 
 def print_script_usage():
    print  """Script usage : ./makeclassifierplot.py 
