@@ -82,7 +82,6 @@ def distance_taken(**kwargs):
     latest = lens_positions[-1]
     return float(abs(latest - first)) / total_positions
 
-
 # I think in general it's better to normalize, but it could be that the
 # calculation for some other features (such as slope) gives bogus results
 # when there are only 1-2 steps, so I'm hoping these two features can help
@@ -102,6 +101,11 @@ def absolute_distance_taken(**kwargs):
     latest = lens_positions[-1]
     return float(abs(latest - first))
 
+
+functions_steps_and_distance = [ steps_taken, large_steps_taken, 
+                                 small_steps_taken, ratio_small_steps,
+                                 ratio_large_steps, distance_taken,
+                                 absolute_steps_taken, absolute_distance_taken ]
 
 ### Features related to the distances to the last lens positions on either side
 
@@ -146,6 +150,9 @@ def ratio_right_to_left(**kwargs):
     return min(float(total_positions - latest - 1) / latest, 10.0)
 
 
+functions_distance_edge = [ distance_to_left, distance_to_right,
+                            ratio_left_to_right, ratio_right_to_left ]
+
 ### Scagnostics ###
 
 def rank(vector):
@@ -179,6 +186,8 @@ def monotoniticy(**kwargs):
 
     return float(covariance) / sqrt(variance_x * variance_y)
 
+
+functions_scagnostics = [ monotoniticy ]
 
 ### Features related to comparison with the maximum we've got so far ###
 
@@ -222,6 +231,8 @@ def distance_to_max(**kwargs):
     return float(closest) / total_positions
 
 
+functions_maximum = [ ratio_to_max, ratio_to_range, distance_to_max ]
+
 ### Features related to the overall trend of focus values ###
 
 def simple_slope(**kwargs):
@@ -254,6 +265,8 @@ def regression_slope(**kwargs):
     assert variance_x != 0
     return covariance / variance_x
 
+
+functions_trend_slope = [ simple_slope, regression_slope ]
 
 ### Features related to the local slope ###
 
@@ -295,7 +308,6 @@ def downslope_1st_half(**kwargs):
     
     major_half = len(lens_positions) / 2 + 1
     lens_positions = lens_positions[:max(2, major_half)]
-    print focus_values
     count = [ focus_values[x1] > focus_values[x2] for x1, x2 
               in zip(lens_positions[:-1], lens_positions[1:]) ].count(True)
     return float(count) / (len(lens_positions) - 1)
@@ -314,3 +326,123 @@ def downslope_2nd_half(**kwargs):
     count = [ focus_values[x1] > focus_values[x2] for x1, x2 
               in zip(lens_positions[:-1], lens_positions[1:]) ].count(True)
     return float(count) / (len(lens_positions) - 1)
+
+
+functions_local_slope = [ current_slope, current_slope_large,
+                          downslope_1st_half, downslope_2nd_half ]
+
+### For convenience ###
+
+def all_features(filters=[]):
+    """Returns an array of (attribute name, function)"""
+
+    functions = functions_steps_and_distance + functions_distance_edge + \
+                functions_scagnostics + functions_maximum + \
+                functions_trend_slope + functions_local_slope
+
+    if len(filters) > 0:
+        return [ (f.__name__, f) for f in functions if
+                         f.__name__ in filters ]
+    else:
+        return [ (f.__name__, f) for f in functions ]
+    
+
+### Classifiers ###
+
+# Enums
+class Action:
+    CONTINUE, TURN_PEAK, BACKTRACK = range(0, 3)
+
+class PeakHandling:
+    ALWAYSTURN, CLOSEST = range(0, 2)
+
+class BacktrackHandling:
+    NOPEAKSONLY, FASTER = range(0, 2)
+
+
+def _successor(value, array):
+    """Find the smallest value greater than a specified number"""
+    smallest = None
+    for a in array:
+        if a > value:
+            if smallest is None:
+                smallest = a
+            elif a < smallest:
+                smallest = a
+    return smallest
+
+
+def _predecessor(value, array):
+    """Find the largest value smaller than or equal to a specified number"""
+    largest = None
+    for a in array:
+        if a <= value:
+            if largest is None:
+                largest = a
+            elif a > largest:
+                largest = a
+    return largest
+    
+
+def get_move_right_classification(start_lens_pos, current_lens_pos,
+                                  focus_measures, maxima,
+                                  peak_handling, backtrack_handling):
+
+    visited_maxima = [ maximum for maximum in maxima 
+                       if maximum >= start_lens_pos ]
+
+    # Find the closest maxima on the left.
+    left_closest = _predecessor(current_lens_pos, maxima)
+    left_closest_visited = _predecessor(current_lens_pos, visited_maxima)
+    right_closest = _successor(current_lens_pos, maxima)
+
+    if left_closest_visited is None:
+        if backtrack_handling == BacktrackHandling.FASTER:
+            # Determine if it would be faster to just go the other way.
+            if right_closest is None:
+                return Action.BACKTRACK
+            elif abs(right_closest - current_lens_pos) > \
+                    abs(current_lens_pos - left_closest):
+                return Action.BACKTRACK
+        else:
+            assert backtrack_handling == BacktrackHandling.NOPEAKSONLY
+    else:
+        # If we just passed peak, we should continue looking
+        # forward for just a bit to confirm that this is a peak.
+        if current_lens_pos - left_closest_visited <= 5:
+            return Action.CONTINUE
+        elif peak_handling == PeakHandling.CLOSEST:
+            if right_closest is None:
+                return Action.TURN_PEAK
+            elif current_lens_pos - left_closest_visited - 5 < \
+                    right_closest - current_lens_pos:
+                return Action.TURN_PEAK
+            else:
+                return Action.CONTINUE
+        else:
+            assert peak_handling == PeakHandling.ALWAYSTURN
+            return Action.TURN_PEAK
+
+    # If there are no more peaks to the right, we should backtrack.
+    if right_closest is None:
+        return Action.BACKTRACK
+
+    # Default case : continue looking
+    return Action.CONTINUE 
+
+
+
+def get_move_left_classification(start_lens_pos, current_lens_pos,
+                                 focus_measures, maxima, 
+                                 peak_handling, backtrack_handling):
+    def reverse(pos):
+        return len(focus_measures) - pos - 1
+    # To classify the correct action when we are moving left is to
+    # classify the correct action when we are moving right on the
+    # reverse data.
+    reversed_measures = list(focus_measures)
+    reversed_measures.reverse()
+    reversed_maxima = [ reverse(maximum) for maximum in maxima]
+    return get_move_right_classification(
+        reverse(start_lens_pos), reverse(current_lens_pos), 
+        reversed_measures, reversed_maxima, peak_handling, backtrack_handling)
