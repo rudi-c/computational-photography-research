@@ -3,6 +3,9 @@
 #   "  An Autofocus Heuristic for Digital Cameras Based on 
 #      Supervised Machine Learning  "
 
+from math import log
+from featuresleftright import safeRatioMoreThan
+
 def coarse_if_previously_fine(f_cur, f_prev, f_prev2):
     """Assumes the previous step taken was a fine step. Return true
     if the next step should be a coarse step."""

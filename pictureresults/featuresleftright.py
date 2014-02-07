@@ -7,8 +7,6 @@
 # third (third focus measurement, [0, 1])
 # lens_pos (0 for the first lens position, 1 for the last lens position)
 
-from math import log
-
 from scene import *
 
 def safeRatioLessThan(a, b, k):

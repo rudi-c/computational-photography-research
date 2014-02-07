@@ -10,8 +10,8 @@ import inspect
 import os
 import sys
 
-from scene             import *
-from featuresleftright import *
+from scene      import *
+from coarsefine import *
 
 
 def simulate(scene):
