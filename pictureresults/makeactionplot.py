@@ -28,7 +28,7 @@ def segmentation(array):
     return segments
 
 
-def print_left_classes(scene, peak_handling, backtrack_handling):
+def print_left_classes(scene, params):
 
     segments_continue = []
     segments_turn_peak = []
@@ -36,9 +36,8 @@ def print_left_classes(scene, peak_handling, backtrack_handling):
 
     for start_pos in range(0, scene.measuresCount):
         y = float(start_pos) / scene.measuresCount
-        classes = [ get_move_left_classification(
-                        start_pos, pos, scene.measuresValues, scene.maxima,
-                        peak_handling, backtrack_handling)
+        classes = [ get_move_left_classification(start_pos, pos, 
+                        scene.measuresValues, scene.maxima, params)
                     for pos in range(0, start_pos + 1) ]
         segments = segmentation(classes)
         for start, end in zip(segments[:-1], segments[1:]):
@@ -71,7 +70,7 @@ def print_left_classes(scene, peak_handling, backtrack_handling):
 
 
 
-def print_right_classes(scene, peak_handling, backtrack_handling):
+def print_right_classes(scene, params):
 
     segments_continue = []
     segments_turn_peak = []
@@ -79,9 +78,8 @@ def print_right_classes(scene, peak_handling, backtrack_handling):
 
     for start_pos in range(0, scene.measuresCount):
         y = float(start_pos) / scene.measuresCount
-        classes = [ get_move_right_classification(
-                        start_pos, pos, scene.measuresValues, scene.maxima,
-                        peak_handling, backtrack_handling)
+        classes = [ get_move_right_classification(start_pos, pos, 
+                        scene.measuresValues, scene.maxima, params)
                     for pos in range(start_pos, scene.measuresCount) ]
         segments = segmentation(classes)
         for start, end in zip(segments[:-1], segments[1:]):
@@ -113,7 +111,7 @@ def print_right_classes(scene, peak_handling, backtrack_handling):
           " col=\"red\") }" % len(segments_backtrack)
 
 
-def print_R_script(scene, peak_handling, backtrack_handling):
+def print_R_script(scene, params):
 
     print "# " + scene.fileName + "\n"
 
@@ -128,32 +126,13 @@ def print_R_script(scene, peak_handling, backtrack_handling):
     print "frame()"
     print "library(scales)" # for alpha blending
 
-    print_right_classes(scene, peak_handling, backtrack_handling)
+    print_right_classes(scene, params)
 
     print "\nplot(focusmeasures, pch=8, ylim=c(-0.1,1))"
     print "lines(focusmeasures)"
 
     print "plot.new()"
-    print_left_classes(scene, peak_handling, backtrack_handling)
-
-    # for i in range(0, 3):
-    #     # Left
-    #     xs = [ x for x in range(0, len(left_classes)) 
-    #            if left_classes[x] == i ]
-    #     ys = [-0.1 + float(i) / 100] * len(xs) # offset to avoid overlapping
-    #     print_array_assignment("xs", xs)
-    #     print_array_assignment("ys", ys)
-    #     print "points(xs, ys, pch=%d, col=alpha(\"%s\", 0.3), " \
-    #               "bg=alpha(\"%s\", 0.5))" % ( PCHS[i], COLORS[i], COLORS[i] )
-
-    #     # Right
-    #     xs = [ x for x in range(0, len(right_classes)) 
-    #            if right_classes[x] == i ]
-    #     ys = [1.0 - float(i) / 100] * len(xs) # offset to avoid overlapping
-    #     print_array_assignment("xs", xs)
-    #     print_array_assignment("ys", ys)
-    #     print "points(xs, ys, pch=%d, col=alpha(\"%s\", 0.3), " \
-    #               "bg=alpha(\"%s\", 0.5))" % ( PCHS[i], COLORS[i], COLORS[i] )
+    print_left_classes(scene, params)
 
     print "\n# Plot me!\n"
 
@@ -164,21 +143,20 @@ def main(argv):
         print scenes_folder + " folder not found."
         return
 
-    peak_handling = PeakHandling.ALWAYSTURN
-    backtrack_handling = BacktrackHandling.NOPEAKSONLY
+    params = ParameterSet()
 
     # Process command line options.
     for arg in argv:
         if arg == "--closest-peak":
-            peak_handling = PeakHandling.CLOSEST
+            params.peakHandling = PeakHandling.CLOSEST
         elif arg == "--backtrack-faster":
-            backtrack_handling = BacktrackHandling.FASTER
+            params.backtrackHandling = BacktrackHandling.FASTER
 
     scenes = load_scenes()
     load_maxima_into_measures(scenes)
 
     for scene in scenes:
-        print_R_script(scene, peak_handling, backtrack_handling)
+        print_R_script(scene, params)
 
 
 main(sys.argv[1:])

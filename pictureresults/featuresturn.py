@@ -359,6 +359,31 @@ class PeakHandling:
 class BacktrackHandling:
     NOPEAKSONLY, FASTER = range(0, 2)
 
+class OutlierHandling:
+    WEIGHTING, SAMPLING = range(0, 2)
+
+class ParameterSet:
+    def __init__(self):
+        self.peakHandling = PeakHandling.ALWAYSTURN
+        self.backtrackHandling = BacktrackHandling.NOPEAKSONLY
+        # Probability that any given instance will be kept (this is to
+        # reduce the amount of data, which we can afford since it's quite
+        # redudant)
+        self.uniformSamplingRate = 0.25
+
+        # Whether we weight less important instance or sample them at
+        # lower rates
+        self.outlierHandling = OutlierHandling.SAMPLING
+
+        # Factor by which to multiply the weight or sampling rate when we
+        # encounter a lens position where the classification is to continue
+        self.continueRatio = 0.99
+
+        # Factor by which to multiply the weight or sampling rate when we
+        # encounter a lens position where the classification is to turn back
+        self.turnbackRatio = 0.95
+
+
 
 def _successor(value, array):
     """Find the smallest value greater than a specified number"""
@@ -385,8 +410,7 @@ def _predecessor(value, array):
     
 
 def get_move_right_classification(start_lens_pos, current_lens_pos,
-                                  focus_measures, maxima,
-                                  peak_handling, backtrack_handling):
+                                  focus_measures, maxima, params):
 
     visited_maxima = [ maximum for maximum in maxima 
                        if maximum >= start_lens_pos ]
@@ -397,7 +421,7 @@ def get_move_right_classification(start_lens_pos, current_lens_pos,
     right_closest = _successor(current_lens_pos, maxima)
 
     if left_closest_visited is None:
-        if backtrack_handling == BacktrackHandling.FASTER:
+        if params.backtrackHandling == BacktrackHandling.FASTER:
             # Determine if it would be faster to just go the other way.
             if right_closest is None:
                 return Action.BACKTRACK
@@ -405,13 +429,13 @@ def get_move_right_classification(start_lens_pos, current_lens_pos,
                     abs(current_lens_pos - left_closest):
                 return Action.BACKTRACK
         else:
-            assert backtrack_handling == BacktrackHandling.NOPEAKSONLY
+            assert params.backtrackHandling == BacktrackHandling.NOPEAKSONLY
     else:
         # If we just passed peak, we should continue looking
         # forward for just a bit to confirm that this is a peak.
         if current_lens_pos - left_closest_visited <= 5:
             return Action.CONTINUE
-        elif peak_handling == PeakHandling.CLOSEST:
+        elif params.peakHandling == PeakHandling.CLOSEST:
             if right_closest is None:
                 return Action.TURN_PEAK
             elif current_lens_pos - left_closest_visited - 5 < \
@@ -420,7 +444,7 @@ def get_move_right_classification(start_lens_pos, current_lens_pos,
             else:
                 return Action.CONTINUE
         else:
-            assert peak_handling == PeakHandling.ALWAYSTURN
+            assert params.peakHandling == PeakHandling.ALWAYSTURN
             return Action.TURN_PEAK
 
     # If there are no more peaks to the right, we should backtrack.
@@ -433,8 +457,7 @@ def get_move_right_classification(start_lens_pos, current_lens_pos,
 
 
 def get_move_left_classification(start_lens_pos, current_lens_pos,
-                                 focus_measures, maxima, 
-                                 peak_handling, backtrack_handling):
+                                 focus_measures, maxima, params):
     def reverse(pos):
         return len(focus_measures) - pos - 1
     # To classify the correct action when we are moving left is to
@@ -445,4 +468,4 @@ def get_move_left_classification(start_lens_pos, current_lens_pos,
     reversed_maxima = [ reverse(maximum) for maximum in maxima]
     return get_move_right_classification(
         reverse(start_lens_pos), reverse(current_lens_pos), 
-        reversed_measures, reversed_maxima, peak_handling, backtrack_handling)
+        reversed_measures, reversed_maxima, params)
