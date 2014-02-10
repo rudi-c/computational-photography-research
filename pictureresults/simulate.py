@@ -8,29 +8,115 @@ from scene import *
 from coarsefine import *
 from featuresturn import *
 
-def print_instance(scene, features, lens_positions, classification):
+class_names = { Action.CONTINUE : "continue", 
+                Action.TURN_PEAK : "turn_peak", 
+                Action.BACKTRACK : "backtrack" }
+
+def make_instance(scene, features, params, instances,
+                  lens_positions, classification, weight):
+    """Adds a new instance by evaluate the features on the data acquired so
+    far. If the outlier handling mode is SAMPLING, an array of
+    (evaluated features, classification) is returned. If the outlier handling
+    mode is WEIGHTING, an array (evaluated features, classification, weights)
+    is returned."""
     kwargs = { "lens_positions" : lens_positions, 
                "focus_values" : scene.measuresValues,
                "total_positions" : scene.measuresCount }
 
-    # Uniformly randomly select only a subset of instances.
-    if random.randint(0, 10) != 1:
-        return
+    # Randomly select only a subset of instances based on their weight.
+    if params.outlierHandling == OutlierHandling.SAMPLING:
+        if random.random() < weight * params.uniformSamplingRate:
+            instance = ( [ feature(**kwargs) for _, feature in features ], 
+                         classification )
+            instances.append(instance)
+    elif params.outlierHandling == OutlierHandling.WEIGHTING:
+        if random.random() < params.uniformSamplingRate:
+            instance = ( [ feature(**kwargs) for _, feature in features ], 
+                           classification, weight )
+            instances.append(instance)
+    else:
+        assert False
 
-    print ",".join([ "%.3f" % feature(**kwargs) for _, feature in features ]) \
-          + "," + ["continue", "turn_peak", "backtrack"][classification]
+
+def get_balancing_probabilities(instances):
+    """Calculate the probabilities of needed to removing instances of each
+    class to get a balanced dataset."""
+    count_continue  = len( [ True for _, classification in instances
+                             if classification == Action.CONTINUE ] )
+    count_turn_peak = len( [ True for _, classification in instances
+                             if classification == Action.TURN_PEAK ] )
+    count_backtrack = len( [ True for _, classification in instances
+                             if classification == Action.BACKTRACK ] )
+
+    min_count = min(count_continue, count_turn_peak, count_backtrack)
+    probabilities = { Action.CONTINUE  : float(min_count) / count_continue,
+                      Action.TURN_PEAK : float(min_count) / count_turn_peak,
+                      Action.BACKTRACK : float(min_count) / count_backtrack }
+    return probabilities
 
 
-def simulate_sweep(scene, features, initial_lens_positions, 
-                   direction, classifier,
-                   peak_handling, backtrack_handling):
+def balance_dataset_sampling(instances):
+    """Balance the dataset so that each class has approximately
+    the same number of instances."""
+    probabilities = get_balancing_probabilities(instances)
+    new_instances = [ (features, classification) 
+                      for features, classification in instances 
+                      if random.random() < probabilities[classification] ]
+
+    return new_instances
+
+
+def assert_balanced_sampling(instances):
+    """Make sure we have approximately the same number of instances of each
+    class, within 10%"""
+    probabilities = get_balancing_probabilities(instances)
+    assert all( [ probabilities[k] > 0.9 for k in probabilities.keys() ] )
+
+
+def get_balancing_weight_factors(instances):
+    """Calculate the factors by which to multiply weights to get an equal
+    sum of weights in each class."""
+    sum_continue  = sum( [ w for _, classification, w in instances
+                           if classification == Action.CONTINUE ] )
+    sum_turn_peak = sum( [ w for _, classification, w in instances
+                           if classification == Action.TURN_PEAK ] )
+    sum_backtrack = sum( [ w for _, classification, w in instances
+                           if classification == Action.BACKTRACK ] )
+
+    min_sum = min(sum_continue, sum_turn_peak, sum_backtrack)
+    factors = { Action.CONTINUE  : float(min_sum) / sum_continue,
+                Action.TURN_PEAK : float(min_sum) / sum_turn_peak,
+                Action.BACKTRACK : float(min_sum) / sum_backtrack }
+    return factors
+
+
+def balance_dataset_weighting(instances):
+    """Balance the dataset so the sum of weights for each class is the same"""
+    factors = get_balancing_weight_factors(instances)
+    new_instances = [ (features, classification, w * factors[classification]) 
+                      for features, classification, w in instances ]
+    return new_instances
+
+
+def assert_balanced_weighting(instances):
+    """Make sure we have approximately the same the sum of weights in 
+    instances of each class, within 10%"""
+    factors = get_balancing_weight_factors(instances)
+    assert all( [ factors[k] > 0.9 for k in factors.keys() ] )
+
+
+def simulate_sweep(scene, features, instances, initial_lens_positions, 
+                   direction, classifier, params):
     assert abs(direction) == 1
 
     lens_positions = initial_lens_positions
     current_pos = lens_positions[-1]
     previously_coarse_step = False
 
+    keep_ratio = 1.0
+
     while current_pos > 0 and current_pos < scene.measuresCount - 1:
+        # Determine next step size.
         if previously_coarse_step:
             coarse_now = coarse_if_previously_coarse(
                 scene.measuresValues[current_pos],
@@ -42,11 +128,7 @@ def simulate_sweep(scene, features, initial_lens_positions,
                 scene.measuresValues[lens_positions[-2]],
                 scene.measuresValues[lens_positions[-3]])
 
-        print_instance(scene, features, lens_positions, 
-            classifier(initial_lens_positions[0], current_pos,
-                scene.measuresValues, scene.maxima, 
-                peak_handling, backtrack_handling))
-
+        # Move the lens forward.
         if coarse_now:
             current_pos = min(scene.measuresCount - 1, 
                               max(0, current_pos + direction * 8))
@@ -55,15 +137,26 @@ def simulate_sweep(scene, features, initial_lens_positions,
                               max(0, current_pos + direction))
         lens_positions.append(current_pos)
         previously_coarse_step = coarse_now
+   
+        # Obtain the correct classification at the new lens position.
+        classification = classifier(initial_lens_positions[0], current_pos,
+                                    scene.measuresValues, scene.maxima, params)
 
-    print_instance(scene, features, lens_positions, 
-        classifier(initial_lens_positions[0], current_pos,
-            scene.measuresValues, scene.maxima, 
-            peak_handling, backtrack_handling))
+        # Reduce the weight as we go along.
+        if classification == Action.CONTINUE:
+            keep_ratio *= params.continueRatio
+        else:
+            assert classification == Action.TURN_PEAK or    \
+                   classification == Action.BACKTRACK
+            keep_ratio *= params.turnbackRatio
+
+        # Create a new instance for this lens position.
+        make_instance(scene, features, params, instances,
+                      lens_positions, classification, keep_ratio)
 
 
-def simulate_scenes(scenes, features, step_size, 
-                    peak_handling, backtrack_handling):
+def simulate_scenes(scenes, features, step_size, params):
+    instances = []
     for scene in scenes:
 
         # We simulate a sweep at each starting position.
@@ -74,17 +167,27 @@ def simulate_scenes(scenes, features, step_size,
             initial_lens_positions = [ lens_pos, lens_pos - step_size,
                                        lens_pos - step_size * 2,
                                        lens_pos - step_size * 2 - 1 ]
-            simulate_sweep(scene, features, initial_lens_positions, 
-                -1, get_move_left_classification,
-                peak_handling, backtrack_handling)
+            simulate_sweep(scene, features, instances, initial_lens_positions, 
+                -1, get_move_left_classification, params)
 
             # Right
             initial_lens_positions = [ lens_pos - step_size * 2,
                                        lens_pos - step_size, lens_pos,
                                        lens_pos + 1 ]
-            simulate_sweep(scene, features, initial_lens_positions, 
-                +1, get_move_right_classification,
-                peak_handling, backtrack_handling)
+            simulate_sweep(scene, features, instances, initial_lens_positions, 
+                +1, get_move_right_classification, params)
+
+    # Balance datasets.
+    if params.outlierHandling == OutlierHandling.SAMPLING:
+        instances = balance_dataset_sampling(instances)
+        assert_balanced_sampling(instances)
+    elif params.outlierHandling == OutlierHandling.WEIGHTING:
+        instances = balance_dataset_weighting(instances)
+        assert_balanced_weighting(instances)
+    else:
+        assert False
+
+    return instances
 
 
 def get_arff_header(features):
@@ -106,8 +209,7 @@ def main(argv):
     filters = []
     step_size = 1
 
-    peak_handling = PeakHandling.ALWAYSTURN
-    backtrack_handling = BacktrackHandling.NOPEAKSONLY
+    params = ParameterSet()
 
     # Process command line options. Anything remaining will be considered
     # to be filters for features.
@@ -115,9 +217,12 @@ def main(argv):
         if arg == "--double-step":
             step_size = 2
         elif arg == "--closest-peak":
-            peak_handling = PeakHandling.CLOSEST
+            params.peakHandling = PeakHandling.CLOSEST
         elif arg == "--backtrack-faster":
-            backtrack_handling = BacktrackHandling.FASTER
+            params.backtrackHandling = BacktrackHandling.FASTER
+        elif arg == "--use-weights":
+            params.outlierHandling = OutlierHandling.WEIGHTING
+            params.uniformSamplingRate = 0.10
         else:
             filters.append(arg)
 
@@ -128,9 +233,19 @@ def main(argv):
     # redirection to save to file)
     print get_arff_header(features(filters))
     print "@DATA"
-    simulate_scenes(scenes, features(filters), step_size, 
-                    peak_handling, backtrack_handling)
+    instances = simulate_scenes(scenes, features(filters), step_size, params)
 
+
+    if params.outlierHandling == OutlierHandling.SAMPLING:
+        for features, classification in instances:
+            print ",".join([ "%.3f" % f for f in features ] ) \
+                  + "," + class_names[classification]
+    elif params.outlierHandling == OutlierHandling.WEIGHTING:
+        for features, classification, weights in instances:
+            print ",".join([ "%.3f" % f for f in features ] ) \
+                  + "," + class_names[classification] + ",{%.3f}" % weights
+    else:
+        assert False
 
 
 main(sys.argv[1:])
