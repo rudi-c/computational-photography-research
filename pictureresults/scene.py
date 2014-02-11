@@ -1,6 +1,7 @@
 # Data structure for storing the focus measures at each lens position
 # for each scene.
 
+import copy
 import os
 
 # Where to find the data.
@@ -32,15 +33,31 @@ class Scene:
 
         assert self.measuresCount > 0
 
-    def __init__(self, file_name):
+
+    def inverse_copy(self):
+        """Return an inverted copy of this scene."""
+        i_scene = copy.copy(self)
+        i_scene.measuresValues = list(self.measuresValues)
+        i_scene.measuresValues.reverse()
+        i_scene.maxima = [ self.measuresCount - m - 1 for m in self.maxima ]
+        i_scene.norm_maxima = [ float(m) / self.measuresCount 
+                                for m in i_scene.maxima ]
+        return i_scene
+
+
+    def __init__(self, file_name = None):
         self.fileName = file_name
-        self.__load_file()
+        if not file_name is None:
+            self.__load_file()
         self.maxima = []
+        self.norm_maxima = []
+
 
 def load_scenes():
     return [ Scene(f) 
              for f in os.listdir(scenes_folder) 
              if os.path.isfile(scenes_folder + f) ]
+
 
 def load_maxima_into_measures(scenes):
     try:
