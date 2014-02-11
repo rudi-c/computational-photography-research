@@ -8,6 +8,7 @@
 # lens_pos (0 for the first lens position, 1 for the last lens position)
 
 from scene import *
+from math  import log
 
 def safeRatioLessThan(a, b, k):
     """Compare the ratio of a, b with k and handle division by zero."""
