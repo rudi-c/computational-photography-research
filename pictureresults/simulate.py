@@ -25,12 +25,12 @@ def make_instance(scene, features, params, instances,
 
     # Randomly select only a subset of instances based on their weight.
     if params.outlierHandling == OutlierHandling.SAMPLING:
-        if random.random() < weight * params.uniformSamplingRate:
+        if random.random() <= weight * params.uniformSamplingRate:
             instance = ( [ feature(**kwargs) for _, feature in features ], 
                          classification )
             instances.append(instance)
     elif params.outlierHandling == OutlierHandling.WEIGHTING:
-        if random.random() < params.uniformSamplingRate:
+        if random.random() <= params.uniformSamplingRate:
             instance = ( [ feature(**kwargs) for _, feature in features ], 
                            classification, weight )
             instances.append(instance)
@@ -154,26 +154,26 @@ def simulate_sweep(scene, features, instances, initial_lens_positions,
         make_instance(scene, features, params, instances,
                       lens_positions, classification, keep_ratio)
 
+    return lens_positions
+
 
 def simulate_scenes(scenes, features, step_size, params):
     instances = []
     for scene in scenes:
 
         # We simulate a sweep at each starting position.
-        for lens_pos in range(step_size * 2 + 1, scene.measuresCount - 1):
+        for lens_pos in range(step_size * 2 + 1, scene.measuresCount):
 
             # Going left. Note that we are assuming that the initial
             # three focus measures were obtained by moving right.
             initial_lens_positions = [ lens_pos, lens_pos - step_size,
-                                       lens_pos - step_size * 2,
-                                       lens_pos - step_size * 2 - 1 ]
+                                       lens_pos - step_size * 2 ]
             simulate_sweep(scene, features, instances, initial_lens_positions, 
                 -1, get_move_left_classification, params)
 
             # Right
             initial_lens_positions = [ lens_pos - step_size * 2,
-                                       lens_pos - step_size, lens_pos,
-                                       lens_pos + 1 ]
+                                       lens_pos - step_size, lens_pos ]
             simulate_sweep(scene, features, instances, initial_lens_positions, 
                 +1, get_move_right_classification, params)
 
@@ -188,6 +188,116 @@ def simulate_scenes(scenes, features, step_size, params):
         assert False
 
     return instances
+
+
+def print_array_assignment(var_name, array):
+    print var_name + " <- c(" + \
+          ",".join(["%.3f" % v if isinstance(v, float) else str(v) 
+                    for v in array]) + ")"
+
+
+def print_R_script(scene, lens_positions, instances):
+
+    assert len(lens_positions) == len(instances)
+
+    print "# " + scene.fileName + "\n"
+
+    # Print the focus measures first. Normalize so that the maximum is 1 (but
+    # without touching the minimum!) these so that they fit on the graph.
+    maximum = max(scene.measuresValues)
+    print_array_assignment("focusmeasures", [ float(v) / maximum for v in
+                                              scene.measuresValues ] )
+
+    xs_continue = []
+    ys_continue = []
+    xs_turn_peak = []
+    ys_turn_peak = []
+    xs_backtrack = []
+    ys_backtrack = []
+
+    for lens_pos, (_, classif, weight) in zip(lens_positions, instances):
+        if classif == Action.CONTINUE:
+            xs_continue.append(lens_pos)
+            ys_continue.append(weight)
+        if classif == Action.TURN_PEAK:
+            xs_turn_peak.append(lens_pos)
+            ys_turn_peak.append(weight)
+        if classif == Action.BACKTRACK:
+            xs_backtrack.append(lens_pos)
+            ys_backtrack.append(weight)
+
+    # Some R functions for plotting.
+    print "par(mfrow=c(1,1))"
+    print "library(scales)" # for alpha blending
+
+    print "\nplot(focusmeasures, pch=8, ylim=c(-0.1,1))"
+    print "lines(focusmeasures)"
+
+    print_array_assignment("xs", xs_continue)
+    print_array_assignment("ys", ys_continue)
+    print "points(xs, ys, pch=25, col=alpha(\"black\", 0.5), " \
+          "bg=alpha(\"black\", 0.5))"
+    print_array_assignment("xs", xs_turn_peak)
+    print_array_assignment("ys", ys_turn_peak)
+    print "points(xs, ys, pch=25, col=alpha(\"green\", 0.5), " \
+          "bg=alpha(\"green\", 0.5))"
+    print_array_assignment("xs", xs_backtrack)
+    print_array_assignment("ys", ys_backtrack)
+    print "points(xs, ys, pch=25, col=alpha(\"red\", 0.5), " \
+          "bg=alpha(\"red\", 0.5))"
+
+    print "\n# Plot me!\n"
+
+
+def simulate_samples(scenes, features, step_size, params):
+    """Does a few random simulations and prints an R 
+    script for visualization."""
+
+    # Need to set the parameters so that all the instances are kept.
+    params.outlierHandling = OutlierHandling.WEIGHTING
+    params.uniformSamplingRate = 1.0
+
+    for i in range(0, 20):
+        scene = random.choice(scenes)
+        instances = []
+
+        # Always sweep right to make things easier. So invert the focus
+        # measures half the time.
+        if random.random() < 0.5:
+            scene = scene.inverse_copy()
+
+        lens_pos = random.randint(step_size * 2 + 1, scene.measuresCount - 1)
+
+        initial_lens_positions = [ lens_pos - step_size * 2,
+                                   lens_pos - step_size, lens_pos ]
+        lens_positions = simulate_sweep(scene, features, instances,
+            initial_lens_positions, +1, get_move_right_classification, params)
+
+        # Don't want the initial three positions we used to decide whether
+        # to move left or right anymore.
+        lens_positions = lens_positions[3:]
+
+        print_R_script(scene, lens_positions, instances)
+
+
+def simulate_full(scenes, features, step_size, params):
+
+    # Print the contents of the ARFF file to screen (use output
+    # redirection to save to file)
+    print get_arff_header(features)
+    print "@DATA"
+    instances = simulate_scenes(scenes, features, step_size, params)
+
+    if params.outlierHandling == OutlierHandling.SAMPLING:
+        for features, classification in instances:
+            print ",".join([ "%.3f" % f for f in features ] ) \
+                  + "," + class_names[classification]
+    elif params.outlierHandling == OutlierHandling.WEIGHTING:
+        for features, classification, weights in instances:
+            print ",".join([ "%.3f" % f for f in features ] ) \
+                  + "," + class_names[classification] + ",{%.3f}" % weights
+    else:
+        assert False
 
 
 def get_arff_header(features):
@@ -208,6 +318,7 @@ def main(argv):
     features = all_features
     filters = []
     step_size = 1
+    show_random_sample = False
 
     params = ParameterSet()
 
@@ -223,29 +334,18 @@ def main(argv):
         elif arg == "--use-weights":
             params.outlierHandling = OutlierHandling.WEIGHTING
             params.uniformSamplingRate = 0.10
+        elif arg == "--show-random-sample":
+            show_random_sample = True
         else:
             filters.append(arg)
 
     scenes = load_scenes()
     load_maxima_into_measures(scenes)
 
-    # Print the contents of the ARFF file to screen (use output
-    # redirection to save to file)
-    print get_arff_header(features(filters))
-    print "@DATA"
-    instances = simulate_scenes(scenes, features(filters), step_size, params)
-
-
-    if params.outlierHandling == OutlierHandling.SAMPLING:
-        for features, classification in instances:
-            print ",".join([ "%.3f" % f for f in features ] ) \
-                  + "," + class_names[classification]
-    elif params.outlierHandling == OutlierHandling.WEIGHTING:
-        for features, classification, weights in instances:
-            print ",".join([ "%.3f" % f for f in features ] ) \
-                  + "," + class_names[classification] + ",{%.3f}" % weights
+    if show_random_sample:
+        simulate_samples(scenes, features(filters), step_size, params)
     else:
-        assert False
+        simulate_full(scenes, features(filters), step_size, params)
 
 
 main(sys.argv[1:])
