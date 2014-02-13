@@ -362,6 +362,10 @@ class BacktrackHandling:
 class OutlierHandling:
     WEIGHTING, SAMPLING = range(0, 2)
 
+class_names = { Action.CONTINUE : "continue", 
+                Action.TURN_PEAK : "turn_peak", 
+                Action.BACKTRACK : "backtrack" }
+
 class ParameterSet:
     def __init__(self):
         self.peakHandling = PeakHandling.ALWAYSTURN

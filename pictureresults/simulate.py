@@ -8,10 +8,6 @@ from scene import *
 from coarsefine import *
 from featuresturn import *
 
-class_names = { Action.CONTINUE : "continue", 
-                Action.TURN_PEAK : "turn_peak", 
-                Action.BACKTRACK : "backtrack" }
-
 def make_instance(scene, features, params, instances,
                   lens_positions, classification, weight):
     """Adds a new instance by evaluate the features on the data acquired so
