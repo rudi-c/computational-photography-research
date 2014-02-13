@@ -441,6 +441,11 @@ def get_move_right_classification(start_lens_pos, current_lens_pos,
         else:
             assert params.backtrackHandling == BacktrackHandling.NOPEAKSONLY
     else:
+        # If we're at the last lens position, we need need to turn back to
+        # the peak -now-.
+        if current_lens_pos == len(focus_measures) - 1:
+            return Action.TURN_PEAK
+
         # If we just passed peak, we should continue looking
         # forward for just a bit to confirm that this is a peak.
         if current_lens_pos - left_closest_visited <= 5:
