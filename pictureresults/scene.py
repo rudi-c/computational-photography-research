@@ -33,7 +33,6 @@ class Scene:
 
         assert self.measuresCount > 0
 
-
     def inverse_copy(self):
         """Return an inverted copy of this scene."""
         i_scene = copy.copy(self)
@@ -44,6 +43,13 @@ class Scene:
                                 for m in i_scene.maxima ]
         return i_scene
 
+    def distance_to_closest_peak(self, lens_pos):
+        if len(self.maxima) == 0:
+            raise Exception("Error : No maxima loaded for this scene")
+        min_dist = self.measuresCount
+        for maximum in self.maxima:
+            min_dist = min(min_dist, abs(lens_pos - maximum))
+        return min_dist
 
     def __init__(self, file_name = None):
         self.fileName = file_name
