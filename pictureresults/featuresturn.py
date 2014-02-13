@@ -415,6 +415,12 @@ def get_move_right_classification(start_lens_pos, current_lens_pos,
     visited_maxima = [ maximum for maximum in maxima 
                        if maximum >= start_lens_pos ]
 
+    # If we don't wait until there is at least a few lens positions before 
+    # turning back, the classification suggests that we might turn back 
+    # immediately before we chose to go left or right.
+    if abs(current_lens_pos - start_lens_pos) < 6:
+        return Action.CONTINUE
+
     # Find the closest maxima on the left.
     left_closest = _predecessor(current_lens_pos, maxima)
     left_closest_visited = _predecessor(current_lens_pos, visited_maxima)

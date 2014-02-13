@@ -162,7 +162,7 @@ def simulate_scenes(scenes, features, step_size, params):
     for scene in scenes:
 
         # We simulate a sweep at each starting position.
-        for lens_pos in range(step_size * 2 + 1, scene.measuresCount):
+        for lens_pos in range(step_size * 2, scene.measuresCount):
 
             # Going left. Note that we are assuming that the initial
             # three focus measures were obtained by moving right.
