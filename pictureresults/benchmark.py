@@ -132,7 +132,7 @@ class Evaluator:
 
         lens_positions = list(initial_positions)
         current_pos = lens_positions[-1]
-        previously_coarse_step = False
+        previously_coarse_step = True
         dir_str = "left" if direction == -1 else "right"
 
         while current_pos > 0 and current_pos < scene.measuresCount - 1:
@@ -278,10 +278,12 @@ def benchmark_scenes(left_right_tree, action_tree, step_size, scenes,
             [ scene.distance_to_closest_peak(result)
               for (result, status) in zip(evaluator.result, evaluator.status)
               if status == "foundmax" ] )
+        sum_steps = sum([ len(vps) for vps in evaluator.visitedPositions ])
 
-        print "%s: %d failed %d success with %.3f distance to peak on avg" \
-              % (scene.fileName, count_failed, count_foundmax,
-                 float(sum_distances) / count_foundmax)
+        print "%s | %d failed | %d success | %.3f avg distance to peak | " \
+              "%.3f avg steps " % (scene.fileName, count_failed, 
+              count_foundmax, float(sum_distances) / count_foundmax,
+              float(sum_steps) / evaluator.scene.measuresCount)
 
 
 def benchmark_specific(left_right_tree, action_tree, step_size, 

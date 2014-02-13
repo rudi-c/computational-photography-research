@@ -107,7 +107,7 @@ def simulate_sweep(scene, features, instances, initial_lens_positions,
 
     lens_positions = initial_lens_positions
     current_pos = lens_positions[-1]
-    previously_coarse_step = False
+    previously_coarse_step = True
 
     keep_ratio = 1.0
 
