@@ -7,6 +7,7 @@ import sys
 from scene import *
 from coarsefine import *
 from featuresturn import *
+from rtools import *
 
 def make_instance(scene, features, params, instances,
                   lens_positions, classification, weight):
@@ -186,23 +187,11 @@ def simulate_scenes(scenes, features, step_size, params):
     return instances
 
 
-def print_array_assignment(var_name, array):
-    print var_name + " <- c(" + \
-          ",".join(["%.3f" % v if isinstance(v, float) else str(v) 
-                    for v in array]) + ")"
-
-
 def print_R_script(scene, lens_positions, instances):
 
     assert len(lens_positions) == len(instances)
 
     print "# " + scene.fileName + "\n"
-
-    # Print the focus measures first. Normalize so that the maximum is 1 (but
-    # without touching the minimum!) these so that they fit on the graph.
-    maximum = max(scene.measuresValues)
-    print_array_assignment("focusmeasures", [ float(v) / maximum for v in
-                                              scene.measuresValues ] )
 
     xs_continue = []
     ys_continue = []
@@ -223,24 +212,13 @@ def print_R_script(scene, lens_positions, instances):
             ys_backtrack.append(weight)
 
     # Some R functions for plotting.
-    print "par(mfrow=c(1,1))"
+    print_set_window_division(1, 1)
     print "library(scales)" # for alpha blending
+    print_plot_focus_measures(scene.measuresValues, (-0.1, 1))
 
-    print "\nplot(focusmeasures, pch=8, ylim=c(-0.1,1))"
-    print "lines(focusmeasures)"
-
-    print_array_assignment("xs", xs_continue)
-    print_array_assignment("ys", ys_continue)
-    print "points(xs, ys, pch=25, col=alpha(\"black\", 0.5), " \
-          "bg=alpha(\"black\", 0.5))"
-    print_array_assignment("xs", xs_turn_peak)
-    print_array_assignment("ys", ys_turn_peak)
-    print "points(xs, ys, pch=25, col=alpha(\"green\", 0.5), " \
-          "bg=alpha(\"green\", 0.5))"
-    print_array_assignment("xs", xs_backtrack)
-    print_array_assignment("ys", ys_backtrack)
-    print "points(xs, ys, pch=25, col=alpha(\"red\", 0.5), " \
-          "bg=alpha(\"red\", 0.5))"
+    print_plot_point_pairs(xs_continue, ys_continue, 25, "black", "black")
+    print_plot_point_pairs(xs_turn_peak, ys_turn_peak, 25, "green", "green")
+    print_plot_point_pairs(xs_backtrack, ys_backtrack, 25, "red", "red")
 
     print "\n# Plot me!\n"
 

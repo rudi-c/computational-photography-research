@@ -12,6 +12,7 @@ import sys
 
 from scene      import *
 from coarsefine import *
+from rtools     import *
 
 
 def simulate(scene):
@@ -45,43 +46,26 @@ def simulate(scene):
     return output
 
 
-def print_array_assignment(var_name, array):
-    print var_name + " <- c(" + \
-          str(array).translate(None, '[] ') + ")"
-
 def print_R_script(scene):
 
     print "# " + scene.fileName + "\n"
 
-    # Print the focus measures first. Normalize so that the maximum is 1 (but
-    # without touching the minimum!) these so that they fit on the graph.
-    maximum = max(scene.measuresValues)
-    print_array_assignment("focusmeasures", [ float(v) / maximum for v in
-                                              scene.measuresValues ] )
-
-    # Then the points to plot.
-    results = simulate(scene)
-    xs, ys = ([ a for a,b in results ], [ b for a,b in results ]) # unzip
-
-    print_array_assignment("xs", xs)
-    print_array_assignment("ys", ys)
-
     # Some R functions for plotting.
     print "library(scales)" # for alpha blending
-    print "plot(focusmeasures, pch=8, ylim=c(0,1))"
+    print_plot_focus_measures(scene.measuresValues)
 
     # Axis to indicate that the bottom points mean coarse and
     # the top points means fine.
     print "axis(2, at=0, labels=\"coarse\", padj=-2)"
     print "axis(2, at=1.0, labels=\"fine\", padj=-2)"
 
-    print "lines(focusmeasures)"
+    # Points to plot
+    results = simulate(scene)
+    xs, ys = ([ a for a,b in results ], [ b for a,b in results ]) # unzip
 
-    # Indicate the correct classes (coarse or fine) and
-    # the predicted classes. The predicted classes is
-    # slightly offset to avoid overlapping.
-    print "points(xs, ys, pch=22, col=alpha(\"black\", 0.3), " \
-          "bg=alpha(\"blue\", 0.5))"
+    # Indicate the correct classes (coarse or fine) and the predicted classes. 
+    # The predicted classes is slightly offset to avoid overlapping.
+    print_plot_point_pairs(xs, ys, 22, "black", "blue", False, 0.3, 0.5)
 
     # In the title, indicate how many steps are used.
     print "title(main=paste(\"coarse steps:\", %d, " \

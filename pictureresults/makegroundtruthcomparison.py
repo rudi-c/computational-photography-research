@@ -15,14 +15,11 @@ import inspect
 import os
 import sys
 
-from scene             import *
-from statistics        import *
 from evaluatetree      import *
 from featuresleftright import *
-
-def print_array_assignment(var_name, array):
-    print var_name + " <- c(" + \
-          ",".join(["%.3f" % v for v in array]) + ")"
+from rtools            import *
+from scene             import *
+from statistics        import *
 
 def print_R_script(ground_probabilities, our_probabilities):
     print_array_assignment("ground", ground_probabilities)

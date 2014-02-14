@@ -7,15 +7,10 @@ import sys
 
 from scene import *
 from featuresturn import *
+from rtools import *
 
 PCHS = [ 3, 1, 7 ]
 COLORS = [ "black", "green", "red" ]
-
-def print_array_assignment(var_name, array):
-    print var_name + " <- c(" + \
-          ",".join(["%.3f" % v if isinstance(v, float) else str(v) 
-                    for v in array]) + ")"
-
 
 def segmentation(array):
     segments = [ 0 ]
@@ -115,21 +110,16 @@ def print_R_script(scene, params):
 
     print "# " + scene.fileName + "\n"
 
-    # Print the focus measures first. Normalize so that the maximum is 1 (but
-    # without touching the minimum!) these so that they fit on the graph.
-    maximum = max(scene.measuresValues)
-    print_array_assignment("focusmeasures", [ float(v) / maximum for v in
-                                              scene.measuresValues ] )
-
     # Some R functions for plotting.
-    print "par(mfrow=c(3,1))"
+    print_set_window_division(3, 1)
     print "frame()"
     print "library(scales)" # for alpha blending
 
     print_right_classes(scene, params)
 
-    print "\nplot(focusmeasures, pch=8, ylim=c(-0.1,1))"
-    print "lines(focusmeasures)"
+    print ""
+    print_plot_focus_measures(scene.measuresValues, (-0.1, 1))
+    print ""
 
     print "plot.new()"
     print_left_classes(scene, params)

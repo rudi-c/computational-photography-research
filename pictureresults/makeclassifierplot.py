@@ -15,9 +15,10 @@ import inspect
 import os
 import sys
 
-from scene             import *
-from featuresleftright import *
 from evaluatetree      import *
+from featuresleftright import *
+from rtools            import *
+from scene             import *
 
 def print_script_usage():
    print  """Script usage : ./makeclassifierplot.py 
@@ -26,33 +27,14 @@ def print_script_usage():
              [-c <classifier (highest, nearest, near_high)>]
              [-d <double step size used>]"""
 
-def print_array_assignment(var_name, array):
-    print var_name + " <- c(" + \
-          str(array).translate(None, '[] ') + ")"
 
 def print_R_script(scene, tree, classifier, step_size):
 
     print "# " + scene.fileName + "\n"
 
-    # Print the focus measures first. Normalize so that the maximum is 1 (but
-    # without touching the minimum!) these so that they fit on the graph.
-    maximum = max(scene.measuresValues)
-    print_array_assignment("focusmeasures", [ float(v) / maximum for v in
-                                              scene.measuresValues ] )
-
-    # Then the correct classifications.
-    classes = [ 0 if classifier(scene, lens_pos) else 1
-                for lens_pos in range(2 * step_size, scene.measuresCount) ]
-    print_array_assignment("classes", classes)
-
-    # Then what we actually get.
-    results = [ tree_eval(scene, lens_pos, tree, step_size)
-                for lens_pos in range(2 * step_size, scene.measuresCount) ]
-    print_array_assignment("results", results)
-
     # Some R functions for plotting.
     print "library(scales)" # for alpha blending
-    print "plot(focusmeasures, pch=8, ylim=c(0,1))"
+    print_plot_focus_measures(scene.measuresValues)
 
     # Axis to indicate that the bottom points mean left and
     # the top points means right.
@@ -64,7 +46,15 @@ def print_R_script(scene, tree, classifier, step_size):
     print "legend(\"left\", pch=c(25, 22), col=c(\"brown\", \"blue\"), " \
           "legend=c(\"correct\", \"predicted\"))"
 
-    print "lines(focusmeasures)"
+    # The correct classifications.
+    classes = [ 0 if classifier(scene, lens_pos) else 1
+                for lens_pos in range(2 * step_size, scene.measuresCount) ]
+    print_array_assignment("classes", classes)
+
+    # Then what we actually get.
+    results = [ tree_eval(scene, lens_pos, tree, step_size)
+                for lens_pos in range(2 * step_size, scene.measuresCount) ]
+    print_array_assignment("results", results)
 
     # Indicate the correct classes (left or right) and
     # the predicted classes. The predicted classes is
