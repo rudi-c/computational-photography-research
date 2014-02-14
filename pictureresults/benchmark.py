@@ -161,10 +161,10 @@ class Evaluator:
        
             if self.perfect_classification is None:
                 # Obtain the ML classification at the new lens position.
-                feature_args = { "focus_values" : self.scene.measuresValues,
-                                 "lens_positions" : lens_positions,
-                                 "total_positions" : self.scene.measuresCount }
-                classification = evaluate_tree(self.action_tree, feature_args)
+                evaluator = featuresturn.action_feature_evaluator(direction, 
+                    self.scene.measuresValues, lens_positions, 
+                    self.scene.measuresCount)
+                classification = evaluate_tree(self.action_tree, evaluator)
             else:
                 classification = self.perfect_classification[make_key(
                     dir_str, lens_positions[0], current_pos)]
@@ -231,9 +231,11 @@ class Evaluator:
         first  = self.scene.measuresValues[lens_pos - self.step_size * 2]
         second = self.scene.measuresValues[lens_pos - self.step_size]
         third  = self.scene.measuresValues[lens_pos]
-        feature_args = { "first" : first, "second" : second, 
-                         "third" : third, "lens_pos" : lens_pos }
-        direction = evaluate_tree(self.left_right_tree, feature_args)
+        norm_lens_pos = float(lens_pos) / (self.scene.measuresCount - 1)
+
+        evaluator = featuresleftright.leftright_feature_evaluator(
+            first, second, third, norm_lens_pos)
+        direction = evaluate_tree(self.left_right_tree, evaluator)
 
         initial_positions = [lens_pos - self.step_size * 2, 
                              lens_pos - self.step_size, lens_pos]
@@ -281,9 +283,14 @@ def benchmark_scenes(left_right_tree, action_tree, step_size, scenes,
               if status == "foundmax" ] )
         sum_steps = sum([ len(vps) for vps in evaluator.visitedPositions ])
 
+        if count_foundmax == 0:
+            avg_distances = 0
+        else:
+            avg_distances = float(sum_distances) / count_foundmax
+
         print "%s | %d failed | %d success | %.3f avg distance to peak | " \
               "%.3f avg steps " % (scene.fileName, count_failed, 
-              count_foundmax, float(sum_distances) / count_foundmax,
+              count_foundmax, avg_distances,
               float(sum_steps) / evaluator.scene.measuresCount)
 
 
@@ -351,7 +358,7 @@ def read_decision_tree(filename, features):
     return parse_tree(json_tree)
 
 
-def evaluate_tree(tree, feature_args):
+def evaluate_tree(tree, evaluator):
     if isinstance(tree, str):
         # Reached leaf.
         return tree
@@ -359,14 +366,14 @@ def evaluate_tree(tree, feature_args):
         raise Exception("Expecting non-unicode string")
 
     function, children = tree
-    node_evaluation = function(**feature_args)
+    node_evaluation = evaluator(function)
     for comparator, value, subtree in children:
         if isinstance(value, list):
             # Handle ranges of values.
             if value[0] < node_evaluation <= value[1]:
-                return evaluate_tree(subtree, feature_args)
+                return evaluate_tree(subtree, evaluator)
         elif comparator(node_evaluation, value):
-            return evaluate_tree(subtree, feature_args)
+            return evaluate_tree(subtree, evaluator)
     raise Exception("No match in tree for evaluated featured!")
 
 

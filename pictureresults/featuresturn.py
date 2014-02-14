@@ -347,6 +347,36 @@ def all_features(filters=[]):
         return [ (f.__name__, f) for f in functions ]
     
 
+def action_feature_evaluator(direction, focus_values, 
+                             lens_positions, total_positions):
+    """Returns a function to evaluate an action feature, flipping the data
+    if neccessary so the features only need to evaluate the case where the
+    lens is moving to the right."""
+    assert len(focus_values) >= len(lens_positions)
+
+    if direction in (-1, "left"):
+        rev_positions = [ total_positions - pos - 1 for pos in lens_positions ]
+        rev_values = { total_positions - pos - 1 : focus_values[pos]
+                       for pos in lens_positions }
+        feature_args = { "focus_values"    : rev_values,
+                         "lens_positions"  : rev_positions,
+                         "total_positions" : total_positions}
+    elif direction in (+1, "right"):
+        feature_args = { "focus_values"    : focus_values,
+                         "lens_positions"  : lens_positions,
+                         "total_positions" : total_positions}
+    else:
+        raise Exception("Unknown direction : %A." % direction)
+
+    # Make sure the lens positions are increasing (we are indeed moving right)
+    assert all( x1 < x2 for x1, x2 in zip(feature_args["lens_positions"][:-1], 
+                                          feature_args["lens_positions"][1:]) )
+
+    def evaluate(feature):
+        return feature(**feature_args)
+
+    return evaluate
+
 ### Classifiers ###
 
 # Enums

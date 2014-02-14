@@ -9,26 +9,25 @@ from coarsefine import *
 from featuresturn import *
 from rtools import *
 
-def make_instance(scene, features, params, instances,
+def make_instance(scene, features, params, instances, direction,
                   lens_positions, classification, weight):
     """Adds a new instance by evaluate the features on the data acquired so
     far. If the outlier handling mode is SAMPLING, an array of
     (evaluated features, classification) is returned. If the outlier handling
     mode is WEIGHTING, an array (evaluated features, classification, weights)
     is returned."""
-    kwargs = { "lens_positions" : lens_positions, 
-               "focus_values" : scene.measuresValues,
-               "total_positions" : scene.measuresCount }
+    evaluator = action_feature_evaluator(direction, scene.measuresValues,
+        lens_positions, scene.measuresCount)
 
     # Randomly select only a subset of instances based on their weight.
     if params.outlierHandling == OutlierHandling.SAMPLING:
         if random.random() <= weight * params.uniformSamplingRate:
-            instance = ( [ feature(**kwargs) for _, feature in features ], 
+            instance = ( [ evaluator(feature) for _, feature in features ], 
                          classification )
             instances.append(instance)
     elif params.outlierHandling == OutlierHandling.WEIGHTING:
         if random.random() <= params.uniformSamplingRate:
-            instance = ( [ feature(**kwargs) for _, feature in features ], 
+            instance = ( [ evaluator(feature) for _, feature in features ], 
                            classification, weight )
             instances.append(instance)
     else:
@@ -148,7 +147,7 @@ def simulate_sweep(scene, features, instances, initial_lens_positions,
             keep_ratio *= params.turnbackRatio
 
         # Create a new instance for this lens position.
-        make_instance(scene, features, params, instances,
+        make_instance(scene, features, params, instances, direction,
                       lens_positions, classification, keep_ratio)
 
     return lens_positions

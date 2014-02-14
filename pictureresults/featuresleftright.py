@@ -216,6 +216,7 @@ def bracket(brackets):
     # start and end to be numbers from 0 to 1
     def f(**kwargs):
         lens_pos = kwargs["lens_pos"]
+        assert 0 <= lens_pos <= 1
         assert lens_pos >= brackets[0]
 
         # Return the index corresponding to the correct bracket
@@ -257,11 +258,23 @@ def measure_features(filters=[]):
     """ Returns an array of (attribute name, attribute range, function)"""
     return two_measure_features(filters) + three_measure_features(filters)
 
+
 def all_features(filters=[]):
     """ Returns an array of (attribute name, attribute range, function)"""
-
     return two_measure_features(filters) + three_measure_features(filters) + \
            other_features(filters)
+
+
+def leftright_feature_evaluator(first, second, third, lens_pos):
+    """Returns a function to evaluate a feature for deciding left vs right.
+    The lens_pos argument needs to be normalized to [0, 1]!"""
+    assert 0 <= lens_pos <= 1
+    feature_args = { "first" : first, "second"   : second,
+                     "third" : third, "lens_pos" : lens_pos }
+    def evaluate(feature):
+        return feature(**feature_args)
+
+    return evaluate
 
 
 ### Classifiers ###
