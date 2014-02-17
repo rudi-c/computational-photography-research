@@ -15,10 +15,10 @@ from math import sqrt
 
 def count_step_size(lens_positions):
     """Returns a tuple (# of small steps taken, # large steps taken)"""
-    small = len([1 for p1, p2 in zip(lens_positions[:-1], lens_positions[1:])
-                 if abs(p1 - p2) == 1])
-    large = len([1 for p1, p2 in zip(lens_positions[:-1], lens_positions[1:])
-                 if abs(p1 - p2) > 1])
+    small = sum(1 for p1, p2 in zip(lens_positions[:-1], lens_positions[1:])
+                 if abs(p1 - p2) == 1)
+    large = sum(1 for p1, p2 in zip(lens_positions[:-1], lens_positions[1:])
+                 if abs(p1 - p2) > 1)
     return (small, large)
 
 
@@ -187,7 +187,19 @@ def monotoniticy(**kwargs):
     return float(covariance) / sqrt(variance_x * variance_y)
 
 
-functions_scagnostics = [ monotoniticy ]
+def alternation_ratio(**kwargs):
+    """Measure of noise by counting the number of triples of lens positions
+    which are not monotonic (value goes down and up or up and down)."""
+    focus_values = kwargs["focus_values"]
+    lens_positions = kwargs["lens_positions"]
+    triples = zip(lens_positions, lens_positions[1:], lens_positions[2:])
+    count = sum( (focus_values[x1] < focus_values[x2]) !=
+                 (focus_values[x2] < focus_values[x3])
+                 for x1, x2, x3 in triples )
+    return float(count) / (len(lens_positions) - 2)
+
+
+functions_scagnostics = [ monotoniticy, alternation_ratio ]
 
 ### Features related to comparison with the maximum we've got so far ###
 
@@ -231,25 +243,43 @@ def distance_to_max(**kwargs):
     return float(closest) / total_positions
 
 
-functions_maximum = [ ratio_to_max, ratio_to_range, distance_to_max ]
+def ratio_min_to_max(**kwargs):
+    """How the smallest focus value found so far compares to the largest focus
+    value found so far."""
+    focus_values = kwargs["focus_values"]
+    lens_positions = kwargs["lens_positions"]
+    max_so_far = max( focus_values[x] for x in lens_positions )
+    min_so_far = min( focus_values[x] for x in lens_positions )
+    return float(min_so_far) / max_so_far
+
+
+functions_maximum = [ ratio_to_max, ratio_to_range, distance_to_max,
+                      ratio_min_to_max ]
 
 ### Features related to the overall trend of focus values ###
 
+def slope(x1, x2, focus_values, total_positions):
+    normalized_diff = float(x2 - x1) / total_positions
+    average = (focus_values[x2] + focus_values[x1]) / 2
+    return (focus_values[x2] - focus_values[x1]) / normalized_diff / average
+
+
 def simple_slope(**kwargs):
     """Simple calculation of the slope using only the endpoints,
-    normalized by the total number of lens positions."""
+    normalized by the total number of lens positions and the
+    average value of the two endpoints."""
     focus_values = kwargs["focus_values"]
     total_positions = kwargs["total_positions"]
     lens_positions = kwargs["lens_positions"]
     first  = lens_positions[0]
     latest = lens_positions[-1]
-    normalized_diff = float(latest - first) / total_positions
-    return (focus_values[latest] - focus_values[first]) / normalized_diff
+    return slope(first, latest, focus_values, total_positions)
            
 
 def regression_slope(**kwargs):
     """Slope as obtained by linear regression (least squares),
-    normalized by the total number of lens positions."""
+    normalized by the total number of lens positions and the
+    average value of the positions."""
     focus_values = kwargs["focus_values"]
     total_positions = kwargs["total_positions"]
     lens_positions = kwargs["lens_positions"]
@@ -263,7 +293,7 @@ def regression_slope(**kwargs):
     variance_x = sum( (float(x) / total_positions - mean_xs) ** 2 
                       for x in lens_positions )
     assert variance_x != 0
-    return covariance / variance_x
+    return covariance / variance_x / mean_ys
 
 
 functions_trend_slope = [ simple_slope, regression_slope ]
@@ -272,19 +302,21 @@ functions_trend_slope = [ simple_slope, regression_slope ]
 
 def current_slope(**kwargs):
     """Slope between the current lens position and the previous 
-    lens position, normalized by the total number of lens positions"""
+    lens position, normalized by the total number of lens positions
+    and the average value of the two positions."""
     focus_values = kwargs["focus_values"]
     total_positions = kwargs["total_positions"]
     lens_positions = kwargs["lens_positions"]
     latest = lens_positions[-1]
     previous = lens_positions[-2]
-    normalized_diff = float(latest - previous) / total_positions
-    return (focus_values[latest] - focus_values[previous]) / normalized_diff
+    return slope(previous, latest, focus_values, total_positions)
 
 
 def current_slope_large(**kwargs):
     """Slope between the current lens position and another position at least
-    4 lens positions away, normalized by the total number of lens positions"""
+    4 lens positions away, normalized by the total number of lens positions
+    and the average value of the two positions."""
+
     # The point of this feature is that it should be more noise-resilient than
     # current slope when the last step taken was a fine step
     focus_values = kwargs["focus_values"]
@@ -295,8 +327,7 @@ def current_slope_large(**kwargs):
     while len(remaining) > 1 and abs(latest - remaining[-1]) < 4:
         remaining = remaining[:-1]
     previous = remaining[-1]
-    normalized_diff = float(latest - previous) / total_positions
-    return (focus_values[latest] - focus_values[previous]) / normalized_diff
+    return slope(previous, latest, focus_values, total_positions)
 
 
 def downslope_1st_half(**kwargs):

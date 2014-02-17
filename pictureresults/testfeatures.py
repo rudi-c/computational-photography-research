@@ -90,7 +90,7 @@ class ScagnosticsTests(unittest.TestCase):
         self.assertAlmostEqual(monotoniticy(**make_feature_argument(
             zip(range(0, 10), range(0, 10)), 20)), 1.0)
         self.assertAlmostEqual(monotoniticy(**make_feature_argument(
-            zip(range(0, 10), range(10, 0,-1)), 20)), -1.0)
+            zip(range(0, 10), range(10, 0, -1)), 20)), -1.0)
         self.assertLess(abs(monotoniticy(**make_feature_argument(
             zip(range(0, 7), [4, 1, 5, 2, 5, 3, 4]), 20))), 0.8)
 
@@ -98,6 +98,14 @@ class ScagnosticsTests(unittest.TestCase):
         simulation = [ (1, 1.1), (9, 1.1), (10, 1.1), (18, 1.1) ]
         kwargs = make_feature_argument(simulation, 20)
         self.assertEqual(monotoniticy(**kwargs), 0.0)
+
+    def testAlternation(self):
+        self.assertAlmostEqual(alternation_ratio(**make_feature_argument(
+            zip(range(0, 10), range(0, 10)), 20)), 0.0)
+        self.assertAlmostEqual(alternation_ratio(**make_feature_argument(
+            zip(range(0, 10), range(10, 0, -1)), 20)), 0.0)
+        self.assertAlmostEqual(alternation_ratio(**make_feature_argument(
+            zip(range(0, 7), [4, 1, 5, 2, 5, 3, 4]), 20)), 1.0)
 
 
 class MaximumTests(unittest.TestCase):
@@ -108,6 +116,7 @@ class MaximumTests(unittest.TestCase):
         self.assertAlmostEqual(ratio_to_max(**kwargs), 1.0)
         self.assertAlmostEqual(ratio_to_range(**kwargs), 0.5)
         self.assertAlmostEqual(distance_to_max(**kwargs), 0.0)
+        self.assertAlmostEqual(ratio_min_to_max(**kwargs), 1.0)
 
 
     def testNormal(self):
@@ -116,6 +125,7 @@ class MaximumTests(unittest.TestCase):
         self.assertAlmostEqual(ratio_to_max(**kwargs), 1.4 / 1.6)
         self.assertAlmostEqual(ratio_to_range(**kwargs), 0.3 / 0.5)
         self.assertAlmostEqual(distance_to_max(**kwargs), 8.0 / 20)
+        self.assertAlmostEqual(ratio_min_to_max(**kwargs), 1.1 / 1.6)
 
 
 class TrendTests(unittest.TestCase):
@@ -129,14 +139,15 @@ class TrendTests(unittest.TestCase):
     def testSlopeOne(self):
         simulation = [ (1, 0.1), (9, 0.9), (10, 1.0), (18, 1.8) ]
         kwargs = make_feature_argument(simulation, 20)
-        self.assertAlmostEqual(simple_slope(**kwargs), 0.1 * 20)
-        self.assertAlmostEqual(regression_slope(**kwargs), 0.1 * 20)
+        self.assertAlmostEqual(simple_slope(**kwargs), 0.1 * 20 / (1.9 / 2))
+        self.assertAlmostEqual(regression_slope(**kwargs), 0.1 * 20 / (1.9 / 2))
 
     def testSlopeMinusOne(self):
         simulation = [ (1, 1.8), (9, 1.0), (10, 0.9), (18, 0.1) ]
         kwargs = make_feature_argument(simulation, 20)
-        self.assertAlmostEqual(simple_slope(**kwargs), -0.1 * 20)
-        self.assertAlmostEqual(regression_slope(**kwargs), -0.1 * 20)
+        self.assertAlmostEqual(simple_slope(**kwargs), -0.1 * 20 / (1.9 / 2))
+        self.assertAlmostEqual(regression_slope(**kwargs), 
+            -0.1 * 20 / (1.9 / 2))
 
 
 class LocalSlopeTests(unittest.TestCase):
@@ -152,8 +163,9 @@ class LocalSlopeTests(unittest.TestCase):
     def testPeak(self):
         simulation = [ (1, 1.1), (9, 1.4), (10, 1.5), (18, 1.4), (19, 1.0) ]
         kwargs = make_feature_argument(simulation, 20)
-        self.assertAlmostEqual(current_slope(**kwargs), -0.4 * 20)
-        self.assertAlmostEqual(current_slope_large(**kwargs), -0.5 / 9 * 20)
+        self.assertAlmostEqual(current_slope(**kwargs), -0.4 * 20 / 1.2)
+        self.assertAlmostEqual(current_slope_large(**kwargs), 
+            -0.5 / 9 * 20 / 1.25)
         self.assertEqual(downslope_1st_half(**kwargs), 0.0)
         self.assertEqual(downslope_2nd_half(**kwargs), 1.0)
 
