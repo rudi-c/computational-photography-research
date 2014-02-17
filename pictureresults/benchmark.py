@@ -374,7 +374,7 @@ def evaluate_tree(tree, evaluator):
                 return evaluate_tree(subtree, evaluator)
         elif comparator(node_evaluation, value):
             return evaluate_tree(subtree, evaluator)
-    raise Exception("No match in tree for evaluated featured!")
+    raise Exception("No match in tree for evaluated feature!")
 
 
 def load_classifications(filename):

@@ -7,11 +7,7 @@ LEFT_RIGHT_ARFF=results/nearestall_filtered.arff
 ACTION_ARFF=results/action.arff
 
 attribute_select=false
-
-# By default, the data with filtered features is the same unless we
-# pass in the command-line option --attribute-select
-ACTION_ARFF_FILTERED=$ACTION_ARFF
-
+discretize=false
 
 # Loop until all parameters are used up
 while [ "$1" != "" ]; do
@@ -22,6 +18,8 @@ while [ "$1" != "" ]; do
         #                         filename=$1
         #                         ;;
         -as | --attribute-select ) attribute_select=true
+                                ;;
+        -ds | --discretize ) discretize=true
                                 ;;
         # -h | --help )           usage
         #                         exit
@@ -38,19 +36,38 @@ done
 echo "Simulating..."
 ./simulate.py > $ACTION_ARFF
 
-# Perform attribute selection if needed.
+# Make a copy of the data, which we will modify if filters used.
+ACTION_DATA=/tmp/action_data.arff
+cat $ACTION_ARFF > $ACTION_DATA
+
+if [ "$discretize" = true ]; then
+    echo "Performing discretization..."
+    ACTION_FILTERED=/tmp/filtered_action.arff
+
+    java -cp $CP weka.filters.supervised.attribute.Discretize \
+        -R "first-last" \
+        -c "last" \
+        -b \
+        -i $ACTION_DATA \
+        -o $ACTION_FILTERED \
+        -r $ACTION_DATA \
+        -s $ACTION_FILTERED
+    cat $ACTION_FILTERED > $ACTION_DATA
+fi
+
 if [ "$attribute_select" = true ]; then
     echo "Performing attribute selection..."
-    ACTION_ARFF_FILTERED=/tmp/filtered_action.arff
+    ACTION_FILTERED=/tmp/filtered_action.arff
 
     java -cp $CP weka.filters.supervised.attribute.AttributeSelection \
         -E "weka.attributeSelection.CfsSubsetEval -M" \
         -S "weka.attributeSelection.BestFirst -D 1 -N 5" \
         -b \
-        -i $ACTION_ARFF \
-        -o $ACTION_ARFF_FILTERED \
-        -r $ACTION_ARFF \
-        -s $ACTION_ARFF_FILTERED
+        -i $ACTION_DATA \
+        -o $ACTION_FILTERED \
+        -r $ACTION_DATA \
+        -s $ACTION_FILTERED
+    cat $ACTION_FILTERED > $ACTION_DATA
 fi
 
 
@@ -60,7 +77,7 @@ java -cp $CP weka.classifiers.trees.J48 \
     -t $LEFT_RIGHT_ARFF -C 0.25 -M 6 | ./$PARSER > /tmp/tree_leftright.json
 echo "Training action tree..."
 java -cp $CP weka.classifiers.trees.J48 \
-    -t $ACTION_ARFF_FILTERED -C 0.25 -M 128 | ./$PARSER > /tmp/tree_action.json
+    -t $ACTION_DATA -C 0.25 -M 128 | ./$PARSER > /tmp/tree_action.json
 
 
 # Evaluate tree effectiveness.
