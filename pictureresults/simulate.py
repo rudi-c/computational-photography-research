@@ -292,6 +292,7 @@ def main(argv):
     filters = []
     step_size = 1
     show_random_sample = False
+    seed = 1
 
     params = ParameterSet()
 
@@ -311,6 +312,8 @@ def main(argv):
             show_random_sample = True
         else:
             filters.append(arg)
+
+    random.seed(seed)
 
     scenes = load_scenes()
     load_maxima_into_measures(scenes)
