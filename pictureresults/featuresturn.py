@@ -173,10 +173,10 @@ def monotoniticy(**kwargs):
     ranks_ys = rank([focus_values[x] for x in lens_positions])
     mean_xs = float(sum(ranks_xs)) / len(ranks_xs)
     mean_ys = float(sum(ranks_ys)) / len(ranks_ys)
-    covariance = sum([ (x - mean_xs) * (y - mean_ys) 
-                       for x, y in zip(ranks_xs, ranks_ys)])
-    variance_x = sum([ (x - mean_xs) ** 2 for x in ranks_xs ])
-    variance_y = sum([ (y - mean_ys) ** 2 for y in ranks_ys ])
+    covariance = sum( (x - mean_xs) * (y - mean_ys) 
+                      for x, y in zip(ranks_xs, ranks_ys) )
+    variance_x = sum( (x - mean_xs) ** 2 for x in ranks_xs )
+    variance_y = sum( (y - mean_ys) ** 2 for y in ranks_ys )
 
     assert variance_x != 0
     if variance_y == 0:
@@ -197,7 +197,7 @@ def ratio_to_max(**kwargs):
     focus_values = kwargs["focus_values"]
     lens_positions = kwargs["lens_positions"]
     latest = lens_positions[-1]
-    max_so_far = float(max( [ focus_values[x] for x in lens_positions ] ))
+    max_so_far = float(max( focus_values[x] for x in lens_positions ))
     return focus_values[latest] / max_so_far
 
 
@@ -207,8 +207,8 @@ def ratio_to_range(**kwargs):
     focus_values = kwargs["focus_values"]
     lens_positions = kwargs["lens_positions"]
     latest = lens_positions[-1]
-    max_so_far = float(max( [ focus_values[x] for x in lens_positions ] ))
-    min_so_far = float(min( [ focus_values[x] for x in lens_positions ] ))
+    max_so_far = float(max( focus_values[x] for x in lens_positions ))
+    min_so_far = float(min( focus_values[x] for x in lens_positions ))
     if min_so_far == max_so_far:
         return 0.5 # I think this is a fair "in-between" value
     return (focus_values[latest] - min_so_far) / (max_so_far - min_so_far)
@@ -222,12 +222,12 @@ def distance_to_max(**kwargs):
     focus_values = kwargs["focus_values"]
     lens_positions = kwargs["lens_positions"]
     latest = lens_positions[-1]
-    max_so_far = float(max( [ focus_values[x] for x in lens_positions ] ))
-    max_positions = [ x for x in lens_positions 
-                        if focus_values[x] == max_so_far ]
+    max_so_far = float(max( focus_values[x] for x in lens_positions ))
+    max_positions = ( x for x in lens_positions 
+                        if focus_values[x] == max_so_far )
     # There may be more than one maximum in exceptional cases - pick the
     # closest one.
-    closest = min( [ abs(latest - max_pos) for max_pos in max_positions ] )
+    closest = min( abs(latest - max_pos) for max_pos in max_positions )
     return float(closest) / total_positions
 
 
@@ -255,13 +255,13 @@ def regression_slope(**kwargs):
     lens_positions = kwargs["lens_positions"]
 
     mean_xs = float(sum(lens_positions)) / len(lens_positions) / total_positions
-    mean_ys = float(sum([focus_values[x] for x in lens_positions])) / \
-                                                        len(lens_positions)
-    covariance = sum( [ (float(x) / total_positions - mean_xs) * 
-                            (focus_values[x] - mean_ys)
-                        for x in lens_positions ] )
-    variance_x = sum( [ (float(x) / total_positions - mean_xs) ** 2 
-                        for x in lens_positions ] )
+    mean_ys = float(sum(focus_values[x] for x in lens_positions)) / \
+              len(lens_positions)
+    covariance = sum( (float(x) / total_positions - mean_xs) * 
+                          (focus_values[x] - mean_ys)
+                      for x in lens_positions )
+    variance_x = sum( (float(x) / total_positions - mean_xs) ** 2 
+                      for x in lens_positions )
     assert variance_x != 0
     return covariance / variance_x
 
@@ -308,8 +308,8 @@ def downslope_1st_half(**kwargs):
     
     major_half = len(lens_positions) / 2 + 1
     lens_positions = lens_positions[:max(2, major_half)]
-    count = [ focus_values[x1] > focus_values[x2] for x1, x2 
-              in zip(lens_positions[:-1], lens_positions[1:]) ].count(True)
+    count = sum( focus_values[x1] > focus_values[x2] for x1, x2 
+                 in zip(lens_positions[:-1], lens_positions[1:]) )
     return float(count) / (len(lens_positions) - 1)
 
 
@@ -323,8 +323,8 @@ def downslope_2nd_half(**kwargs):
     half_rounded_down = len(lens_positions) / 2
     lens_positions = lens_positions[min(len(lens_positions) - 2, 
                                         half_rounded_down):]
-    count = [ focus_values[x1] > focus_values[x2] for x1, x2 
-              in zip(lens_positions[:-1], lens_positions[1:]) ].count(True)
+    count = sum( focus_values[x1] > focus_values[x2] for x1, x2 
+                 in zip(lens_positions[:-1], lens_positions[1:]) )
     return float(count) / (len(lens_positions) - 1)
 
 
