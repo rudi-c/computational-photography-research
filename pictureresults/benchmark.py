@@ -396,7 +396,7 @@ def print_R_script(scene, lens_pos, visitedPositions, evaluation, result):
     print_set_window_division(1, 1)
     print "library(scales)" # for alpha blending
 
-    print_plot_focus_measures(scene.measuresValues)
+    print_plot_focus_measures(scene.measuresValues, show_grid=True)
 
     xs = visitedPositions
     ys = [ float(i) / max(10, len(visitedPositions))

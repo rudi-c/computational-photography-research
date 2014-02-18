@@ -14,7 +14,7 @@ def print_set_window_division(rows, cols):
     print "par(mfrow=c(%d,%d))" % (rows, cols)
 
 
-def print_plot_focus_measures(focus_measures, yrange=(0,1)):
+def print_plot_focus_measures(focus_measures, yrange=(0,1), show_grid=False):
     """Plot the focus measures divided by the maximum. An optional range
     can be specified as a tuple."""
     maximum = max(focus_measures)
@@ -24,6 +24,8 @@ def print_plot_focus_measures(focus_measures, yrange=(0,1)):
     print "plot(x=seq(0,%d), y=focusmeasures, " \
           "pch=8, type=\"o\", ylim=c(%d,%d))" % \
           (len(focus_measures) - 1, yrange[0], yrange[1])
+    if show_grid:
+        print "grid(nx=32,ny=1)"
 
 
 def print_plot_point_pairs(xs, ys, pch, point_color, bg_color, lines=False,
