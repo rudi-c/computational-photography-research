@@ -53,16 +53,18 @@ class Scene:
 
     def __init__(self, file_name = None):
         self.fileName = file_name
+        self.name = file_name[:file_name.rfind(".")] # remove extension
         if not file_name is None:
             self.__load_file()
         self.maxima = []
         self.norm_maxima = []
 
 
-def load_scenes():
+def load_scenes(excluded_scenes):
     return [ Scene(f) 
              for f in os.listdir(scenes_folder) 
-             if os.path.isfile(scenes_folder + f) ]
+             if os.path.isfile(scenes_folder + f)
+             if not f in excluded_scenes ]
 
 
 def load_maxima_into_measures(scenes):

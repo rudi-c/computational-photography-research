@@ -97,3 +97,10 @@ echo "Evaluating..."
 # ./benchmark.py --left-right-tree=/tmp/tree_leftright.json \
 #     --action-tree=/tmp/tree_action.json \
 #     --specific-scene=backyard.txt > test.R
+
+# ./benchmark.py --left-right-tree=/tmp/tree_leftright.json \
+#             --action-tree=results/manual_tree.json
+
+# ./benchmark.py --left-right-tree=/tmp/tree_leftright.json \
+#     --action-tree=results/manual_tree.json\
+#     --specific-scene=landscape3.txt > test.R

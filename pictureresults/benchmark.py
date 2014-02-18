@@ -45,7 +45,7 @@ class Evaluator:
         self.step_size = step_size
         self.scene = scene
         self.status = [ "none" ] * scene.measuresCount
-        self.result = [ -1 ] * scene.measuresCount
+        self.result = [ -100 ] * scene.measuresCount
         self.visitedPositions = [ [] for pos in scene.measuresValues ]
         if perfect_classification is None:
             self.perfect_classification = None
@@ -264,6 +264,43 @@ class Evaluator:
         for lens_pos in range(self.step_size * 2, self.scene.measuresCount):
             self._evaluate_at_position(lens_pos)
 
+    def count_true_positive(self):
+        """Number of instances where a real peak has been marked as found."""
+        return sum(1 for (status, result) in zip(self.status, self.result)
+                     if status == "foundmax"
+                     if self.scene.distance_to_closest_peak(result) <= 1 )
+
+    def count_false_positive(self):
+        """Number of instances where a peak marked a found is not a real peak,
+        or not close enough to the real peak."""
+        return sum(1 for (status, result) in zip(self.status, self.result)
+                     if status == "foundmax"
+                     if self.scene.distance_to_closest_peak(result) > 1 )
+
+    def count_true_negative(self):
+        """Number of instances where we failed to come close to a peak."""
+        return sum(1 for (status, visited) 
+                         in zip(self.status, self.visitedPositions)
+                     if status == "failed"
+                     if all(self.scene.distance_to_closest_peak(pos) > 1
+                            for pos in visited))
+
+    def count_false_negative(self):
+        """Number of instances where we came close to a peak but ignored it."""
+        return sum(1 for (status, visited) 
+                         in zip(self.status, self.visitedPositions)
+                     if status == "failed"
+                     if any(self.scene.distance_to_closest_peak(pos) <= 1
+                            for pos in visited))
+
+
+def print_aligned_data_rows(rows):
+    """Print rows of data such that each column is aligned."""
+    column_lengths = [ len(max(cols, key=len)) for cols in zip(*rows) ]
+    for row in rows:
+        print "|".join(" " * (length - len(col)) + col
+                       for length, col in zip(column_lengths, row))
+
 
 def benchmark_scenes(left_right_tree, action_tree, step_size, scenes,
                      perfect_classification):
@@ -273,25 +310,44 @@ def benchmark_scenes(left_right_tree, action_tree, step_size, scenes,
     for evaluator in evaluators:
         evaluator.evaluate()
 
+    data_rows = [( "filename", "t-pos", "f-pos", "t-neg", 
+                   "f-neg", "%", "steps" )]
+    sum_t_pos = 0
+    sum_f_pos = 0
+    sum_t_neg = 0
+    sum_f_neg = 0
+    sum_perct = 0
+    sum_steps = 0
+
     for evaluator in evaluators:
-        scene = evaluator.scene
-        count_failed = sum([ s == "failed" for s in evaluator.status])
-        count_foundmax = sum([ s == "foundmax" for s in evaluator.status])
-        sum_distances = sum( 
-            [ scene.distance_to_closest_peak(result)
-              for (result, status) in zip(evaluator.result, evaluator.status)
-              if status == "foundmax" ] )
-        sum_steps = sum([ len(vps) for vps in evaluator.visitedPositions ])
+        t_pos = evaluator.count_true_positive()
+        f_pos = evaluator.count_false_positive()
+        t_neg = evaluator.count_true_negative()
+        f_neg = evaluator.count_false_negative()
+        perct = float(t_pos) / (t_pos + f_pos + t_neg + f_neg) * 100
+        steps = float(sum(len(vps) for vps in evaluator.visitedPositions)) / \
+                len(evaluator.visitedPositions)
 
-        if count_foundmax == 0:
-            avg_distances = 0
-        else:
-            avg_distances = float(sum_distances) / count_foundmax
+        sum_t_pos += t_pos
+        sum_f_pos += f_pos
+        sum_t_neg += t_neg
+        sum_f_neg += f_neg
+        sum_perct += perct
+        sum_steps += steps
 
-        print "%s | %d failed | %d success | %.3f avg distance to peak | " \
-              "%.3f avg steps " % (scene.fileName, count_failed, 
-              count_foundmax, avg_distances,
-              float(sum_steps) / evaluator.scene.measuresCount)
+        data_rows.append((evaluator.scene.name, 
+            "%d" % t_pos, "%d" % f_pos, "%d" % t_neg, "%d" % f_neg,
+            "%.1f" % perct, "%d" % steps))
+
+    data_rows.append(("average",
+        "%.1f" % (float(sum_t_pos) / len(evaluators)),
+        "%.1f" % (float(sum_f_pos) / len(evaluators)),
+        "%.1f" % (float(sum_t_neg) / len(evaluators)),
+        "%.1f" % (float(sum_f_neg) / len(evaluators)),
+        "%.1f" % (float(sum_perct) / len(evaluators)),
+        "%.1f" % (float(sum_steps) / len(evaluators))))
+
+    print_aligned_data_rows(data_rows)
 
 
 def benchmark_specific(left_right_tree, action_tree, step_size, 
@@ -441,7 +497,7 @@ def main(argv):
         print_script_usage()
         sys.exit(2)
 
-    scenes = load_scenes()
+    scenes = load_scenes(excluded_scenes=["cat.txt", "moon.txt"])
     load_maxima_into_measures(scenes)
 
     if specific_scene == None:

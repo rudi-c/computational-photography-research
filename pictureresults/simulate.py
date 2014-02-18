@@ -315,7 +315,7 @@ def main(argv):
 
     random.seed(seed)
 
-    scenes = load_scenes()
+    scenes = load_scenes(excluded_scenes=["cat.txt", "moon.txt"])
     load_maxima_into_measures(scenes)
 
     if show_random_sample:
