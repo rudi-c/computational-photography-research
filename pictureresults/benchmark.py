@@ -264,34 +264,57 @@ class Evaluator:
         for lens_pos in range(self.step_size * 2, self.scene.measuresCount):
             self._evaluate_at_position(lens_pos)
 
+    def _is_true_positive(self, status, result):
+        return status == "foundmax" and \
+               self.scene.distance_to_closest_peak(result) <= 1
+
+    def _is_false_positive(self, status, result):
+        return status == "foundmax" and \
+               self.scene.distance_to_closest_peak(result) > 1
+
+    def _is_true_negative(self, status, visited):
+        return status == "failed" and \
+               all(self.scene.distance_to_closest_peak(pos) > 1
+                   for pos in visited)
+
+    def _is_false_negative(self, status, visited):
+        return status == "failed" and \
+               any(self.scene.distance_to_closest_peak(pos) <= 1
+                   for pos in visited)
+
+    def get_evaluation_at(self, lens_pos):
+        status = self.status[lens_pos]
+        result = self.result[lens_pos]
+        if self._is_true_positive(status, result):
+            return "true positive"
+        if self._is_false_positive(status, result):
+            return "false positive"
+        visited = self.visitedPositions[lens_pos]
+        if self._is_true_negative(status, visited):
+            return "true negative"
+        if self._is_false_negative(status, visited):
+            return "false negative"
+
     def count_true_positive(self):
         """Number of instances where a real peak has been marked as found."""
-        return sum(1 for (status, result) in zip(self.status, self.result)
-                     if status == "foundmax"
-                     if self.scene.distance_to_closest_peak(result) <= 1 )
+        return sum(self._is_true_positive(status, result) 
+                   for status, result in zip(self.status, self.result))
 
     def count_false_positive(self):
         """Number of instances where a peak marked a found is not a real peak,
         or not close enough to the real peak."""
-        return sum(1 for (status, result) in zip(self.status, self.result)
-                     if status == "foundmax"
-                     if self.scene.distance_to_closest_peak(result) > 1 )
+        return sum(self._is_false_positive(status, result) 
+                   for status, result in zip(self.status, self.result))
 
     def count_true_negative(self):
         """Number of instances where we failed to come close to a peak."""
-        return sum(1 for (status, visited) 
-                         in zip(self.status, self.visitedPositions)
-                     if status == "failed"
-                     if all(self.scene.distance_to_closest_peak(pos) > 1
-                            for pos in visited))
+        return sum(self._is_true_negative(status, visited) for status, visited
+                   in zip(self.status, self.visitedPositions))
 
     def count_false_negative(self):
         """Number of instances where we came close to a peak but ignored it."""
-        return sum(1 for (status, visited) 
-                         in zip(self.status, self.visitedPositions)
-                     if status == "failed"
-                     if any(self.scene.distance_to_closest_peak(pos) <= 1
-                            for pos in visited))
+        return sum(self._is_false_negative(status, visited) for status, visited
+                         in zip(self.status, self.visitedPositions))
 
 
 def print_aligned_data_rows(rows):
@@ -361,13 +384,13 @@ def benchmark_specific(left_right_tree, action_tree, step_size,
             for lens_pos in range(0, scene.measuresCount):
                 print_R_script(scene, lens_pos, 
                     evaluator.visitedPositions[lens_pos],
-                    evaluator.status[lens_pos],
+                    evaluator.get_evaluation_at(lens_pos),
                     evaluator.result[lens_pos])
 
 
-def print_R_script(scene, lens_pos, visitedPositions, status, result):
+def print_R_script(scene, lens_pos, visitedPositions, evaluation, result):
 
-    print "# %s at %d, %s\n" % (scene.fileName, lens_pos, status)
+    print "# %s at %d, %s\n" % (scene.fileName, lens_pos, evaluation)
 
     # Some R functions for plotting.
     print_set_window_division(1, 1)
@@ -381,7 +404,7 @@ def print_R_script(scene, lens_pos, visitedPositions, status, result):
 
     print_plot_point_pairs(xs, ys, 25, "blue", "blue", True)
 
-    if status == "foundmax":
+    if result >= 0:
         print "segments(%d, 0.0, %d, 1.0)" % (result, result)
 
     print "\n# Plot me!\n"
