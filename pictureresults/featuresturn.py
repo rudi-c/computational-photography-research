@@ -33,6 +33,13 @@ def left_or_right(**kwargs):
 
 ### Features related to the number of steps and distance ###
 
+def start_position(**kwargs):
+    """Where the lens started, in the range [0, 1]."""
+    total_positions = kwargs["total_positions"]
+    lens_positions = kwargs["lens_positions"]
+    return float(lens_positions[0]) / total_positions
+
+
 def steps_taken(**kwargs):
     """Number of steps taken up to now, regardless of step size,
     normalized by the total number of lens positions."""
@@ -102,7 +109,7 @@ def absolute_distance_taken(**kwargs):
     return float(abs(latest - first))
 
 
-functions_steps_and_distance = [ steps_taken, large_steps_taken, 
+functions_steps_and_distance = [ start_position, steps_taken, large_steps_taken, 
                                  small_steps_taken, ratio_small_steps,
                                  ratio_large_steps, distance_taken,
                                  absolute_steps_taken, absolute_distance_taken ]
@@ -162,8 +169,8 @@ def rank(vector):
     return [sorted_vector.index(x) for x in vector]
 
 
-def monotoniticy(**kwargs):
-    """Measure of monotoniticy can be obtained by using Spearman's Rank
+def monotonicity(**kwargs):
+    """Measure of monotonicity can be obtained by using Spearman's Rank
     Correlation coefficient, with gives +1 if the function is perfectly
     monotonic and increasing and -1 if the function is perfectly monotonic
     and decreasing"""
@@ -187,6 +194,11 @@ def monotoniticy(**kwargs):
     return float(covariance) / sqrt(variance_x * variance_y)
 
 
+def abs_monotonicity(**kwargs):
+    """Absolute value of monotonicity"""
+    return abs(monotonicity(**kwargs))
+
+
 def alternation_ratio(**kwargs):
     """Measure of noise by counting the number of triples of lens positions
     which are not monotonic (value goes down and up or up and down)."""
@@ -199,7 +211,7 @@ def alternation_ratio(**kwargs):
     return float(count) / (len(lens_positions) - 2)
 
 
-functions_scagnostics = [ monotoniticy, alternation_ratio ]
+functions_scagnostics = [ monotonicity, abs_monotonicity, alternation_ratio ]
 
 ### Features related to comparison with the maximum we've got so far ###
 

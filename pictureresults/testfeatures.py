@@ -18,6 +18,7 @@ class StepFeaturesTests(unittest.TestCase):
     def testFineOnly(self):
         simulation = [ (4, 1.1), (5, 1.2), (6, 1.3), (7, 1.4), (8, 1.5) ]
         kwargs = make_feature_argument(simulation, 12)
+        self.assertAlmostEqual(start_position(**kwargs), 4.0 / 12)
         self.assertAlmostEqual(steps_taken(**kwargs), 4.0 / 12)
         self.assertAlmostEqual(large_steps_taken(**kwargs), 0.0)
         self.assertAlmostEqual(small_steps_taken(**kwargs), 4.0 / 12)
@@ -30,6 +31,7 @@ class StepFeaturesTests(unittest.TestCase):
     def testCoarseOnly(self):
         simulation = [ (4, 1.1), (12, 1.2), (20, 1.3), (28, 1.4), (36, 1.5) ]
         kwargs = make_feature_argument(simulation, 40)
+        self.assertAlmostEqual(start_position(**kwargs), 4.0 / 40)
         self.assertAlmostEqual(steps_taken(**kwargs), 4.0 / 40)
         self.assertAlmostEqual(large_steps_taken(**kwargs), 4.0 / 40)
         self.assertAlmostEqual(small_steps_taken(**kwargs), 0.0)
@@ -42,6 +44,7 @@ class StepFeaturesTests(unittest.TestCase):
     def testFineCoarse(self):
         simulation = [ (4, 1.1), (12, 1.2), (13, 1.3), (21, 1.4), (22, 1.5) ]
         kwargs = make_feature_argument(simulation, 40)
+        self.assertAlmostEqual(start_position(**kwargs), 4.0 / 40)
         self.assertAlmostEqual(steps_taken(**kwargs), 4.0 / 40)
         self.assertAlmostEqual(large_steps_taken(**kwargs), 2.0 / 40)
         self.assertAlmostEqual(small_steps_taken(**kwargs), 2.0 / 40)
@@ -87,17 +90,21 @@ class ScagnosticsTests(unittest.TestCase):
         self.assertEqual(rank([1, 5, -4, 3, 4, -6]), [2, 5, 1, 3, 4, 0] )
 
     def testMonotoniticity(self):
-        self.assertAlmostEqual(monotoniticy(**make_feature_argument(
+        self.assertAlmostEqual(monotonicity(**make_feature_argument(
             zip(range(0, 10), range(0, 10)), 20)), 1.0)
-        self.assertAlmostEqual(monotoniticy(**make_feature_argument(
+        self.assertAlmostEqual(abs_monotonicity(**make_feature_argument(
+            zip(range(0, 10), range(0, 10)), 20)), 1.0)
+        self.assertAlmostEqual(monotonicity(**make_feature_argument(
             zip(range(0, 10), range(10, 0, -1)), 20)), -1.0)
-        self.assertLess(abs(monotoniticy(**make_feature_argument(
-            zip(range(0, 7), [4, 1, 5, 2, 5, 3, 4]), 20))), 0.8)
+        self.assertAlmostEqual(abs_monotonicity(**make_feature_argument(
+            zip(range(0, 10), range(10, 0, -1)), 20)), 1.0)
+        self.assertLess(abs_monotonicity(**make_feature_argument(
+            zip(range(0, 7), [4, 1, 5, 2, 5, 3, 4]), 20)), 0.8)
 
     def testAllEqual(self):
         simulation = [ (1, 1.1), (9, 1.1), (10, 1.1), (18, 1.1) ]
         kwargs = make_feature_argument(simulation, 20)
-        self.assertEqual(monotoniticy(**kwargs), 0.0)
+        self.assertEqual(monotonicity(**kwargs), 0.0)
 
     def testAlternation(self):
         self.assertAlmostEqual(alternation_ratio(**make_feature_argument(
@@ -172,6 +179,11 @@ class LocalSlopeTests(unittest.TestCase):
 
 
 def main():
+    # This increasing alternating sequence has monotoniticity 0.94
+    # simulation = [ (1, 1.1), (2, 1.0), (3, 1.3), (4, 1.2), (5, 1.5),
+    #                (6, 1.4), (7, 1.7), (8, 1.6), (9, 1.9), (10, 1.8) ]
+    # print monotoniticy(**make_feature_argument(simulation, 15))
+
     unittest.main()
 
 main()
