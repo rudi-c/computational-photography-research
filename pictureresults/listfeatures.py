@@ -6,17 +6,21 @@ import os
 import sys
 
 from featuresleftright import *
+import featuresturn
 
 def main(argv):
-    print "# Features taking 2 focus measures :"
+    print "# Left-right features taking 2 focus measures :"
     for name, values, _ in two_measure_features():
         print name + " : " + values
-    print "# Features taking 3 focus measures :"
+    print "# Left-right features taking 3 focus measures :"
     for name, values, _ in three_measure_features():
         print name + " : " + values
-    print "# Other features :"
+    print "# Left-right other features :"
     for name, values, _ in other_features():
         print name + " : " + values
+    print "# Action features :"
+    for name, _ in featuresturn.all_features():
+        print name
     return
 
 # Entry point.
