@@ -20,8 +20,10 @@ def print_plot_focus_measures(focus_measures, yrange=(0,1)):
     maximum = max(focus_measures)
     print_array_assignment("focusmeasures", [ float(v) / maximum for v in
                                               focus_measures ] )
-    print "plot(focusmeasures, pch=8, ylim=c(%d,%d))" % yrange
-    print "lines(focusmeasures)"
+    # Type 'o' means plot both points and lines joining the points.
+    print "plot(x=seq(0,%d), y=focusmeasures, " \
+          "pch=8, type=\"o\", ylim=c(%d,%d))" % \
+          (len(focus_measures) - 1, yrange[0], yrange[1])
 
 
 def print_plot_point_pairs(xs, ys, pch, point_color, bg_color, lines=False,
