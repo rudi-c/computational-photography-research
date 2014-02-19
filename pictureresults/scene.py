@@ -60,7 +60,7 @@ class Scene:
         self.norm_maxima = []
 
 
-def load_scenes(excluded_scenes):
+def load_scenes(excluded_scenes=[]):
     return [ Scene(f) 
              for f in os.listdir(scenes_folder) 
              if os.path.isfile(scenes_folder + f)
