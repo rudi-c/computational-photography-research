@@ -1,81 +1,20 @@
+PARSER="../../weka-json-parser/parse-j48.py"
 
-# TREE="(ratio2Inverse_8 right left)"
-# TREE="(downTrend right (ratio2Inverse_8 right left))"
+left_right_classifier=nearest
 
-# New features, nearest, 3 measures with brackets, step size 1
-# TREE="(downTrend (diffRatioMin3_5 right 
-#                                 (bracket right right right left left)) 
-#                  (bracket right 
-#                           (diffRatioMin2_5 right
-#                                            (diffRatioMin3_6 right left))
-#                           (ratio3_19 left right)
-#                           left
-#                           left))"
+left_right_tree=/tmp/left_right_tree.json
+first_step_tree=/tmp/first_step_tree.json
 
-# New features and dataset, highest, 3 measures with brackets, 
-# step size 1, min 10 nodes per leaf
-# TREE="(diffRatioAvg3_5 (bracket right right right
-#                                 (logRatio3_9 left
-#                                              (upTrend left right))
-#                                 (upTrend left
-#                                          (logRatio3_9 left right)))
-#                        (downTrend (bracket right right left left left)
-#                                   (bracket (diffRatioMin2_5 right left)
-#                                            left left left left)))"
+./$PARSER results/nearestall_weka.txt > $left_right_tree
+./$PARSER results/firstsize_weka.txt  > $first_step_tree
 
-# New features and dataset, nearest or near_high (same result), 
-# 3 measures with brackets, step size 1, min 10 nodes per leaf
-# TREE="(diffRatioAvg3_5 (upTrend (bracket right right right left left)
-#                                 (bracket right right right right
-#                                         (ratio3_9 left right)))
-#                        (downTrend (bracket right right left left left)
-#                                   (bracket (diffRatioMin2_5 right left)
-#                                            (ratio3_19 left right)
-#                                            left left left)))"
-
-# New features 2 and raw data, highest, 3 measures with brackets
-# TREE="(downTrend (ratio3_7 (bracket right right
-#                                     (ratio3_6 right left)
-#                                     left left)
-#                            (bracket right right right
-#                                     (ratio3_8 left right)
-#                                     (ratio3_8 left right)))
-#                  (bracket (ratio3_6 left right)
-#                           (ratio3_6 left right)
-#                           left left left))"
-
-# New features 2 and raw data, nearest, 3 measures with brackets
-# TREE="(ratio3_7 (downTrend (bracket right right 
-#                                    (diffRatioMax3_6 left right)
-#                                    left left)
-#                            (bracket (diffRatioMax3_3 right left)
-#                                     (diffRatioMax3_3 (diffRatioMax3_6 right left)
-#                                                      left)
-#                                     left left left))
-#                 (ratio3_8 (bracket right right right left left)
-#                           (upTrend (bracket right right right right left)
-#                                    right)))"
-
-# New features 2 and raw data, near-highest, 3 measures with brackets
-TREE="(ratio3_7 (downTrend (bracket right right 
-                                   (diffRatioMax3_6 left right)
-                                   left left)
-                           (diffRatioMax3_6 (bracket right right left left left)
-                                            left))
-                (ratio3_8 (bracket right right right left left)
-                          (upTrend (bracket right right right right left)
-                                   right)))"
-
-
-#CLASSIFIER=highest
-#CLASSIFIER=nearest
-CLASSIFIER=near_high
-
-./makegroundtruthcomparison.py -t "$TREE" -c $CLASSIFIER > ground.R
+./makegroundtruthcomparison.py -t $left_right_tree \
+                               -c $left_right_classifier > ground.R
 
 # Empty what's in the file previously (we need to do that because
 # we will be appending to the file multiple times)
-cat /dev/null > classification.R
+cat /dev/null > left_right_classification.R
+cat /dev/null > first_step_classification.R
 cat /dev/null > stepsizes.R
 
 for file in \
@@ -114,6 +53,9 @@ for file in \
     timbuk.txt \
     ubuntu.txt
 do
-    ./makeclassifierplot.py -s $file -t "$TREE" -c $CLASSIFIER >> classification.R
+    ./makeclassifierplot.py -s $file -t $left_right_tree \
+        -c $left_right_classifier >> left_right_classification.R
+    ./makefirstsizeplot.py -s $file -t $first_step_tree \
+        >> first_step_classification.R
     ./evaluatestepsize.py -s $file >> stepsizes.R
 done

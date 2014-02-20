@@ -24,11 +24,10 @@ def print_script_usage():
    print  """Script usage : ./makeclassifierplot.py 
              [-s <scene to load (.txt)>]
              [-t <decision tree to evaluate>]
-             [-c <classifier (highest, nearest, near_high)>]
              [-d <double step size used>]"""
 
 
-def print_R_script(scene, tree, classifier, step_size):
+def print_R_script(scene, tree, step_size):
 
     print "# " + scene.fileName + "\n"
 
@@ -36,16 +35,34 @@ def print_R_script(scene, tree, classifier, step_size):
     print "library(scales)" # for alpha blending
     print_plot_focus_measures(scene.measuresValues)
 
-    # The correct classifications.
-    classes = [ "left" if classifier(scene, lens_pos) else "right"
-                for lens_pos in range(2 * step_size, scene.measuresCount) ]
-
-    # What we actually get.
+    classes = []
     results = []
+
     for lens_pos in range(2 * step_size, scene.measuresCount):
-        first  = scene.measuresValues[lens_pos - step_size * 2]
-        second = scene.measuresValues[lens_pos - step_size]
-        third  = scene.measuresValues[lens_pos]
+
+        # The correct classification.
+        go_left =  nearest_on_left(scene, lens_pos)
+        if go_left:
+            pos_1st = lens_pos
+            pos_2nd = lens_pos - 1 * step_size
+            pos_3rd = lens_pos - 2 * step_size
+            if scene.distance_to_closest_left_peak(pos_3rd) <= 15:
+                classes.append("fine")
+            else:
+                classes.append("coarse")
+        else:
+            pos_1st = lens_pos - 2 * step_size
+            pos_2nd = lens_pos - 1 * step_size
+            pos_3rd = lens_pos
+            if scene.distance_to_closest_right_peak(pos_3rd) <= 15:
+                classes.append("fine")
+            else:
+                classes.append("coarse")
+
+        # The classification obtained by evaluating the decision tree.
+        first  = scene.measuresValues[pos_1st]
+        second = scene.measuresValues[pos_2nd]
+        third  = scene.measuresValues[pos_3rd]
         norm_lens_pos = float(lens_pos) / (scene.measuresCount - 1)
 
         evaluator = leftright_feature_evaluator(first, second, 
@@ -54,7 +71,7 @@ def print_R_script(scene, tree, classifier, step_size):
         evaluation = evaluate_tree(tree, evaluator)
         results.append(evaluation)
 
-    print_classification_points(classes, results, ["left", "right"])
+    print_classification_points(classes, results, ["coarse", "fine"])
 
     print "# Plot me!\n"
 
@@ -74,7 +91,6 @@ def main(argv):
 
     scene = None
     tree = None
-    classifier = None
     step_size = 1
 
     for opt, arg in opts:
@@ -82,13 +98,6 @@ def main(argv):
             scene = Scene(arg)
         elif opt in ("-t", "--tree"):
             tree = read_decision_tree(arg, functions)
-        elif opt in ("-c", "--classifier"):
-            if arg == "highest":
-                classifier = highest_on_left
-            elif arg == "nearest":
-                classifier = nearest_on_left
-            elif arg == "near_high":
-                classifier = highest_and_near_on_left
         elif opt in ("-d", "--double-step"):
             step_size = 2
 
@@ -97,7 +106,7 @@ def main(argv):
         sys.exit(2)
 
     load_maxima_into_measures([scene])
-    print_R_script(scene, tree, classifier, step_size)
+    print_R_script(scene, tree, step_size)
 
 
 main(sys.argv[1:])

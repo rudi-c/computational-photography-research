@@ -41,3 +41,31 @@ def print_plot_point_pairs(xs, ys, pch, point_color, bg_color, lines=False,
           bg_color, bg_alpha)
     if lines:
         print "lines(xs, ys)"
+
+
+def print_classification_points(classes, results, leaves):
+
+    # Axis to indicate that the bottom points mean left and
+    # the top points means right.
+    for index, name in enumerate(leaves):
+        print "axis(2, at=%.2f, labels=\"%s\", padj=-2)" % \
+            (float(index) / (len(leaves) - 1), name)
+
+    # Legend to differentiate correct and predicted.
+    # pch indicates the shape of the points 
+    print "legend(\"left\", pch=c(25, 22), col=c(\"brown\", \"blue\"), " \
+          "legend=c(\"correct\", \"predicted\"))"
+
+    classes_ys = [float(leaves.index(c)) / (len(leaves) - 1) for c in classes]
+    results_ys = [float(leaves.index(r)) / (len(leaves) - 1) for r in results]
+
+    print_array_assignment("classes", classes_ys)
+    print_array_assignment("results", results_ys)
+
+    # Indicate the correct classes (left or right) and
+    # the predicted classes. The predicted classes is
+    # slightly offset to avoid overlapping.
+    print "points(classes, pch=25, col=alpha(\"black\", 0.3), " \
+          "bg=alpha(\"brown\", 0.5))"
+    print "points(results - 0.02, pch=22, col=alpha(\"black\", 0.3), " \
+          "bg=alpha(\"blue\", 0.5))"

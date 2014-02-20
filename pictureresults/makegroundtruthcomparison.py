@@ -42,12 +42,12 @@ def print_R_script(ground_probabilities, our_probabilities):
     print "summary(our - ground)"
 
 
-
 def print_script_usage():
    print  """Script usage : ./makegroundtruthcomparison.py 
              [-t <decision tree to evaluate>]
              [-c <classifier (highest, nearest, near_high)>]
              [-d <double step size used>]"""
+
 
 def main(argv):
 
@@ -59,7 +59,7 @@ def main(argv):
         print_script_usage
         sys.exit(2)
 
-    functions = { key : value for (key, _, value) in all_features() }
+    functions = { key : value for key, _, value in all_features() }
 
     tree = None
     classifier = None
@@ -68,7 +68,7 @@ def main(argv):
 
     for opt, arg in opts:
         if opt in ("-t", "--tree"):
-            tree = parse_tree(arg, functions)
+            tree = read_decision_tree(arg, functions)
         elif opt in ("-c", "--classifier"):
             if arg == "highest":
                 classifier = highest_on_left
@@ -122,8 +122,15 @@ def main(argv):
 
             # The tree returns 0 if the answer is Left, so we need to change
             # it to True.
-            dectree_class = tree_eval(scene, lens_pos, tree, step_size)
-            dectree_class = (dectree_class == 0)
+            first  = scene.measuresValues[lens_pos - step_size * 2]
+            second = scene.measuresValues[lens_pos - step_size]
+            third  = scene.measuresValues[lens_pos]
+            norm_lens_pos = float(lens_pos) / (scene.measuresCount - 1)
+            evaluator = leftright_feature_evaluator(first, second, 
+                                                    third, norm_lens_pos)
+
+            dectree_class = evaluate_tree(tree, evaluator)
+            dectree_class = (dectree_class == "left")
 
             # Need to round at a few decimal points to make sure that floating
             # point precisions errors don't make it so that i != lens_pos
