@@ -81,6 +81,19 @@ class Evaluator:
         return max(lens_positions, 
                    key=(lambda pos : self.scene.measuresValues[pos]))
 
+    def _do_local_search(self, lens_pos, maximum_pos, direction, rev_direction):
+        visitedPositions = self.visitedPositions[lens_pos]
+        while 0 < visitedPositions[-1] < self.scene.measuresCount - 1:
+            self._walk_fine(lens_pos, direction, 1)
+            if self.scene.measuresValues[visitedPositions[-1]] > \
+               self.scene.measuresValues[maximum_pos]:
+               maximum_pos = visitedPositions[-1]
+            else:
+                # Backtrack and stop.
+                self._walk_fine(lens_pos, rev_direction, 1)
+                break
+        return maximum_pos
+
     def _go_to_max(self, lens_pos, lens_positions):
         current_pos = lens_positions[-1]
         maximum_pos = self._max_among(lens_positions)
@@ -124,17 +137,14 @@ class Evaluator:
                 abs(maximum_pos - self._max_among(potential_maxs)))
             maximum_pos = self._max_among(potential_maxs)
         else:
-            # Keep going at least two lens positions to see if we can find
-            # a higher position.
-            while 0 < visitedPositions[-1] < self.scene.measuresCount - 1:
-                self._walk_fine(lens_pos, direction, 1)
-                if self.scene.measuresValues[visitedPositions[-1]] > \
-                   self.scene.measuresValues[maximum_pos]:
-                   maximum_pos = visitedPositions[-1]
-                else:
-                    # Backtrack and stop.
-                    self._walk_fine(lens_pos, rev_direction, 1)
-                    break
+            # Keep going to see if we can find a higher position.
+            maximum_pos = self._do_local_search(lens_pos, 
+                maximum_pos, direction, rev_direction)
+            # If we didn't take any fine steps at all to get to the
+            # max lens position, we should look the other way too.
+            if fine_steps == 0:
+                maximum_pos = self._do_local_search(lens_pos,
+                    maximum_pos, rev_direction, direction)
 
         self.status[lens_pos] = "foundmax"
         self.result[lens_pos] = maximum_pos
