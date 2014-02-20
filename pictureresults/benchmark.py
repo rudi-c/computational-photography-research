@@ -85,8 +85,18 @@ class Evaluator:
         current_pos = lens_positions[-1]
         maximum_pos = self._max_among(lens_positions)
 
-        direction = "left" if maximum_pos < current_pos else "right"
-        rev_direction = "left" if maximum_pos >= current_pos else "right"
+        if maximum_pos < current_pos:
+            direction = "left"
+            rev_direction = "right"
+        elif maximum_pos > current_pos:
+            direction = "right"
+            rev_direction = "left"
+        elif current_pos < lens_positions[-2]:
+            direction = "left"
+            rev_direction = "right"
+        else:
+            direction = "right"
+            rev_direction = "left"
 
         # Find minimum number of coarse and fine steps needed to go back to
         # the maximum point.
