@@ -8,39 +8,23 @@ import json
 import os
 import sys
 
-from scene      import *
-from coarsefine import *
-from rtools     import *
+from coarsefine   import *
+from evaluatetree import *
+from scene        import *
+from rtools       import *
 import featuresturn     
 import featuresleftright
-
-def less(a, b):
-    return a < b
-
-def less_or_equal(a, b):
-    return a <= b
-
-def greater(a, b):
-    return a > b
-
-def greater_or_equal(a, b):
-    return a >= b
-
-def equals(a, b):
-    return a == b
-
-comparator_map = { "<" : less, "<=" : less_or_equal, 
-                   ">" : greater, ">=" : greater_or_equal,
-                   "=" : equals }
 
 def make_key(direction, initial_pos, current_pos):
     return direction + "-" + str(initial_pos) + "-" + str(current_pos)
 
 class Evaluator:
 
-    def __init__(self, left_right_tree, action_tree, step_size, scene,
+    def __init__(self, left_right_tree, first_size_tree,
+                 action_tree, step_size, scene,
                  perfect_classification):
         self.left_right_tree = left_right_tree
+        self.first_size_tree = first_size_tree
         self.action_tree = action_tree
         self.step_size = step_size
         self.scene = scene
@@ -93,14 +77,13 @@ class Evaluator:
         else:
             assert False, direction
 
+    def _max_among(self, lens_positions):
+        return max(lens_positions, 
+                   key=(lambda pos : self.scene.measuresValues[pos]))
+
     def _go_to_max(self, lens_pos, lens_positions):
         current_pos = lens_positions[-1]
-        maximum_pos = 0
-        max_value = 0
-        for pos in lens_positions:
-            if self.scene.measuresValues[pos] > max_value:
-                max_value = self.scene.measuresValues[pos]
-                maximum_pos = pos
+        maximum_pos = self._max_among(lens_positions)
 
         direction = "left" if maximum_pos < current_pos else "right"
         rev_direction = "left" if maximum_pos >= current_pos else "right"
@@ -111,19 +94,42 @@ class Evaluator:
         coarse_steps = distance / 8
         self._walk_coarse(lens_pos, direction, coarse_steps)
 
-        remainder = distance % 8
-        if remainder <= 4:
-            fine_steps = remainder
-            self._walk_fine(lens_pos, direction, fine_steps)
+        # If the remainder is 6-7, we will need to take 6-7 fine steps and it
+        # would in theory be better to take a coarse step and go back the other
+        # way. Fortunately, in practice this is very rare so we ignore this
+        # optimization on the number of lens movements needed to reach the max.
+        fine_steps = distance % 8
+        potential_maxs = []
+        visitedPositions = self.visitedPositions[lens_pos]
+        for i in range(fine_steps):
+            self._walk_fine(lens_pos, direction, 1)
+            potential_maxs.append(visitedPositions[-1])
+
+        assert visitedPositions[-1] == maximum_pos
+
+        if len(potential_maxs) > 0 and \
+                self._max_among(potential_maxs) != maximum_pos:
+            # Found something better, go back that way.
+            self._walk_fine(lens_pos, rev_direction, 
+                abs(maximum_pos - self._max_among(potential_maxs)))
+            maximum_pos = self._max_among(potential_maxs)
         else:
-            self._walk_coarse(lens_pos, direction, 1)
-            fine_steps = 8 - remainder
-            self._walk_fine(lens_pos, rev_direction, fine_steps)
+            # Keep going at least two lens positions to see if we can find
+            # a higher position.
+            while 0 < visitedPositions[-1] < self.scene.measuresCount - 1:
+                self._walk_fine(lens_pos, direction, 1)
+                if self.scene.measuresValues[visitedPositions[-1]] > \
+                   self.scene.measuresValues[maximum_pos]:
+                   maximum_pos = visitedPositions[-1]
+                else:
+                    # Backtrack and stop.
+                    self._walk_fine(lens_pos, rev_direction, 1)
+                    break
 
         self.status[lens_pos] = "foundmax"
         self.result[lens_pos] = maximum_pos
 
-        assert self.visitedPositions[lens_pos][-1] == maximum_pos
+        assert visitedPositions[-1] == maximum_pos
 
     def _sweep(self, direction, initial_positions):
         # Sweep the lens in one direction.
@@ -132,9 +138,30 @@ class Evaluator:
         scene = self.scene
 
         lens_positions = list(initial_positions)
-        current_pos = lens_positions[-1]
-        previously_coarse_step = True
         dir_str = "left" if direction == -1 else "right"
+        current_pos = lens_positions[-1]
+
+        # Size of the first step determined by another decision tree.
+        if current_pos > 0 and current_pos < scene.measuresCount - 1:
+            first  = self.scene.measuresValues[lens_positions[-3]]
+            second = self.scene.measuresValues[lens_positions[-2]]
+            third  = self.scene.measuresValues[current_pos]
+            norm_lens_pos = float(current_pos) / (self.scene.measuresCount - 1)
+            evaluator = featuresleftright.leftright_feature_evaluator(
+                first, second, third, norm_lens_pos)
+            first_size = evaluate_tree(self.first_size_tree, evaluator)
+
+            if first_size == "coarse":
+                previously_coarse_step = True
+                current_pos = min(scene.measuresCount - 1, 
+                                  max(0, current_pos + direction * 8))
+            else:
+                previously_coarse_step = False
+                current_pos = min(scene.measuresCount - 1, 
+                                  max(0, current_pos + direction))
+            lens_positions.append(current_pos)
+
+        current_pos = lens_positions[-1]
 
         while current_pos > 0 and current_pos < scene.measuresCount - 1:
             # Determine next step size.
@@ -156,6 +183,7 @@ class Evaluator:
             else:
                 current_pos = min(scene.measuresCount - 1, 
                                   max(0, current_pos + direction))
+                    
             lens_positions.append(current_pos)
             previously_coarse_step = coarse_now
        
@@ -325,9 +353,11 @@ def print_aligned_data_rows(rows):
                        for length, col in zip(column_lengths, row))
 
 
-def benchmark_scenes(left_right_tree, action_tree, step_size, scenes,
+def benchmark_scenes(left_right_tree, first_size_tree,
+                     action_tree, step_size, scenes,
                      perfect_classification):
-    evaluators = [ Evaluator(left_right_tree, action_tree, step_size, scene,
+    evaluators = [ Evaluator(left_right_tree, first_size_tree,
+                             action_tree, step_size, scene,
                              perfect_classification) 
                    for scene in scenes ]
     for evaluator in evaluators:
@@ -373,15 +403,17 @@ def benchmark_scenes(left_right_tree, action_tree, step_size, scenes,
     print_aligned_data_rows(data_rows)
 
 
-def benchmark_specific(left_right_tree, action_tree, step_size, 
+def benchmark_specific(left_right_tree, first_size_tree,
+                       action_tree, step_size, 
                        scenes, specific_scene, perfect_classification):
     for scene in scenes:
         if scene.fileName == specific_scene:
-            evaluator = Evaluator(left_right_tree, action_tree, 
+            evaluator = Evaluator(left_right_tree, first_size_tree,
+                                  action_tree, 
                                   step_size, scene, perfect_classification)
             evaluator.evaluate()
 
-            for lens_pos in range(0, scene.measuresCount):
+            for lens_pos in range(2 * step_size, scene.measuresCount):
                 print_R_script(scene, lens_pos, 
                     evaluator.visitedPositions[lens_pos],
                     evaluator.get_evaluation_at(lens_pos),
@@ -410,52 +442,6 @@ def print_R_script(scene, lens_pos, visitedPositions, evaluation, result):
     print "\n# Plot me!\n"
 
 
-def read_decision_tree(filename, features):
-    """Transform a JSON representation of the decision tree into one that can
-    be used directly (with lambdas for feature evaluation and comparison)"""
-    def parse_tree(json_tree):
-        if isinstance(json_tree, str) or isinstance(json_tree, unicode):
-            # Reached leaf.
-            return str(json_tree)
-        else:
-            feature, children = json_tree
-        if not features.has_key(feature):
-            raise Exception("Feature %s not found." % feature)
-        return (features[feature], 
-                [ (comparator_map[comparator], value, parse_tree(subtree))
-                  for comparator, value, subtree in children ])
-
-    if os.path.isfile(filename):
-        f = open(filename)
-        lines = f.readlines()
-        f.close()
-    else:
-        print "Error : File %s not found!" % filename
-        sys.exit(1)
-
-    json_tree = json.loads("".join(lines))
-    return parse_tree(json_tree)
-
-
-def evaluate_tree(tree, evaluator):
-    if isinstance(tree, str):
-        # Reached leaf.
-        return tree
-    if isinstance(tree, unicode):
-        raise Exception("Expecting non-unicode string")
-
-    function, children = tree
-    node_evaluation = evaluator(function)
-    for comparator, value, subtree in children:
-        if isinstance(value, list):
-            # Handle ranges of values.
-            if value[0] < node_evaluation <= value[1]:
-                return evaluate_tree(subtree, evaluator)
-        elif comparator(node_evaluation, value):
-            return evaluate_tree(subtree, evaluator)
-    raise Exception("No match in tree for evaluated feature!")
-
-
 def load_classifications(filename):
     try:
         f = open(filename)
@@ -469,6 +455,7 @@ def load_classifications(filename):
 def print_script_usage():
    print  """Script usage : ./makegroundtruthcomparison.py 
              --left-right-tree=<decision tree for deciding left vs right>
+             --first-size-tree=<decision tree for deciding first coarse vs fine>
              --action-tree=<decision tree for deciding action to take>]
              [-d, --double-step <double step size used>]
              [--specific-scene=<a scene's filename, will print R script]
@@ -484,7 +471,8 @@ def main(argv):
     # Parse script arguments
     try:
         opts, args = getopt.getopt(argv, "d",
-            ["left-right-tree=", "action-tree=", "double-step",
+            ["left-right-tree=", "first-size-tree=",
+             "action-tree=", "double-step",
              "specific-scene=", "perfect-file="])
     except getopt.GetoptError:
         print_script_usage()
@@ -492,6 +480,7 @@ def main(argv):
 
     step_size = 1
     left_right_tree = None
+    first_size_tree = None
     action_tree = None
     specific_scene = None
     perfect_classification = None
@@ -503,6 +492,10 @@ def main(argv):
             features = { name : function 
                 for name, _, function in featuresleftright.all_features() }
             left_right_tree = read_decision_tree(arg, features)
+        elif opt == "--first-size-tree":
+            features = { name : function 
+                for name, _, function in featuresleftright.all_features() }
+            first_size_tree = read_decision_tree(arg, features)
         elif opt == "--action-tree":
             features = { name : function 
                 for name, function in featuresturn.all_features() }
@@ -515,19 +508,22 @@ def main(argv):
             print_script_usage()
             sys.exit(2)
 
-    if (left_right_tree == None or action_tree == None) and \
-            perfect_classification == None:
+    if (left_right_tree is None or first_size_tree is None 
+                                or action_tree is None) and \
+            perfect_classification is None:
         print_script_usage()
         sys.exit(2)
 
     scenes = load_scenes(excluded_scenes=["cat.txt", "moon.txt"])
     load_maxima_into_measures(scenes)
 
-    if specific_scene == None:
-        benchmark_scenes(left_right_tree, action_tree, step_size, scenes,
+    if specific_scene is None:
+        benchmark_scenes(left_right_tree, first_size_tree,
+            action_tree, step_size, scenes,
             perfect_classification)
     else:
-        benchmark_specific(left_right_tree, action_tree, step_size, scenes,
+        benchmark_specific(left_right_tree, first_size_tree,
+                           action_tree, step_size, scenes,
                            specific_scene, perfect_classification)
 
 

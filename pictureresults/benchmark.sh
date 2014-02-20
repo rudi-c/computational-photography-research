@@ -3,7 +3,6 @@
 
 CP="$CLASSPATH:/usr/share/java/weka-3.6.6.jar"
 PARSER="../../weka-json-parser/parse-j48.py"
-LEFT_RIGHT_ARFF=results/nearestall_filtered.arff
 ACTION_ARFF=results/action.arff
 
 attribute_select=false
@@ -72,9 +71,9 @@ fi
 
 
 # Train trees with Weka
-echo "Training left-right tree..."
-java -cp $CP weka.classifiers.trees.J48 \
-    -t $LEFT_RIGHT_ARFF -C 0.25 -M 6 | ./$PARSER > /tmp/tree_leftright.json
+echo "Parsing first step trees..."
+./$PARSER results/nearestall_weka.txt > /tmp/tree_leftright.json
+./$PARSER results/firstsize_weka.txt > /tmp/tree_firstsize.json
 echo "Training action tree..."
 java -cp $CP weka.classifiers.trees.J48 \
     -t $ACTION_DATA -C 0.25 -M 128 | ./$PARSER > /tmp/tree_action.json
@@ -83,15 +82,18 @@ java -cp $CP weka.classifiers.trees.J48 \
 # Evaluate tree effectiveness.
 echo "Evaluating..."
 ./benchmark.py --left-right-tree=/tmp/tree_leftright.json \
+            --first-size-tree=/tmp/tree_firstsize.json \
             --action-tree=/tmp/tree_action.json
 
 # Evaluate the effectiveness given perfect classifications
 # ./makeperfectaction.py > perfect.json
 # ./benchmark.py --left-right-tree=/tmp/tree_leftright.json \
+#     --first-size-tree=/tmp/tree_firstsize.json \
 #     --action-tree=/tmp/tree_action.json --perfect-file=perfect.json
 
 # ./benchmark.py --left-right-tree=/tmp/tree_leftright.json \
 #     --action-tree=/tmp/tree_action.json --perfect-file=perfect.json \
+#     --first-size-tree=/tmp/tree_firstsize.json \
 #     --specific-scene=landscape3.txt > test.R
 
 # ./benchmark.py --left-right-tree=/tmp/tree_leftright.json \
