@@ -41,25 +41,25 @@ class Evaluator:
         for i in range(0, count):
             visitedPositions = self.visitedPositions[lens_pos]
             visitedPositions.append(max(0, min(visitedPositions[-1] - 1,
-                self.scene.measuresCount)))
+                self.scene.measuresCount - 1)))
 
     def _walk_left_coarse(self, lens_pos, count=1):
         for i in range(0, count):
             visitedPositions = self.visitedPositions[lens_pos]
             visitedPositions.append(max(0, min(visitedPositions[-1] - 8,
-                self.scene.measuresCount)))
+                self.scene.measuresCount - 1)))
 
     def _walk_right_fine(self, lens_pos, count=1):
         for i in range(0, count):
             visitedPositions = self.visitedPositions[lens_pos]
             visitedPositions.append(max(0, min(visitedPositions[-1] + 1,
-                self.scene.measuresCount)))
+                self.scene.measuresCount - 1)))
 
     def _walk_right_coarse(self, lens_pos, count=1):
         for i in range(0, count):
             visitedPositions = self.visitedPositions[lens_pos]
             visitedPositions.append(max(0, min(visitedPositions[-1] + 8,
-                self.scene.measuresCount)))
+                self.scene.measuresCount - 1)))
 
     def _walk_fine(self, lens_pos, direction, count=1):
         if direction in ("left", -1):
@@ -95,7 +95,9 @@ class Evaluator:
         return maximum_pos
 
     def _go_to_max(self, lens_pos, lens_positions):
-        current_pos = lens_positions[-1]
+        visitedPositions = self.visitedPositions[lens_pos]
+
+        current_pos = visitedPositions[-1]
         maximum_pos = self._max_among(lens_positions)
 
         if maximum_pos < current_pos:
@@ -123,7 +125,6 @@ class Evaluator:
         # optimization on the number of lens movements needed to reach the max.
         fine_steps = distance % 8
         potential_maxs = []
-        visitedPositions = self.visitedPositions[lens_pos]
         for i in range(fine_steps):
             self._walk_fine(lens_pos, direction, 1)
             potential_maxs.append(visitedPositions[-1])
@@ -162,7 +163,7 @@ class Evaluator:
         current_pos = lens_positions[-1]
 
         # Size of the first step determined by another decision tree.
-        if current_pos > 0 and current_pos < scene.measuresCount - 1:
+        if 0 < current_pos < scene.measuresCount - 1:
             first  = self.scene.measuresValues[lens_positions[-3]]
             second = self.scene.measuresValues[lens_positions[-2]]
             third  = self.scene.measuresValues[current_pos]
@@ -183,7 +184,7 @@ class Evaluator:
 
         current_pos = lens_positions[-1]
 
-        while current_pos > 0 and current_pos < scene.measuresCount - 1:
+        while 0 < current_pos < scene.measuresCount - 1:
             # Determine next step size.
             if previously_coarse_step:
                 coarse_now = coarse_if_previously_coarse(
@@ -203,7 +204,7 @@ class Evaluator:
             else:
                 current_pos = min(scene.measuresCount - 1, 
                                   max(0, current_pos + direction))
-                    
+
             lens_positions.append(current_pos)
             previously_coarse_step = coarse_now
        
