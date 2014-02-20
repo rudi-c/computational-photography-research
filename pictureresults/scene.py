@@ -43,13 +43,22 @@ class Scene:
                                 for m in i_scene.maxima ]
         return i_scene
 
-    def distance_to_closest_peak(self, lens_pos):
+    def distance_to_closest_peak(self, lens_pos, condition=None):
         if len(self.maxima) == 0:
             raise Exception("Error : No maxima loaded for this scene")
         min_dist = self.measuresCount
         for maximum in self.maxima:
-            min_dist = min(min_dist, abs(lens_pos - maximum))
+            if condition is None or condition(maximum):
+                min_dist = min(min_dist, abs(lens_pos - maximum))
         return min_dist
+    
+    def distance_to_closest_left_peak(self, lens_pos):
+        return self.distance_to_closest_peak(lens_pos,
+            lambda max : max <= lens_pos)
+    
+    def distance_to_closest_right_peak(self, lens_pos):
+        return self.distance_to_closest_peak(lens_pos,
+            lambda max : max >= lens_pos)
 
     def __init__(self, file_name = None):
         self.fileName = file_name
