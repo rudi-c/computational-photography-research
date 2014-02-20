@@ -1,6 +1,7 @@
 # Build files
 *.o
 *.exe
+*.pyc
 
 # Directories
 Results/
