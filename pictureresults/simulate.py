@@ -37,12 +37,12 @@ def make_instance(scene, features, params, instances, direction,
 def get_balancing_probabilities(instances):
     """Calculate the probabilities of needed to removing instances of each
     class to get a balanced dataset."""
-    count_continue  = len( [ True for _, classification in instances
-                             if classification == Action.CONTINUE ] )
-    count_turn_peak = len( [ True for _, classification in instances
-                             if classification == Action.TURN_PEAK ] )
-    count_backtrack = len( [ True for _, classification in instances
-                             if classification == Action.BACKTRACK ] )
+    count_continue  = sum(classification == Action.CONTINUE 
+                          for _, classification in instances)
+    count_turn_peak = sum(classification == Action.TURN_PEAK
+                          for _, classification in instances)
+    count_backtrack = sum(classification == Action.BACKTRACK
+                          for _, classification in instances)
 
     min_count = min(count_continue, count_turn_peak, count_backtrack)
     probabilities = { Action.CONTINUE  : float(min_count) / count_continue,
@@ -72,12 +72,12 @@ def assert_balanced_sampling(instances):
 def get_balancing_weight_factors(instances):
     """Calculate the factors by which to multiply weights to get an equal
     sum of weights in each class."""
-    sum_continue  = sum( [ w for _, classification, w in instances
-                           if classification == Action.CONTINUE ] )
-    sum_turn_peak = sum( [ w for _, classification, w in instances
-                           if classification == Action.TURN_PEAK ] )
-    sum_backtrack = sum( [ w for _, classification, w in instances
-                           if classification == Action.BACKTRACK ] )
+    sum_continue  = sum(w for _, classification, w in instances
+                        if classification == Action.CONTINUE)
+    sum_turn_peak = sum(w for _, classification, w in instances
+                        if classification == Action.TURN_PEAK)
+    sum_backtrack = sum(w for _, classification, w in instances
+                        if classification == Action.BACKTRACK)
 
     min_sum = min(sum_continue, sum_turn_peak, sum_backtrack)
     factors = { Action.CONTINUE  : float(min_sum) / sum_continue,
@@ -230,7 +230,7 @@ def simulate_samples(scenes, features, step_size, params):
     params.outlierHandling = OutlierHandling.WEIGHTING
     params.uniformSamplingRate = 1.0
 
-    for i in range(0, 20):
+    for _ in range(20):
         scene = random.choice(scenes)
         instances = []
 
@@ -263,12 +263,12 @@ def simulate_full(scenes, features, step_size, params):
 
     if params.outlierHandling == OutlierHandling.SAMPLING:
         for features, classification in instances:
-            print ",".join([ "%.3f" % f for f in features ] ) \
-                  + "," + class_names[classification]
+            print "%s,%s" % (",".join("%.3f" % f for f in features),
+                             class_names[classification])
     elif params.outlierHandling == OutlierHandling.WEIGHTING:
         for features, classification, weights in instances:
-            print ",".join([ "%.3f" % f for f in features ] ) \
-                  + "," + class_names[classification] + ",{%.3f}" % weights
+            print "%s,%s,{%.3f}" % (",".join("%.3f" % f for f in features),
+                                    class_names[classification], weights)
     else:
         assert False
 
@@ -276,10 +276,10 @@ def simulate_full(scenes, features, step_size, params):
 def get_arff_header(features):
     """Return a string representing the header of the ARFF file"""
 
-    return "@RELATION autofocus_action\n\n" \
-           + ''.join([ "@ATTRIBUTE " + attr + " numeric\n" 
-                     for attr, _ in features]) \
-           + "@ATTRIBUTE action {continue, turn_peak, backtrack } \n"
+    return ("@RELATION autofocus_action\n\n"
+            + ''.join("@ATTRIBUTE " + attr + " numeric\n" 
+                      for attr, _ in features)
+            + "@ATTRIBUTE action {continue, turn_peak, backtrack } \n")
 
 
 def main(argv):

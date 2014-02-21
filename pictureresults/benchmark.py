@@ -16,9 +16,9 @@ import featuresturn
 import featuresleftright
 
 def make_key(direction, initial_pos, current_pos):
-    return direction + "-" + str(initial_pos) + "-" + str(current_pos)
+    return "%s-%d-%d" % (direction, initial_pos, current_pos)
 
-class Evaluator:
+class Evaluator(object):
 
     def __init__(self, left_right_tree, first_size_tree,
                  action_tree, step_size, scene,
@@ -30,7 +30,7 @@ class Evaluator:
         self.scene = scene
         self.status = [ "none" ] * scene.measuresCount
         self.result = [ -100 ] * scene.measuresCount
-        self.visitedPositions = [ [] for pos in scene.measuresValues ]
+        self.visitedPositions = [ [] ] * scene.measuresValues
         if perfect_classification is None:
             self.perfect_classification = None
         else:
@@ -38,25 +38,25 @@ class Evaluator:
                 perfect_classification[scene.fileName]
 
     def _walk_left_fine(self, lens_pos, count=1):
-        for i in range(0, count):
+        for _ in range(count):
             visitedPositions = self.visitedPositions[lens_pos]
             visitedPositions.append(max(0, min(visitedPositions[-1] - 1,
                 self.scene.measuresCount - 1)))
 
     def _walk_left_coarse(self, lens_pos, count=1):
-        for i in range(0, count):
+        for _ in range(count):
             visitedPositions = self.visitedPositions[lens_pos]
             visitedPositions.append(max(0, min(visitedPositions[-1] - 8,
                 self.scene.measuresCount - 1)))
 
     def _walk_right_fine(self, lens_pos, count=1):
-        for i in range(0, count):
+        for _ in range(count):
             visitedPositions = self.visitedPositions[lens_pos]
             visitedPositions.append(max(0, min(visitedPositions[-1] + 1,
                 self.scene.measuresCount - 1)))
 
     def _walk_right_coarse(self, lens_pos, count=1):
-        for i in range(0, count):
+        for _ in range(count):
             visitedPositions = self.visitedPositions[lens_pos]
             visitedPositions.append(max(0, min(visitedPositions[-1] + 8,
                 self.scene.measuresCount - 1)))
@@ -86,8 +86,8 @@ class Evaluator:
         while 0 < visitedPositions[-1] < self.scene.measuresCount - 1:
             self._walk_fine(lens_pos, direction, 1)
             if self.scene.measuresValues[visitedPositions[-1]] > \
-               self.scene.measuresValues[maximum_pos]:
-               maximum_pos = visitedPositions[-1]
+                    self.scene.measuresValues[maximum_pos]:
+                maximum_pos = visitedPositions[-1]
             else:
                 # Backtrack and stop.
                 self._walk_fine(lens_pos, rev_direction, 1)
@@ -125,14 +125,14 @@ class Evaluator:
         # optimization on the number of lens movements needed to reach the max.
         fine_steps = distance % 8
         potential_maxs = []
-        for i in range(fine_steps):
+        for _ in range(fine_steps):
             self._walk_fine(lens_pos, direction, 1)
             potential_maxs.append(visitedPositions[-1])
 
         assert visitedPositions[-1] == maximum_pos
 
-        if len(potential_maxs) > 0 and \
-                self._max_among(potential_maxs) != maximum_pos:
+        if (len(potential_maxs) > 0 and
+            self._max_among(potential_maxs) != maximum_pos):
             # Found something better, go back that way.
             self._walk_fine(lens_pos, rev_direction, 
                 abs(maximum_pos - self._max_among(potential_maxs)))
@@ -219,8 +219,8 @@ class Evaluator:
                     dir_str, lens_positions[0], current_pos)]
 
             if classification != "continue":
-                assert classification == "turn_peak" or    \
-                       classification == "backtrack"
+                assert (classification == "turn_peak" or
+                        classification == "backtrack")
                 return classification, lens_positions
 
         # TODO: What should be the default action when an edge is reached?
@@ -314,22 +314,22 @@ class Evaluator:
             self._evaluate_at_position(lens_pos)
 
     def _is_true_positive(self, status, result):
-        return status == "foundmax" and \
-               self.scene.distance_to_closest_peak(result) <= 1
+        return (status == "foundmax" and 
+                self.scene.distance_to_closest_peak(result) <= 1)
 
     def _is_false_positive(self, status, result):
-        return status == "foundmax" and \
-               self.scene.distance_to_closest_peak(result) > 1
+        return (status == "foundmax" and 
+                self.scene.distance_to_closest_peak(result) > 1)
 
     def _is_true_negative(self, status, visited):
-        return status == "failed" and \
-               all(self.scene.distance_to_closest_peak(pos) > 1
-                   for pos in visited)
+        return (status == "failed" and 
+                all(self.scene.distance_to_closest_peak(pos) > 1
+                    for pos in visited))
 
     def _is_false_negative(self, status, visited):
-        return status == "failed" and \
-               any(self.scene.distance_to_closest_peak(pos) <= 1
-                   for pos in visited)
+        return (status == "failed" and 
+                any(self.scene.distance_to_closest_peak(pos) <= 1
+                    for pos in visited))
 
     def get_evaluation_at(self, lens_pos):
         status = self.status[lens_pos]
@@ -399,8 +399,8 @@ def benchmark_scenes(left_right_tree, first_size_tree,
         t_neg = evaluator.count_true_negative()
         f_neg = evaluator.count_false_negative()
         perct = float(t_pos) / (t_pos + f_pos + t_neg + f_neg) * 100
-        steps = float(sum(len(vps) for vps in evaluator.visitedPositions)) / \
-                len(evaluator.visitedPositions)
+        steps = (float(sum(len(vps) for vps in evaluator.visitedPositions)) /
+                 len(evaluator.visitedPositions))
 
         sum_t_pos += t_pos
         sum_f_pos += f_pos
@@ -469,7 +469,7 @@ def load_classifications(filename):
         lines = f.readlines()
         f.close()
     except IOError:
-        raise Exception("File " + filename + " not found.")
+        raise Exception("File %s not found." % filename)
     return json.loads("".join(lines))
 
 
@@ -491,7 +491,7 @@ def main(argv):
 
     # Parse script arguments
     try:
-        opts, args = getopt.getopt(argv, "d",
+        opts, _ = getopt.getopt(argv, "d",
             ["left-right-tree=", "first-size-tree=",
              "action-tree=", "double-step",
              "specific-scene=", "perfect-file="])
@@ -529,9 +529,9 @@ def main(argv):
             print_script_usage()
             sys.exit(2)
 
-    if (left_right_tree is None or first_size_tree is None 
-                                or action_tree is None) and \
-            perfect_classification is None:
+    if perfect_classification is None and (left_right_tree is None or 
+                                           first_size_tree is None or
+                                           action_tree is None):
         print_script_usage()
         sys.exit(2)
 

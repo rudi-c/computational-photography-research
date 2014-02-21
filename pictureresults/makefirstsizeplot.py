@@ -80,11 +80,11 @@ def main(argv):
 
     # Parse script arguments
     try:
-        opts, args = getopt.getopt(argv,"s:t:c:d",
+        opts, _ = getopt.getopt(argv, "s:t:c:d",
                                   ["scene=", "tree=", "classifier=",
                                    "double-step"])
     except getopt.GetoptError:
-        print_script_usage
+        print_script_usage()
         sys.exit(2)
 
     functions = { key : value for (key, _, value) in all_features() }
@@ -101,7 +101,7 @@ def main(argv):
         elif opt in ("-d", "--double-step"):
             step_size = 2
 
-    if scene == None or tree == None:
+    if scene is None or tree is None:
         print_script_usage()
         sys.exit(2)
 

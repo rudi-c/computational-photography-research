@@ -18,9 +18,9 @@ from statistics import *
 steps = 250
 
 def print_statistics(scenes, lens_positions, function):
-    print "# " + function.__doc__
+    print "# %s" % function.__doc__
     probabilities = [ function(pos, scenes) for pos in lens_positions ]
-    print "data <- c(" + ",".join(["%.3f" % p for p in probabilities]) + ")"
+    print "data <- c(%s)" % ",".join(["%.3f" % p for p in probabilities])
     print "plot(data)"
 
 
@@ -34,12 +34,12 @@ def main(argv):
     load_maxima_into_measures(scenes)
 
     # Make sure that the number of steps is appropriate.
-    if steps < max([len(scene.maxima) for scene in scenes]):
-        print "Warning - number of steps smaller than the number of lens " \
-              "positions in the largest scene."
+    if steps < max(len(scene.maxima) for scene in scenes):
+        print ("Warning - number of steps smaller than the number of lens "
+               "positions in the largest scene.")
 
     # Calculate various statistics.
-    lens_positions = [ float(i) / (steps - 1) for i in range(0, steps)]
+    lens_positions = [float(i) / (steps - 1) for i in range(steps)]
 
     print_statistics(scenes, lens_positions, probability_left_peak)
     print_statistics(scenes, lens_positions, probability_not_left_peak)

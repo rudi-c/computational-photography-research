@@ -79,7 +79,7 @@ def probability_most_peaks(lens_pos, scenes, comparator):
         left_peaks = [ n_maximum for n_maximum in scene.norm_maxima
                                  if left(n_maximum, lens_pos) ]
         right_peaks = [ n_maximum for n_maximum in scene.norm_maxima
-                                 if right(n_maximum, lens_pos) ]
+                                  if right(n_maximum, lens_pos) ]
         if comparator(len(left_peaks), len(right_peaks)):
             count += 1
     return float(count) / len(scenes)
@@ -130,12 +130,12 @@ def probability_nearhighest(lens_pos, scenes, comparator):
             # Ignore if the peak is exactly at this location, it will
             # give division by zero and is neither left or right.
             if not lens_pos == n_maximum:
-                value = scene.measuresValues[maximum] / \
-                        abs(lens_pos - n_maximum)
+                value = (scene.measuresValues[maximum] /
+                         abs(lens_pos - n_maximum))
             if value > bestvalue:
                 nearhighest = n_maximum
                 bestvalue = value
-        if comparator(n_maximum, lens_pos):
+        if comparator(nearhighest, lens_pos):
             count += 1
     return float(count) / len(scenes)
 

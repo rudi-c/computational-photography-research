@@ -53,10 +53,10 @@ def main(argv):
 
     # Parse script arguments
     try:
-        opts, args = getopt.getopt(argv,"s:t:c:d",
+        opts, args = getopt.getopt(argv, "s:t:c:d",
                                   ["tree=", "classifier=", "double-step"])
     except getopt.GetoptError:
-        print_script_usage
+        print_script_usage()
         sys.exit(2)
 
     functions = { key : value for key, _, value in all_features() }

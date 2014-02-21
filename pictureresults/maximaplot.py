@@ -13,7 +13,7 @@ import sys
 
 from scene import *
 
-def main(argv):
+def main():
     if not os.path.isdir(scenes_folder):
         print scenes_folder + " folder not found."
         return
@@ -39,4 +39,4 @@ def main(argv):
 
 
 # Entry point.
-main(sys.argv[1:])
+main()

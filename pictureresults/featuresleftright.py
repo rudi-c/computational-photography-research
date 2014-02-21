@@ -173,9 +173,12 @@ def upTrend(**kwargs):
     fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
     return fst <= snd and snd <= trd
 
-def three_measure_features(filters=[]):
+def three_measure_features(filters=None):
     """ Returns an array of (attribute name, attribute range, function) 
         where the functions take three arguments."""
+
+    if filters is None:
+        filters = []
 
     # We're using arrays instead of dicts to maintain a constant order.
     features = [ ("downTrend", "{0,1}", downTrend), 
@@ -227,8 +230,11 @@ def bracket(brackets):
 
     return f
 
-def other_features(filters=[]):
+def other_features(filters=None):
     """ Returns an array of (attribute name, attribute range, function)"""
+
+    if filters is None:
+        filters = []
 
     # I've decided not to distribute the brackets evenly because it matters
     # less if the lens is near the center than if it is near the end
@@ -254,15 +260,19 @@ def other_features(filters=[]):
 
 ###
 
-def measure_features(filters=[]):
+def measure_features(filters=None):
     """ Returns an array of (attribute name, attribute range, function)"""
+    if filters is None:
+        filters = []
     return two_measure_features(filters) + three_measure_features(filters)
 
 
-def all_features(filters=[]):
+def all_features(filters=None):
     """ Returns an array of (attribute name, attribute range, function)"""
-    return two_measure_features(filters) + three_measure_features(filters) + \
-           other_features(filters)
+    if filters is None:
+        filters = []
+    return (two_measure_features(filters) + three_measure_features(filters) +
+            other_features(filters))
 
 
 def leftright_feature_evaluator(first, second, third, lens_pos):
@@ -301,7 +311,7 @@ def highest_and_near_on_left(scene, lens_pos):
     best = scene.maxima[0]
     for maxima in scene.maxima:
         # Need to add a + 1 to the distance to avoid division by zero.
-        if scene.measuresValues[maxima] / (abs(lens_pos - maxima) + 1) > \
-           scene.measuresValues[best] / (abs(lens_pos - best) + 1):
+        if (scene.measuresValues[maxima] / (abs(lens_pos - maxima) + 1) >
+            scene.measuresValues[best] / (abs(lens_pos - best) + 1)):
             best = maxima
     return best < lens_pos

@@ -1,5 +1,5 @@
-# Data structure for storing the focus measures at each lens position
-# for each scene.
+"""Class definition for an object storing the focus measures at each lens
+position and the maxima (peaks) for each scene."""
 
 import copy
 import os
@@ -8,28 +8,26 @@ import os
 scenes_folder = "focusraw/"
 maxima_file = "maxima.txt"
 
-class Scene:
+class Scene(object):
     def __get_focus_value(self, string):
         parts = string.split()
         if len(parts) != 2:
-            raise Exception("Lines in focus measures files " \
+            raise Exception("Lines in focus measures files "
                             "should only have two columns.")
         return float(parts[1])
 
     def __load_file(self):
         try:
             f = open(scenes_folder + self.fileName)
+            lines = f.readlines()
+            f.close()
         except IOError:
-            print "File " + self.fileName + " not found."
-            raise
+            raise IOError("File %d not found." % self.fileName)
 
         focus_values = [self.__get_focus_value(line) for
-                        line in f.readlines()]
+                        line in lines]
         self.measuresCount = len(focus_values)
         self.measuresValues = focus_values
-        # Normalized version as tuples.
-        # self.measuresValues = [(float(i) / self.measuresCount, focus_values[i]) 
-        #                       for i in range(0, len(focus_values)) ]
 
         assert self.measuresCount > 0
 
@@ -69,7 +67,9 @@ class Scene:
         self.norm_maxima = []
 
 
-def load_scenes(excluded_scenes=[]):
+def load_scenes(excluded_scenes=None):
+    if excluded_scenes is None:
+        excluded_scenes = []
     return [ Scene(f) 
              for f in os.listdir(scenes_folder) 
              if os.path.isfile(scenes_folder + f)

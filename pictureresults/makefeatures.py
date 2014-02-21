@@ -31,10 +31,10 @@ from featuresleftright import *
 def get_arff_header(features):
     """Return a string representing the header of the ARFF file"""
 
-    return "@RELATION autofocus_dir\n\n" \
-           + ''.join([ "@ATTRIBUTE " + attr + " " + values + " \n" 
-                     for attr, values, _ in features]) \
-           + "@ATTRIBUTE direction {left, right} \n"
+    return ("@RELATION autofocus_dir\n\n"
+            + ''.join([ "@ATTRIBUTE " + attr + " " + values + " \n" 
+                     for attr, values, _ in features])
+            + "@ATTRIBUTE direction {left, right} \n")
 
 
 def convert_true_false(value):
@@ -60,8 +60,8 @@ def get_data_lines(scenes, classifier, position_selector,
                 lens_pos = float(lens_pos) / (scene.measuresCount - 1))
                       for _, _, feature in features]
 
-            classification = ",left" if classifier(scene, lens_pos) \
-                                    else ",right"
+            classification = (",left" if classifier(scene, lens_pos)
+                                      else ",right")
             lines.append(','.join([str(convert_true_false(value))
                                   for value in values])
                       + classification)
@@ -69,7 +69,7 @@ def get_data_lines(scenes, classifier, position_selector,
     return lines
 
 
-def create_lens_position_selector(dup_edges, dup_peaks, step_size):
+def create_lens_position_selector(dup_edges, step_size):
     def f(scene):
         # Default lens positions
         lens_positions = range(step_size * 2, scene.measuresCount)
@@ -119,8 +119,6 @@ def main(argv):
             step_size = 2
         elif arg == "--dup-edges":
             dup_edges = True
-        elif arg == "--dup-peaks":
-            dup_peaks = True
         else:
             filters.append(arg)
 
@@ -134,7 +132,6 @@ def main(argv):
     for line in get_data_lines(scenes, 
                                classifier, 
                                create_lens_position_selector(dup_edges, 
-                                                             dup_peaks,
                                                              step_size),
                                features(filters), 
                                step_size):

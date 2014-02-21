@@ -1,24 +1,11 @@
+import operator
 import json
 import os
 
-def less(a, b):
-    return a < b
-
-def less_or_equal(a, b):
-    return a <= b
-
-def greater(a, b):
-    return a > b
-
-def greater_or_equal(a, b):
-    return a >= b
-
-def equals(a, b):
-    return a == b
-
-comparator_map = { "<" : less, "<=" : less_or_equal, 
-                   ">" : greater, ">=" : greater_or_equal,
-                   "=" : equals }
+# Conveniently convert string operators into lambdas.
+comparator_map = { "<" : operator.lt, "<=" : operator.le, 
+                   ">" : operator.gt, ">=" : operator.ge,
+                   "=" : operator.eq }
 
 def read_decision_tree(filename, features):
     """Transform a JSON representation of the decision tree into one that can
@@ -40,8 +27,7 @@ def read_decision_tree(filename, features):
         lines = f.readlines()
         f.close()
     else:
-        print "Error : File %s not found!" % filename
-        sys.exit(1)
+        raise Exception("Error : File %s not found!" % filename)
 
     json_tree = json.loads("".join(lines))
     return parse_tree(json_tree)

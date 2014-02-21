@@ -53,7 +53,7 @@ def large_steps_taken(**kwargs):
     total number of lens positions."""
     total_positions = kwargs["total_positions"]
     lens_positions = kwargs["lens_positions"]
-    small, large = count_step_size(lens_positions)
+    _, large = count_step_size(lens_positions)
     return float(large) / total_positions
 
 
@@ -62,7 +62,7 @@ def small_steps_taken(**kwargs):
     total number of lens positions."""
     total_positions = kwargs["total_positions"]
     lens_positions = kwargs["lens_positions"]
-    small, large = count_step_size(lens_positions)
+    small, _ = count_step_size(lens_positions)
     return float(small) / total_positions
 
 
@@ -109,10 +109,10 @@ def absolute_distance_taken(**kwargs):
     return float(abs(latest - first))
 
 
-functions_steps_and_distance = [ start_position, steps_taken, large_steps_taken, 
-                                 small_steps_taken, ratio_small_steps,
-                                 ratio_large_steps, distance_taken,
-                                 absolute_steps_taken, absolute_distance_taken ]
+functions_steps_and_distance = [start_position, steps_taken, large_steps_taken, 
+                                small_steps_taken, ratio_small_steps,
+                                ratio_large_steps, distance_taken,
+                                absolute_steps_taken, absolute_distance_taken]
 
 ### Features related to the distances to the last lens positions on either side
 
@@ -297,8 +297,8 @@ def regression_slope(**kwargs):
     lens_positions = kwargs["lens_positions"]
 
     mean_xs = float(sum(lens_positions)) / len(lens_positions) / total_positions
-    mean_ys = float(sum(focus_values[x] for x in lens_positions)) / \
-              len(lens_positions)
+    mean_ys = (float(sum(focus_values[x] for x in lens_positions)) /
+               len(lens_positions))
     covariance = sum( (float(x) / total_positions - mean_xs) * 
                           (focus_values[x] - mean_ys)
                       for x in lens_positions )
@@ -376,12 +376,13 @@ functions_local_slope = [ current_slope, current_slope_large,
 
 ### For convenience ###
 
-def all_features(filters=[]):
+def all_features(filters=None):
     """Returns an array of (attribute name, function)"""
-
-    functions = functions_steps_and_distance + functions_distance_edge + \
-                functions_scagnostics + functions_maximum + \
-                functions_trend_slope + functions_local_slope
+    if filters is None:
+        filters = []
+    functions = (functions_steps_and_distance + functions_distance_edge +
+                 functions_scagnostics + functions_maximum +
+                 functions_trend_slope + functions_local_slope)
 
     if len(filters) > 0:
         return [ (f.__name__, f) for f in functions if
@@ -508,8 +509,8 @@ def get_move_right_classification(start_lens_pos, current_lens_pos,
             # Determine if it would be faster to just go the other way.
             if right_closest is None:
                 return Action.BACKTRACK
-            elif abs(right_closest - current_lens_pos) > \
-                    abs(current_lens_pos - left_closest):
+            elif (abs(right_closest - current_lens_pos) >
+                  abs(current_lens_pos - left_closest)):
                 return Action.BACKTRACK
         else:
             assert params.backtrackHandling == BacktrackHandling.NOPEAKSONLY
@@ -526,8 +527,8 @@ def get_move_right_classification(start_lens_pos, current_lens_pos,
         elif params.peakHandling == PeakHandling.CLOSEST:
             if right_closest is None:
                 return Action.TURN_PEAK
-            elif current_lens_pos - left_closest_visited - 5 < \
-                    right_closest - current_lens_pos:
+            elif (current_lens_pos - left_closest_visited - 5 <
+                  right_closest - current_lens_pos):
                 return Action.TURN_PEAK
             else:
                 return Action.CONTINUE
@@ -553,7 +554,7 @@ def get_move_left_classification(start_lens_pos, current_lens_pos,
     # reverse data.
     reversed_measures = list(focus_measures)
     reversed_measures.reverse()
-    reversed_maxima = [ reverse(maximum) for maximum in maxima]
+    reversed_maxima = [reverse(maximum) for maximum in maxima]
     return get_move_right_classification(
         reverse(start_lens_pos), reverse(current_lens_pos), 
         reversed_measures, reversed_maxima, params)

@@ -61,17 +61,17 @@ def print_R_script(scene):
 
     # Points to plot
     results = simulate(scene)
-    xs, ys = ([ a for a,b in results ], [ b for a,b in results ]) # unzip
+    xs, ys = ([ a for a, b in results ], [ b for a, b in results ]) # unzip
 
     # Indicate the correct classes (coarse or fine) and the predicted classes. 
     # The predicted classes is slightly offset to avoid overlapping.
     print_plot_point_pairs(xs, ys, 22, "black", "blue", False, 0.3, 0.5)
 
     # In the title, indicate how many steps are used.
-    print "title(main=paste(\"coarse steps:\", %d, " \
-                           "\"fine steps:\", %d, " \
-                           "\"total steps:\", %d))" \
-          % (ys.count(0), ys.count(1), len(ys))
+    print ("title(main=paste(\"coarse steps:\", %d, "
+                           "\"fine steps:\", %d, "
+                           "\"total steps:\", %d))"
+           % (ys.count(0), ys.count(1), len(ys)))
 
     print "# Plot me!\n"
 
@@ -87,8 +87,7 @@ def main(argv):
 
     # Parse script arguments
     try:
-        opts, args = getopt.getopt(argv,"s:",
-                                  ["scene="])
+        opts, _ = getopt.getopt(argv, "s:", ["scene="])
     except getopt.GetoptError:
         print_script_usage()
         sys.exit(2)

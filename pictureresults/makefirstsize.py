@@ -25,10 +25,10 @@ from featuresleftright import *
 def get_arff_header(features):
     """Return a string representing the header of the ARFF file"""
 
-    return "@RELATION autofocus_size\n\n" \
-           + ''.join([ "@ATTRIBUTE " + attr + " " + values + " \n" 
-                     for attr, values, _ in features]) \
-           + "@ATTRIBUTE step_size {coarse, fine} \n"
+    return ("@RELATION autofocus_size\n\n"
+            + ''.join(["@ATTRIBUTE " + attr + " " + values + " \n" 
+                       for attr, values, _ in features])
+            + "@ATTRIBUTE step_size {coarse, fine} \n")
 
 
 def convert_true_false(value):
@@ -90,8 +90,6 @@ def main(argv):
     features = two_measure_features
     classifier = highest_on_left
     step_size = 1
-    dup_edges = False
-    dup_peaks = False
 
     # Process command line options. Anything remaining will be considered
     # to be filters for features.

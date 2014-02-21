@@ -63,7 +63,7 @@ def main(argv):
 
     # Parse script arguments
     try:
-        opts, args = getopt.getopt(argv,"s:t:c:d",
+        opts, args = getopt.getopt(argv, "s:t:c:d",
                                   ["scene=", "tree=", "classifier=",
                                    "double-step"])
     except getopt.GetoptError:

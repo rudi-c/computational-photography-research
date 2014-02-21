@@ -6,7 +6,7 @@
 from math import log
 from featuresleftright import safeRatioMoreThan
 
-def coarse_if_previously_fine(f_cur, f_prev, f_prev2):
+def coarse_if_previously_fine(f_cur, f_prev, _):
     """Assumes the previous step taken was a fine step. Return true
     if the next step should be a coarse step."""
     if not safeRatioMoreThan(f_cur, f_prev, 8.0 / 8.0):

@@ -8,7 +8,7 @@ import sys
 from featuresleftright import *
 import featuresturn
 
-def main(argv):
+def main():
     print "# Left-right features taking 2 focus measures :"
     for name, values, _ in two_measure_features():
         print name + " : " + values
@@ -24,4 +24,4 @@ def main(argv):
     return
 
 # Entry point.
-main(sys.argv[1:])
+main()
