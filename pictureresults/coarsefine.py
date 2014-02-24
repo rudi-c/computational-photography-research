@@ -1,7 +1,9 @@
-# Functions that evaluate whether to take a fine step or a coarse step
-# depending on previous focus values, as described in
-#   "  An Autofocus Heuristic for Digital Cameras Based on 
-#      Supervised Machine Learning  "
+"""
+Functions that evaluate whether to take a fine step or a coarse step
+depending on previous focus values, as described in
+   'An Autofocus Heuristic for Digital Cameras Based on 
+    Supervised Machine Learning'
+"""
 
 from math import log
 from featuresfirststep import safe_ratio_gt
@@ -21,6 +23,7 @@ def coarse_if_previously_coarse(f_cur, f_prev, f_prev2):
     if the next step should be a coarse step."""
 
     def log_feature():
+        """Handles the edge cases of logDiff described in the paper."""
         if f_cur <= f_prev:
             return False
         elif f_prev == 0:

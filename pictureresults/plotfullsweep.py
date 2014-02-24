@@ -1,38 +1,36 @@
 #!/usr/bin/python
-
-# This script simulates a sweep using the decision tree learned in
-# "An autofocus heuristic for digital cameras based on supervised 
-#  machine learning" and outputs the classification obtained at every
-# lens position it visits.
+"""
+This script simulates a sweep using the decision tree learned in
+'An autofocus heuristic for digital cameras based on supervised 
+machine learning' and outputs the classification obtained at every
+lens position it visits.
+"""
 
 import getopt
-import inspect
-import os
 import sys
 
-from scene      import *
-from coarsefine import *
-from rtools     import *
+import coarsefine
+import rtools
+from scene import Scene, load_maxima
 
 
 def simulate(scene):
-
+    """Sweep the scene."""
     last_step_coarse = True
-    f_cur   = scene.fvalues[0]
-    f_prev  = scene.fvalues[0]
-    f_prev2 = scene.fvalues[0]
+    f_cur, f_prev, f_prev2 = scene.get_focus_values([0, 0, 0])
     position = 1
 
     output = []
 
     while position < scene.step_count:
-        f_prev2 = f_prev
-        f_prev = f_cur
-        f_cur = scene.fvalues[position]
+        f_prev2, f_prev, f_cur = f_prev, f_cur, scene.fvalues[position]
+
         if last_step_coarse:
-            step_coarse = coarse_if_previously_coarse(f_cur, f_prev, f_prev2)
+            step_coarse = coarsefine.coarse_if_previously_coarse(
+                f_cur, f_prev, f_prev2)
         else:
-            step_coarse = coarse_if_previously_fine(f_cur, f_prev, f_prev2)
+            step_coarse = coarsefine.coarse_if_previously_fine(
+                f_cur, f_prev, f_prev2)
 
         if step_coarse:
             output.append((position, 0))
@@ -52,7 +50,7 @@ def print_R_script(scene):
 
     # Some R functions for plotting.
     print "library(scales)" # for alpha blending
-    print_plot_focus_measures(scene.fvalues)
+    rtools.print_plot_focus_measures(scene.fvalues)
 
     # Axis to indicate that the bottom points mean coarse and
     # the top points means fine.
@@ -61,11 +59,11 @@ def print_R_script(scene):
 
     # Points to plot
     results = simulate(scene)
-    xs, ys = ([ a for a, b in results ], [ b for a, b in results ]) # unzip
+    xs, ys = ([ a for a, _ in results ], [ b for _, b in results ]) # unzip
 
     # Indicate the correct classes (coarse or fine) and the predicted classes. 
     # The predicted classes is slightly offset to avoid overlapping.
-    print_plot_point_pairs(xs, ys, 22, "black", "blue", False, 0.3, 0.5)
+    rtools.print_plot_point_pairs(xs, ys, 22, "black", "blue", False, 0.3, 0.5)
 
     # In the title, indicate how many steps are used.
     print ("title(main=paste(\"coarse steps:\", %d, "
@@ -77,7 +75,7 @@ def print_R_script(scene):
 
 
 def print_script_usage():
-   print  """Script usage : ./evaluatestepsize.py 
+    print """Script usage : ./evaluatestepsize.py 
              [-t <decision tree to evaluate>]
              [-c <classifier (highest, nearest, near_high)>]
              [-d <double step size used>]"""

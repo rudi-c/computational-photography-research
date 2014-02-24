@@ -1,4 +1,4 @@
-PARSER="../../weka-json-parser/parse-j48.py"
+PARSER="../../weka-json-parser/parsej48.py"
 
 left_right_classifier=nearest
 
@@ -57,5 +57,5 @@ do
         -c $left_right_classifier >> left_right_classification.R
     ./makefirstsizeplot.py -s $file -t $first_step_tree \
         >> first_step_classification.R
-    ./evaluatestepsize.py -s $file >> stepsizes.R
+    ./plotfullsweep.py -s $file >> stepsizes.R
 done
