@@ -4,6 +4,7 @@ import os
 import random
 import sys
 
+from direction import Direction
 from scene import *
 from coarsefine import *
 from featuresturn import *
@@ -103,8 +104,6 @@ def assert_balanced_weighting(instances):
 
 def simulate_sweep(scene, features, instances, initial_lens_positions, 
                    direction, classifier, params):
-    assert abs(direction) == 1
-
     lens_positions = initial_lens_positions
     current_pos = lens_positions[-1]
     previously_coarse_step = True
@@ -165,13 +164,13 @@ def simulate_scenes(scenes, features, step_size, params):
             initial_lens_positions = [ lens_pos, lens_pos - step_size,
                                        lens_pos - step_size * 2 ]
             simulate_sweep(scene, features, instances, initial_lens_positions, 
-                -1, get_move_left_classification, params)
+                Direction("left"), get_move_left_classification, params)
 
             # Right
             initial_lens_positions = [ lens_pos - step_size * 2,
                                        lens_pos - step_size, lens_pos ]
             simulate_sweep(scene, features, instances, initial_lens_positions, 
-                +1, get_move_right_classification, params)
+                Direction("right"), get_move_right_classification, params)
 
     # Balance datasets.
     if params.outlierHandling == OutlierHandling.SAMPLING:

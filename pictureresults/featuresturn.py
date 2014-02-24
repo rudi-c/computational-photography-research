@@ -11,6 +11,7 @@
 # Note : Some features assume that at least one step has been taken (i.e.,
 #        that len(lens_positions) >= 2)
 
+from direction import Direction
 from math import sqrt
 
 def count_step_size(lens_positions):
@@ -398,19 +399,19 @@ def action_feature_evaluator(direction, focus_values,
     lens is moving to the right."""
     assert len(focus_values) >= len(lens_positions)
 
-    if direction in (-1, "left"):
+    if direction.is_left():
         rev_positions = [ total_positions - pos - 1 for pos in lens_positions ]
         rev_values = { total_positions - pos - 1 : focus_values[pos]
                        for pos in lens_positions }
         feature_args = { "focus_values"    : rev_values,
                          "lens_positions"  : rev_positions,
                          "total_positions" : total_positions}
-    elif direction in (+1, "right"):
+    elif direction.is_right():
         feature_args = { "focus_values"    : focus_values,
                          "lens_positions"  : lens_positions,
                          "total_positions" : total_positions}
     else:
-        raise Exception("Unknown direction : %A." % direction)
+        raise Exception("Unknown direction : %s." % direction)
 
     # Make sure the lens positions are increasing (we are indeed moving right)
     assert all( x1 < x2 for x1, x2 in zip(feature_args["lens_positions"][:-1], 
