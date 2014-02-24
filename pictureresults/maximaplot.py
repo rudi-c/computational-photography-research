@@ -14,20 +14,15 @@ import sys
 from scene import *
 
 def main():
-    if not os.path.isdir(scenes_folder):
-        print scenes_folder + " folder not found."
-        return
-
     scenes = load_scenes()
-    load_maxima_into_measures(scenes)
 
     xs = []
     ys = []
 
     for scene in scenes:
         for maxima in scene.maxima:
-            xs.append(float(maxima) / scene.measuresCount)
-            ys.append(scene.measuresValues[maxima])
+            xs.append(float(maxima) / scene.step_count)
+            ys.append(scene.fvalues[maxima])
 
     # For alpha blending
     print "library(scales)"

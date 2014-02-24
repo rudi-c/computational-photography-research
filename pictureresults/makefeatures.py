@@ -54,10 +54,10 @@ def get_data_lines(scenes, classifier, position_selector,
     for scene in scenes:
         for lens_pos in position_selector(scene):
             values = [feature(
-                first  = scene.measuresValues[lens_pos - 2 * step_size],
-                second = scene.measuresValues[lens_pos - 1 * step_size],
-                third  = scene.measuresValues[lens_pos],
-                lens_pos = float(lens_pos) / (scene.measuresCount - 1))
+                first  = scene.fvalues[lens_pos - 2 * step_size],
+                second = scene.fvalues[lens_pos - 1 * step_size],
+                third  = scene.fvalues[lens_pos],
+                lens_pos = float(lens_pos) / (scene.step_count - 1))
                       for _, _, feature in features]
 
             classification = (",left" if classifier(scene, lens_pos)
@@ -72,28 +72,24 @@ def get_data_lines(scenes, classifier, position_selector,
 def create_lens_position_selector(dup_edges, step_size):
     def f(scene):
         # Default lens positions
-        lens_positions = range(step_size * 2, scene.measuresCount)
+        lens_positions = range(step_size * 2, scene.step_count)
 
         if dup_edges:
             # Add some positions close to edges
             lens_positions += range(step_size * 2, 
-                int(scene.measuresCount * 0.2 + step_size * 2))
-            lens_positions += range(int(scene.measuresCount * 0.8), 
-                                    scene.measuresCount)
+                int(scene.step_count * 0.2 + step_size * 2))
+            lens_positions += range(int(scene.step_count * 0.8), 
+                                    scene.step_count)
             # Add more of the closest ones
             lens_positions += range(step_size * 2, 
-                int(scene.measuresCount * 0.1 + step_size * 2))
-            lens_positions += range(int(scene.measuresCount * 0.9), 
-                                    scene.measuresCount)
+                int(scene.step_count * 0.1 + step_size * 2))
+            lens_positions += range(int(scene.step_count * 0.9), 
+                                    scene.step_count)
         return lens_positions
     return f
 
 
 def main(argv):
-    if not os.path.isdir(scenes_folder):
-        print scenes_folder + " folder not found."
-        return
-
     filters = []
     features = two_measure_features
     classifier = highest_on_left
@@ -123,7 +119,6 @@ def main(argv):
             filters.append(arg)
 
     scenes = load_scenes()
-    load_maxima_into_measures(scenes)
 
     # Print the contents of the ARFF file to screen (use output
     # redirection to save to file)

@@ -30,23 +30,23 @@ def print_script_usage():
 
 def print_R_script(scene, tree, classifier, step_size):
 
-    print "# " + scene.fileName + "\n"
+    print "# " + scene.filename + "\n"
 
     # Some R functions for plotting.
     print "library(scales)" # for alpha blending
-    print_plot_focus_measures(scene.measuresValues)
+    print_plot_focus_measures(scene.fvalues)
 
     # The correct classifications.
     classes = [ "left" if classifier(scene, lens_pos) else "right"
-                for lens_pos in range(2 * step_size, scene.measuresCount) ]
+                for lens_pos in range(2 * step_size, scene.step_count) ]
 
     # What we actually get.
     results = []
-    for lens_pos in range(2 * step_size, scene.measuresCount):
-        first  = scene.measuresValues[lens_pos - step_size * 2]
-        second = scene.measuresValues[lens_pos - step_size]
-        third  = scene.measuresValues[lens_pos]
-        norm_lens_pos = float(lens_pos) / (scene.measuresCount - 1)
+    for lens_pos in range(2 * step_size, scene.step_count):
+        first  = scene.fvalues[lens_pos - step_size * 2]
+        second = scene.fvalues[lens_pos - step_size]
+        third  = scene.fvalues[lens_pos]
+        norm_lens_pos = float(lens_pos) / (scene.step_count - 1)
 
         evaluator = leftright_feature_evaluator(first, second, 
                                                 third, norm_lens_pos)
@@ -80,6 +80,7 @@ def main(argv):
     for opt, arg in opts:
         if opt in ("-s", "--scene"):
             scene = Scene(arg)
+            load_maxima([scene])
         elif opt in ("-t", "--tree"):
             tree = read_decision_tree(arg, functions)
         elif opt in ("-c", "--classifier"):
@@ -92,11 +93,10 @@ def main(argv):
         elif opt in ("-d", "--double-step"):
             step_size = 2
 
-    if scene == None or tree == None:
+    if scene is None or tree is None:
         print_script_usage()
         sys.exit(2)
 
-    load_maxima_into_measures([scene])
     print_R_script(scene, tree, classifier, step_size)
 
 

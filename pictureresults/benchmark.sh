@@ -2,7 +2,7 @@
 # Generate decision trees with Weka and evaluate their effectiveness.
 
 CP="$CLASSPATH:/usr/share/java/weka-3.6.6.jar"
-PARSER="../../weka-json-parser/parse-j48.py"
+PARSER="../../weka-json-parser/parsej48.py"
 ACTION_ARFF=results/action.arff
 
 attribute_select=false

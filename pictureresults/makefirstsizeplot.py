@@ -29,16 +29,16 @@ def print_script_usage():
 
 def print_R_script(scene, tree, step_size):
 
-    print "# " + scene.fileName + "\n"
+    print "# " + scene.filename + "\n"
 
     # Some R functions for plotting.
     print "library(scales)" # for alpha blending
-    print_plot_focus_measures(scene.measuresValues)
+    print_plot_focus_measures(scene.fvalues)
 
     classes = []
     results = []
 
-    for lens_pos in range(2 * step_size, scene.measuresCount):
+    for lens_pos in range(2 * step_size, scene.step_count):
 
         # The correct classification.
         go_left =  nearest_on_left(scene, lens_pos)
@@ -60,10 +60,10 @@ def print_R_script(scene, tree, step_size):
                 classes.append("coarse")
 
         # The classification obtained by evaluating the decision tree.
-        first  = scene.measuresValues[pos_1st]
-        second = scene.measuresValues[pos_2nd]
-        third  = scene.measuresValues[pos_3rd]
-        norm_lens_pos = float(lens_pos) / (scene.measuresCount - 1)
+        first  = scene.fvalues[pos_1st]
+        second = scene.fvalues[pos_2nd]
+        third  = scene.fvalues[pos_3rd]
+        norm_lens_pos = float(lens_pos) / (scene.step_count - 1)
 
         evaluator = leftright_feature_evaluator(first, second, 
                                                 third, norm_lens_pos)
@@ -96,6 +96,7 @@ def main(argv):
     for opt, arg in opts:
         if opt in ("-s", "--scene"):
             scene = Scene(arg)
+            load_maxima([scene])
         elif opt in ("-t", "--tree"):
             tree = read_decision_tree(arg, functions)
         elif opt in ("-d", "--double-step"):
@@ -105,7 +106,6 @@ def main(argv):
         print_script_usage()
         sys.exit(2)
 
-    load_maxima_into_measures([scene])
     print_R_script(scene, tree, step_size)
 
 

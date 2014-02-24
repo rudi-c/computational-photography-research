@@ -16,8 +16,8 @@ def make_instance(scene, features, params, instances, direction,
     (evaluated features, classification) is returned. If the outlier handling
     mode is WEIGHTING, an array (evaluated features, classification, weights)
     is returned."""
-    evaluator = action_feature_evaluator(direction, scene.measuresValues,
-        lens_positions, scene.measuresCount)
+    evaluator = action_feature_evaluator(direction, scene.fvalues,
+        lens_positions, scene.step_count)
 
     # Randomly select only a subset of instances based on their weight.
     if params.outlierHandling == OutlierHandling.SAMPLING:
@@ -111,32 +111,32 @@ def simulate_sweep(scene, features, instances, initial_lens_positions,
 
     keep_ratio = 1.0
 
-    while current_pos > 0 and current_pos < scene.measuresCount - 1:
+    while current_pos > 0 and current_pos < scene.step_count - 1:
         # Determine next step size.
         if previously_coarse_step:
             coarse_now = coarse_if_previously_coarse(
-                scene.measuresValues[current_pos],
-                scene.measuresValues[lens_positions[-2]],
-                scene.measuresValues[lens_positions[-3]])
+                scene.fvalues[current_pos],
+                scene.fvalues[lens_positions[-2]],
+                scene.fvalues[lens_positions[-3]])
         else:
             coarse_now = coarse_if_previously_fine(
-                scene.measuresValues[current_pos],
-                scene.measuresValues[lens_positions[-2]],
-                scene.measuresValues[lens_positions[-3]])
+                scene.fvalues[current_pos],
+                scene.fvalues[lens_positions[-2]],
+                scene.fvalues[lens_positions[-3]])
 
         # Move the lens forward.
         if coarse_now:
-            current_pos = min(scene.measuresCount - 1, 
+            current_pos = min(scene.step_count - 1, 
                               max(0, current_pos + direction * 8))
         else:
-            current_pos = min(scene.measuresCount - 1, 
+            current_pos = min(scene.step_count - 1, 
                               max(0, current_pos + direction))
         lens_positions.append(current_pos)
         previously_coarse_step = coarse_now
    
         # Obtain the correct classification at the new lens position.
         classification = classifier(initial_lens_positions[0], current_pos,
-                                    scene.measuresValues, scene.maxima, params)
+                                    scene.fvalues, scene.maxima, params)
 
         # Reduce the weight as we go along.
         if classification == Action.CONTINUE:
@@ -158,7 +158,7 @@ def simulate_scenes(scenes, features, step_size, params):
     for scene in scenes:
 
         # We simulate a sweep at each starting position.
-        for lens_pos in range(step_size * 2, scene.measuresCount):
+        for lens_pos in range(step_size * 2, scene.step_count):
 
             # Going left. Note that we are assuming that the initial
             # three focus measures were obtained by moving right.
@@ -190,7 +190,7 @@ def print_R_script(scene, lens_positions, instances):
 
     assert len(lens_positions) == len(instances)
 
-    print "# " + scene.fileName + "\n"
+    print "# " + scene.filename + "\n"
 
     xs_continue = []
     ys_continue = []
@@ -213,7 +213,7 @@ def print_R_script(scene, lens_positions, instances):
     # Some R functions for plotting.
     print_set_window_division(1, 1)
     print "library(scales)" # for alpha blending
-    print_plot_focus_measures(scene.measuresValues, (-0.1, 1))
+    print_plot_focus_measures(scene.fvalues, (-0.1, 1))
 
     print_plot_point_pairs(xs_continue, ys_continue, 25, "black", "black")
     print_plot_point_pairs(xs_turn_peak, ys_turn_peak, 25, "green", "green")
@@ -239,7 +239,7 @@ def simulate_samples(scenes, features, step_size, params):
         if random.random() < 0.5:
             scene = scene.inverse_copy()
 
-        lens_pos = random.randint(step_size * 2 + 1, scene.measuresCount - 1)
+        lens_pos = random.randint(step_size * 2 + 1, scene.step_count - 1)
 
         initial_lens_positions = [ lens_pos - step_size * 2,
                                    lens_pos - step_size, lens_pos ]
@@ -283,11 +283,6 @@ def get_arff_header(features):
 
 
 def main(argv):
-
-    if not os.path.isdir(scenes_folder):
-        print scenes_folder + " folder not found."
-        return
-
     features = all_features
     filters = []
     step_size = 1
@@ -316,7 +311,6 @@ def main(argv):
     random.seed(seed)
 
     scenes = load_scenes(excluded_scenes=["cat.txt", "moon.txt"])
-    load_maxima_into_measures(scenes)
 
     if show_random_sample:
         simulate_samples(scenes, features(filters), step_size, params)

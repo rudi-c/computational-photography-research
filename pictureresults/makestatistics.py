@@ -25,13 +25,7 @@ def print_statistics(scenes, lens_positions, function):
 
 
 def main(argv):
-    if not os.path.isdir(scenes_folder):
-        print scenes_folder + " folder not found."
-        return
-
     scenes = load_scenes()
-
-    load_maxima_into_measures(scenes)
 
     # Make sure that the number of steps is appropriate.
     if steps < max(len(scene.maxima) for scene in scenes):

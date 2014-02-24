@@ -5,116 +5,131 @@ import copy
 import os
 
 # Where to find the data.
-scenes_folder = "focusraw/"
-maxima_file = "maxima.txt"
+SCENES_FOLDER = "focusraw/"
+MAXIMA_FILE = "maxima.txt"
 
 class Scene(object):
+    """Stores a the data of a particular scene, which is composed of focus
+    values obtained from every lens position as well as the location of the
+    peaks/maxima.
+    """
+
     def __get_focus_value(self, string):
+        """Extract the numeric focus value from a line."""
         parts = string.split()
         if len(parts) != 2:
             raise Exception("Lines in focus measures files "
                             "should only have two columns.")
         return float(parts[1])
 
-    def __load_file(self):
+    def __load_from_file(self):
+        """Load scene information from file."""
         try:
-            f = open(scenes_folder + self.fileName)
+            f = open(SCENES_FOLDER + self.filename)
             lines = f.readlines()
             f.close()
         except IOError:
-            raise IOError("File %d not found." % self.fileName)
+            raise IOError("Could not open scene file \"%d\"." % self.filename)
 
         focus_values = [self.__get_focus_value(line) for
                         line in lines]
-        self.measuresCount = len(focus_values)
-        self.measuresValues = focus_values
+        self.step_count = len(focus_values)
+        self.fvalues = focus_values
 
-        assert self.measuresCount > 0
+        assert self.step_count > 0
 
     def inverse_copy(self):
         """Return an inverted copy of this scene."""
         i_scene = copy.copy(self)
-        i_scene.measuresValues = list(self.measuresValues)
-        i_scene.measuresValues.reverse()
-        i_scene.maxima = [ self.measuresCount - m - 1 for m in self.maxima ]
-        i_scene.norm_maxima = [ float(m) / self.measuresCount 
+        i_scene.fvalues = list(self.fvalues)
+        i_scene.fvalues.reverse()
+        i_scene.maxima = [ self.step_count - m - 1 for m in self.maxima ]
+        i_scene.norm_maxima = [ float(m) / self.step_count 
                                 for m in i_scene.maxima ]
         return i_scene
 
     def distance_to_closest_peak(self, lens_pos, condition=None):
+        """Distance to the closest peak from a particular lens position."""
         if len(self.maxima) == 0:
             raise Exception("Error : No maxima loaded for this scene")
-        min_dist = self.measuresCount
+        min_dist = self.step_count
         for maximum in self.maxima:
             if condition is None or condition(maximum):
                 min_dist = min(min_dist, abs(lens_pos - maximum))
         return min_dist
     
     def distance_to_closest_left_peak(self, lens_pos):
+        """Distance to the closest peak on the left side of a lens position."""
         return self.distance_to_closest_peak(lens_pos,
             lambda max : max <= lens_pos)
     
     def distance_to_closest_right_peak(self, lens_pos):
+        """Distance to the closest peak on the right side of a lens position."""
         return self.distance_to_closest_peak(lens_pos,
             lambda max : max >= lens_pos)
 
-    def __init__(self, file_name = None):
-        self.fileName = file_name
-        self.name = file_name[:file_name.rfind(".")] # remove extension
-        if not file_name is None:
-            self.__load_file()
+    def __init__(self, filename=None):
+        self.filename = filename
+        self.name = filename[:filename.rfind(".")] # remove extension
+        if filename is not None:
+            self.__load_from_file()
+        
+        self.step_count = 0
+        self.fvalues = []
         self.maxima = []
         self.norm_maxima = []
 
 
 def load_scenes(excluded_scenes=None):
+    """Loads scenes (sets of pictures at every lens position). Expects a folder
+    focusraw/ and a file maxima.txt to exist in the same directory.
+    """
     if excluded_scenes is None:
         excluded_scenes = []
-    return [ Scene(f) 
-             for f in os.listdir(scenes_folder) 
-             if os.path.isfile(scenes_folder + f)
-             if not f in excluded_scenes ]
+
+    if not os.path.isdir(SCENES_FOLDER):
+        raise IOError("Scenes folder \"%s\" folder not found." % SCENES_FOLDER)
+
+    scenes = [ Scene(f) 
+               for f in os.listdir(SCENES_FOLDER) 
+               if os.path.isfile(SCENES_FOLDER + f)
+               if not f in excluded_scenes ]
+    load_maxima(scenes)
+    return scenes
 
 
-def load_maxima_into_measures(scenes):
+def load_maxima(scenes):
+    """Looks in a file named maxima.txt for the location of the peaks for
+    each scene.
+    """
     try:
-        f = open(maxima_file)
+        f = open(MAXIMA_FILE)
+        lines = f.readlines()
+        f.close()
     except IOError:
-        print maxima_file + " not found."
-        raise
-
-    lines = f.readlines()
+        raise IOError("Could not open maxima file \"%s\"." % MAXIMA_FILE)
 
     if len(lines) % 2 != 0:
-        print "Expecting an even number of lines in " + maxima_file
-        raise
+        raise IOError("Expected an even number of lines in %s." % MAXIMA_FILE)
 
     # Organize scenes by their filename to find them more conveniently.
-    scenes_dict = {}
-    for scene in scenes:
-        scenes_dict[scene.fileName] = scene
+    scenes_dict = { scene.filename: scene for scene in scenes }
 
     for i in range(0, len(lines), 2):
         filename = lines[i].strip()
         maxima = lines[i + 1].split()
 
-        if not scenes_dict.has_key(filename):
-            # print "Warning : " + filename + " was found in " + maxima_file \
-            #       + " but not in " + scenes_folder
+        try:
+            scene = scenes_dict[filename]
+        except KeyError:
             continue
-
-        scene = scenes_dict[filename]
 
         # Peaks are normalized to a range [0, 1]
         scene.maxima = [ int(position) for position in maxima ]
-        scene.norm_maxima = [ float(position) / scene.measuresCount for 
-                              position in maxima ]
+        scene.norm_maxima = [ float(position) / scene.step_count
+                              for position in maxima ]
 
         for maximum in scene.norm_maxima:
             if maximum < 0 or maximum > 1:
                 print "Warning : " + filename + " has a maximum at a" \
                       + " position outside of the range [0, 1]."
-
-
-def peak_count(scenes):
-    return sum(len(scene.maxima) for scene in scenes)

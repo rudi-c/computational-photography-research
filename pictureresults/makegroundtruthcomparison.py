@@ -82,19 +82,18 @@ def main(argv):
         elif opt in ("-d", "--double-step"):
             step_size = 2
 
-    if tree == None:
+    if tree is None:
         print_script_usage()
         sys.exit(2)
 
     scenes = load_scenes()
-    load_maxima_into_measures(scenes)
 
     # We need to calculate the probability of getting the correct
     # classification at certain intervals, but not every scene has
     # the same number of lens positions. Here we just use the least
     # number of intervals amongst all scenes (which should also be
     # the majority).
-    steps = min([scene.measuresCount for scene in scenes])
+    steps = min([scene.step_count for scene in scenes])
     assert steps > 0
 
     # Start at 2 * step_size to match the number of classifications
@@ -115,17 +114,17 @@ def main(argv):
     correct_bins = [ 0 ] * steps
     incorrect_bins = [ 0 ] * steps
     for scene in scenes:
-        for lens_pos in range(2 * step_size, scene.measuresCount):
+        for lens_pos in range(2 * step_size, scene.step_count):
 
             # The classifier function returns True if the answer is Left
             correct_class = classifier(scene, lens_pos)
 
             # The tree returns 0 if the answer is Left, so we need to change
             # it to True.
-            first  = scene.measuresValues[lens_pos - step_size * 2]
-            second = scene.measuresValues[lens_pos - step_size]
-            third  = scene.measuresValues[lens_pos]
-            norm_lens_pos = float(lens_pos) / (scene.measuresCount - 1)
+            first  = scene.fvalues[lens_pos - step_size * 2]
+            second = scene.fvalues[lens_pos - step_size]
+            third  = scene.fvalues[lens_pos]
+            norm_lens_pos = float(lens_pos) / (scene.step_count - 1)
             evaluator = leftright_feature_evaluator(first, second, 
                                                     third, norm_lens_pos)
 
@@ -134,8 +133,8 @@ def main(argv):
 
             # Need to round at a few decimal points to make sure that floating
             # point precisions errors don't make it so that i != lens_pos
-            # when scene.measuresCount == steps.
-            i = int(round(float(lens_pos) / scene.measuresCount * steps, 4))
+            # when scene.step_count == steps.
+            i = int(round(float(lens_pos) / scene.step_count * steps, 4))
 
             if correct_class == dectree_class:
                 correct_bins[i] += 1

@@ -46,7 +46,7 @@ def get_data_lines(scenes, classifier,
     lines = []
 
     for scene in scenes:
-        for lens_pos in range(2 * step_size, scene.measuresCount):
+        for lens_pos in range(2 * step_size, scene.step_count):
 
             go_left =  classifier(scene, lens_pos)
 
@@ -68,10 +68,10 @@ def get_data_lines(scenes, classifier,
                     classification = ",coarse"
 
             values = [feature(
-                first  = scene.measuresValues[pos_1st],
-                second = scene.measuresValues[pos_2nd],
-                third  = scene.measuresValues[pos_3rd],
-                lens_pos = float(pos_3rd) / (scene.measuresCount - 1))
+                first  = scene.fvalues[pos_1st],
+                second = scene.fvalues[pos_2nd],
+                third  = scene.fvalues[pos_3rd],
+                lens_pos = float(pos_3rd) / (scene.step_count - 1))
                       for _, _, feature in features]
 
             lines.append(','.join([str(convert_true_false(value))
@@ -82,10 +82,6 @@ def get_data_lines(scenes, classifier,
 
 
 def main(argv):
-    if not os.path.isdir(scenes_folder):
-        print scenes_folder + " folder not found."
-        return
-
     filters = []
     features = two_measure_features
     classifier = highest_on_left
@@ -111,7 +107,6 @@ def main(argv):
             filters.append(arg)
 
     scenes = load_scenes()
-    load_maxima_into_measures(scenes)
 
     # Print the contents of the ARFF file to screen (use output
     # redirection to save to file)

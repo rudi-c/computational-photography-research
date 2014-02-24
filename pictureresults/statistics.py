@@ -52,11 +52,11 @@ def probability_highest_peak(lens_pos, scenes, comparator):
     count = 0
     for scene in scenes:
         highest = 0
-        for i in range(1, scene.measuresCount):
-            if scene.measuresValues[i] > scene.measuresValues[highest]:
+        for i in range(1, scene.step_count):
+            if scene.fvalues[i] > scene.fvalues[highest]:
                 highest = i
 
-        if comparator(float(highest), lens_pos * scene.measuresCount):
+        if comparator(float(highest), lens_pos * scene.step_count):
             count += 1
     return float(count) / len(scenes)
 
@@ -125,12 +125,12 @@ def probability_nearhighest(lens_pos, scenes, comparator):
 
         # Find the values that maximizes height / distance
         for maximum in scene.maxima:
-            n_maximum = float(maximum) / scene.measuresCount
+            n_maximum = float(maximum) / scene.step_count
 
             # Ignore if the peak is exactly at this location, it will
             # give division by zero and is neither left or right.
             if not lens_pos == n_maximum:
-                value = (scene.measuresValues[maximum] /
+                value = (scene.fvalues[maximum] /
                          abs(lens_pos - n_maximum))
             if value > bestvalue:
                 nearhighest = n_maximum

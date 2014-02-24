@@ -28,38 +28,38 @@ class Evaluator(object):
         self.action_tree = action_tree
         self.step_size = step_size
         self.scene = scene
-        self.status = [ "none" ] * scene.measuresCount
-        self.result = [ -100 ] * scene.measuresCount
-        self.visitedPositions = [ [] ] * scene.measuresValues
+        self.status = [ "none" ] * scene.step_count
+        self.result = [ -100 ] * scene.step_count
+        self.visitedPositions = [ [] for _ in scene.fvalues ]
         if perfect_classification is None:
             self.perfect_classification = None
         else:
             self.perfect_classification = \
-                perfect_classification[scene.fileName]
+                perfect_classification[scene.filename]
 
     def _walk_left_fine(self, lens_pos, count=1):
         for _ in range(count):
             visitedPositions = self.visitedPositions[lens_pos]
             visitedPositions.append(max(0, min(visitedPositions[-1] - 1,
-                self.scene.measuresCount - 1)))
+                self.scene.step_count - 1)))
 
     def _walk_left_coarse(self, lens_pos, count=1):
         for _ in range(count):
             visitedPositions = self.visitedPositions[lens_pos]
             visitedPositions.append(max(0, min(visitedPositions[-1] - 8,
-                self.scene.measuresCount - 1)))
+                self.scene.step_count - 1)))
 
     def _walk_right_fine(self, lens_pos, count=1):
         for _ in range(count):
             visitedPositions = self.visitedPositions[lens_pos]
             visitedPositions.append(max(0, min(visitedPositions[-1] + 1,
-                self.scene.measuresCount - 1)))
+                self.scene.step_count - 1)))
 
     def _walk_right_coarse(self, lens_pos, count=1):
         for _ in range(count):
             visitedPositions = self.visitedPositions[lens_pos]
             visitedPositions.append(max(0, min(visitedPositions[-1] + 8,
-                self.scene.measuresCount - 1)))
+                self.scene.step_count - 1)))
 
     def _walk_fine(self, lens_pos, direction, count=1):
         if direction in ("left", -1):
@@ -79,14 +79,14 @@ class Evaluator(object):
 
     def _max_among(self, lens_positions):
         return max(lens_positions, 
-                   key=(lambda pos : self.scene.measuresValues[pos]))
+                   key=(lambda pos : self.scene.fvalues[pos]))
 
     def _do_local_search(self, lens_pos, maximum_pos, direction, rev_direction):
         visitedPositions = self.visitedPositions[lens_pos]
-        while 0 < visitedPositions[-1] < self.scene.measuresCount - 1:
+        while 0 < visitedPositions[-1] < self.scene.step_count - 1:
             self._walk_fine(lens_pos, direction, 1)
-            if self.scene.measuresValues[visitedPositions[-1]] > \
-                    self.scene.measuresValues[maximum_pos]:
+            if self.scene.fvalues[visitedPositions[-1]] > \
+                    self.scene.fvalues[maximum_pos]:
                 maximum_pos = visitedPositions[-1]
             else:
                 # Backtrack and stop.
@@ -163,46 +163,46 @@ class Evaluator(object):
         current_pos = lens_positions[-1]
 
         # Size of the first step determined by another decision tree.
-        if 0 < current_pos < scene.measuresCount - 1:
-            first  = self.scene.measuresValues[lens_positions[-3]]
-            second = self.scene.measuresValues[lens_positions[-2]]
-            third  = self.scene.measuresValues[current_pos]
-            norm_lens_pos = float(current_pos) / (self.scene.measuresCount - 1)
+        if 0 < current_pos < scene.step_count - 1:
+            first  = self.scene.fvalues[lens_positions[-3]]
+            second = self.scene.fvalues[lens_positions[-2]]
+            third  = self.scene.fvalues[current_pos]
+            norm_lens_pos = float(current_pos) / (self.scene.step_count - 1)
             evaluator = featuresleftright.leftright_feature_evaluator(
                 first, second, third, norm_lens_pos)
             first_size = evaluate_tree(self.first_size_tree, evaluator)
 
             if first_size == "coarse":
                 previously_coarse_step = True
-                current_pos = min(scene.measuresCount - 1, 
+                current_pos = min(scene.step_count - 1, 
                                   max(0, current_pos + direction * 8))
             else:
                 previously_coarse_step = False
-                current_pos = min(scene.measuresCount - 1, 
+                current_pos = min(scene.step_count - 1, 
                                   max(0, current_pos + direction))
             lens_positions.append(current_pos)
 
         current_pos = lens_positions[-1]
 
-        while 0 < current_pos < scene.measuresCount - 1:
+        while 0 < current_pos < scene.step_count - 1:
             # Determine next step size.
             if previously_coarse_step:
                 coarse_now = coarse_if_previously_coarse(
-                    scene.measuresValues[current_pos],
-                    scene.measuresValues[lens_positions[-2]],
-                    scene.measuresValues[lens_positions[-3]])
+                    scene.fvalues[current_pos],
+                    scene.fvalues[lens_positions[-2]],
+                    scene.fvalues[lens_positions[-3]])
             else:
                 coarse_now = coarse_if_previously_fine(
-                    scene.measuresValues[current_pos],
-                    scene.measuresValues[lens_positions[-2]],
-                    scene.measuresValues[lens_positions[-3]])
+                    scene.fvalues[current_pos],
+                    scene.fvalues[lens_positions[-2]],
+                    scene.fvalues[lens_positions[-3]])
 
             # Move the lens forward.
             if coarse_now:
-                current_pos = min(scene.measuresCount - 1, 
+                current_pos = min(scene.step_count - 1, 
                                   max(0, current_pos + direction * 8))
             else:
-                current_pos = min(scene.measuresCount - 1, 
+                current_pos = min(scene.step_count - 1, 
                                   max(0, current_pos + direction))
 
             lens_positions.append(current_pos)
@@ -211,8 +211,8 @@ class Evaluator(object):
             if self.perfect_classification is None:
                 # Obtain the ML classification at the new lens position.
                 evaluator = featuresturn.action_feature_evaluator(direction, 
-                    self.scene.measuresValues, lens_positions, 
-                    self.scene.measuresCount)
+                    self.scene.fvalues, lens_positions, 
+                    self.scene.step_count)
                 classification = evaluate_tree(self.action_tree, evaluator)
             else:
                 classification = self.perfect_classification[make_key(
@@ -277,10 +277,10 @@ class Evaluator(object):
 
     def _evaluate_at_position(self, lens_pos):
         # Decide initial direction in which to look.
-        first  = self.scene.measuresValues[lens_pos - self.step_size * 2]
-        second = self.scene.measuresValues[lens_pos - self.step_size]
-        third  = self.scene.measuresValues[lens_pos]
-        norm_lens_pos = float(lens_pos) / (self.scene.measuresCount - 1)
+        first  = self.scene.fvalues[lens_pos - self.step_size * 2]
+        second = self.scene.fvalues[lens_pos - self.step_size]
+        third  = self.scene.fvalues[lens_pos]
+        norm_lens_pos = float(lens_pos) / (self.scene.step_count - 1)
 
         evaluator = featuresleftright.leftright_feature_evaluator(
             first, second, third, norm_lens_pos)
@@ -310,7 +310,7 @@ class Evaluator(object):
     def evaluate(self):
         """For every scene and every lens position, run a simulation and
         store the statistics."""
-        for lens_pos in range(self.step_size * 2, self.scene.measuresCount):
+        for lens_pos in range(self.step_size * 2, self.scene.step_count):
             self._evaluate_at_position(lens_pos)
 
     def _is_true_positive(self, status, result):
@@ -428,13 +428,13 @@ def benchmark_specific(left_right_tree, first_size_tree,
                        action_tree, step_size, 
                        scenes, specific_scene, perfect_classification):
     for scene in scenes:
-        if scene.fileName == specific_scene:
+        if scene.filename == specific_scene:
             evaluator = Evaluator(left_right_tree, first_size_tree,
                                   action_tree, 
                                   step_size, scene, perfect_classification)
             evaluator.evaluate()
 
-            for lens_pos in range(2 * step_size, scene.measuresCount):
+            for lens_pos in range(2 * step_size, scene.step_count):
                 print_R_script(scene, lens_pos, 
                     evaluator.visitedPositions[lens_pos],
                     evaluator.get_evaluation_at(lens_pos),
@@ -443,13 +443,13 @@ def benchmark_specific(left_right_tree, first_size_tree,
 
 def print_R_script(scene, lens_pos, visitedPositions, evaluation, result):
 
-    print "# %s at %d, %s\n" % (scene.fileName, lens_pos, evaluation)
+    print "# %s at %d, %s\n" % (scene.filename, lens_pos, evaluation)
 
     # Some R functions for plotting.
     print_set_window_division(1, 1)
     print "library(scales)" # for alpha blending
 
-    print_plot_focus_measures(scene.measuresValues, show_grid=True)
+    print_plot_focus_measures(scene.fvalues, show_grid=True)
 
     xs = visitedPositions
     ys = [ float(i) / max(10, len(visitedPositions))
@@ -484,11 +484,6 @@ def print_script_usage():
 
 
 def main(argv):
-
-    if not os.path.isdir(scenes_folder):
-        print scenes_folder + " folder not found."
-        return
-
     # Parse script arguments
     try:
         opts, _ = getopt.getopt(argv, "d",
@@ -536,7 +531,6 @@ def main(argv):
         sys.exit(2)
 
     scenes = load_scenes(excluded_scenes=["cat.txt", "moon.txt"])
-    load_maxima_into_measures(scenes)
 
     if specific_scene is None:
         benchmark_scenes(left_right_tree, first_size_tree,

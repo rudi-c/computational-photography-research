@@ -293,7 +293,7 @@ def highest_on_left(scene, lens_pos):
     # Find the location of the highest peak
     highest = scene.maxima[0]
     for maxima in scene.maxima:
-        if scene.measuresValues[maxima] > scene.measuresValues[highest]:
+        if scene.fvalues[maxima] > scene.fvalues[highest]:
             highest = maxima
     return highest < lens_pos
 
@@ -311,7 +311,7 @@ def highest_and_near_on_left(scene, lens_pos):
     best = scene.maxima[0]
     for maxima in scene.maxima:
         # Need to add a + 1 to the distance to avoid division by zero.
-        if (scene.measuresValues[maxima] / (abs(lens_pos - maxima) + 1) >
-            scene.measuresValues[best] / (abs(lens_pos - best) + 1)):
+        if (scene.fvalues[maxima] / (abs(lens_pos - maxima) + 1) >
+            scene.fvalues[best] / (abs(lens_pos - best) + 1)):
             best = maxima
     return best < lens_pos

@@ -18,17 +18,17 @@ from rtools     import *
 def simulate(scene):
 
     last_step_coarse = True
-    f_cur   = scene.measuresValues[0]
-    f_prev  = scene.measuresValues[0]
-    f_prev2 = scene.measuresValues[0]
+    f_cur   = scene.fvalues[0]
+    f_prev  = scene.fvalues[0]
+    f_prev2 = scene.fvalues[0]
     position = 1
 
     output = []
 
-    while position < scene.measuresCount:
+    while position < scene.step_count:
         f_prev2 = f_prev
         f_prev = f_cur
-        f_cur = scene.measuresValues[position]
+        f_cur = scene.fvalues[position]
         if last_step_coarse:
             step_coarse = coarse_if_previously_coarse(f_cur, f_prev, f_prev2)
         else:
@@ -48,11 +48,11 @@ def simulate(scene):
 
 def print_R_script(scene):
 
-    print "# " + scene.fileName + "\n"
+    print "# " + scene.filename + "\n"
 
     # Some R functions for plotting.
     print "library(scales)" # for alpha blending
-    print_plot_focus_measures(scene.measuresValues)
+    print_plot_focus_measures(scene.fvalues)
 
     # Axis to indicate that the bottom points mean coarse and
     # the top points means fine.
@@ -97,12 +97,12 @@ def main(argv):
     for opt, arg in opts:
         if opt in ("-s", "--scene"):
             scene = Scene(arg)
+            load_maxima([scene])
 
-    if scene == None:
+    if scene is None:
         print_script_usage()
         sys.exit(2)
 
-    load_maxima_into_measures([scene])
     print_R_script(scene)
 
 

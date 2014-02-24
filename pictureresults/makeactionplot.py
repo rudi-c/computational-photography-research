@@ -29,15 +29,15 @@ def print_left_classes(scene, params):
     segments_turn_peak = []
     segments_backtrack = []
 
-    for start_pos in range(0, scene.measuresCount):
-        y = float(start_pos) / scene.measuresCount
+    for start_pos in range(0, scene.step_count):
+        y = float(start_pos) / scene.step_count
         classes = [ get_move_left_classification(start_pos, pos, 
-                        scene.measuresValues, scene.maxima, params)
+                        scene.fvalues, scene.maxima, params)
                     for pos in range(0, start_pos + 1) ]
         segments = segmentation(classes)
         for start, end in zip(segments[:-1], segments[1:]):
-            fstart = float(start) / scene.measuresCount
-            fend   = float(end)   / scene.measuresCount
+            fstart = float(start) / scene.step_count
+            fend   = float(end)   / scene.step_count
             if classes[start] == Action.CONTINUE:
                 segments_continue.append((fstart, fend, y))
             elif classes[start] == Action.TURN_PEAK:
@@ -71,15 +71,15 @@ def print_right_classes(scene, params):
     segments_turn_peak = []
     segments_backtrack = []
 
-    for start_pos in range(0, scene.measuresCount):
-        y = float(start_pos) / scene.measuresCount
+    for start_pos in range(0, scene.step_count):
+        y = float(start_pos) / scene.step_count
         classes = [ get_move_right_classification(start_pos, pos, 
-                        scene.measuresValues, scene.maxima, params)
-                    for pos in range(start_pos, scene.measuresCount) ]
+                        scene.fvalues, scene.maxima, params)
+                    for pos in range(start_pos, scene.step_count) ]
         segments = segmentation(classes)
         for start, end in zip(segments[:-1], segments[1:]):
-            fstart = float(start + start_pos) / scene.measuresCount
-            fend   = float(end + start_pos)   / scene.measuresCount
+            fstart = float(start + start_pos) / scene.step_count
+            fend   = float(end + start_pos)   / scene.step_count
             if classes[start] == Action.CONTINUE:
                 segments_continue.append((fstart, fend, y))
             elif classes[start] == Action.TURN_PEAK:
@@ -108,7 +108,7 @@ def print_right_classes(scene, params):
 
 def print_R_script(scene, params):
 
-    print "# " + scene.fileName + "\n"
+    print "# " + scene.filename + "\n"
 
     # Some R functions for plotting.
     print_set_window_division(3, 1)
@@ -118,7 +118,7 @@ def print_R_script(scene, params):
     print_right_classes(scene, params)
 
     print ""
-    print_plot_focus_measures(scene.measuresValues, (-0.1, 1))
+    print_plot_focus_measures(scene.fvalues, (-0.1, 1))
     print ""
 
     print "plot.new()"
@@ -128,11 +128,6 @@ def print_R_script(scene, params):
 
 
 def main(argv):
-
-    if not os.path.isdir(scenes_folder):
-        print scenes_folder + " folder not found."
-        return
-
     params = ParameterSet()
 
     # Process command line options.
@@ -143,7 +138,6 @@ def main(argv):
             params.backtrackHandling = BacktrackHandling.FASTER
 
     scenes = load_scenes()
-    load_maxima_into_measures(scenes)
 
     for scene in scenes:
         print_R_script(scene, params)

@@ -27,34 +27,29 @@ def classify_for_scene(scene, params):
     left_moves = \
         { make_key("left", initial_pos, current_pos):
             class_names[get_move_left_classification(
-                initial_pos, current_pos, scene.measuresValues,
+                initial_pos, current_pos, scene.fvalues,
                 scene.maxima, params)]
-            for initial_pos in range(0, scene.measuresCount)
+            for initial_pos in range(0, scene.step_count)
             for current_pos in range(0, initial_pos + 1) }
     right_moves = \
         { make_key("right", initial_pos, current_pos):
             class_names[get_move_right_classification(
-                initial_pos, current_pos, scene.measuresValues,
+                initial_pos, current_pos, scene.fvalues,
                 scene.maxima, params)]
-            for initial_pos in range(0, scene.measuresCount)
-            for current_pos in range(initial_pos, scene.measuresCount) }
+            for initial_pos in range(0, scene.step_count)
+            for current_pos in range(initial_pos, scene.step_count) }
 
     return dict(left_moves.items() + right_moves.items())
 
 
 def create_json(scenes, params):
     scene_classifications = \
-        {scene.fileName: classify_for_scene(scene, params)
+        {scene.filename: classify_for_scene(scene, params)
          for scene in scenes}
     return json.dumps(scene_classifications)
 
 
 def main(argv):
-
-    if not os.path.isdir(scenes_folder):
-        print scenes_folder + " folder not found."
-        return
-
     params = ParameterSet()
 
     # Process command line options.
@@ -65,7 +60,6 @@ def main(argv):
             params.backtrackHandling = BacktrackHandling.FASTER
 
     scenes = load_scenes()
-    load_maxima_into_measures(scenes)
 
     json_file = create_json(scenes, params)
     print json_file
