@@ -5,7 +5,6 @@
 
 import getopt
 import json
-import os
 import sys
 
 from coarsefine   import *
@@ -18,62 +17,74 @@ import featuresleftright
 def make_key(direction, initial_pos, current_pos):
     return "%s-%d-%d" % (direction, initial_pos, current_pos)
 
+class BenchmarkParameters(object):
+
+    def __init__(self):
+        self.left_right_tree = None
+        self.first_size_tree = None
+        self.action_tree = None
+        self.step_size = 1
+        self.perfect_classification = None
+
+    def missing_params(self):
+        """Returns whether enough parameters have been set for simulation."""
+        missing_trees = (self.left_right_tree is None or 
+                         self.first_size_tree is None or
+                         self.action_tree is None)
+        return self.perfect_classification is None and missing_trees
+
+    def initial_pos_range(self, scene):
+        """Possible values for the initial lens position."""
+        return range(2 * self.step_size, scene.step_count)
+        
+
 class Evaluator(object):
 
-    def __init__(self, left_right_tree, first_size_tree,
-                 action_tree, step_size, scene,
-                 perfect_classification):
-        self.left_right_tree = left_right_tree
-        self.first_size_tree = first_size_tree
-        self.action_tree = action_tree
-        self.step_size = step_size
+    def __init__(self, params, scene, initial_pos):
+        self.params = params
         self.scene = scene
-        self.status = [ "none" ] * scene.step_count
-        self.result = [ -100 ] * scene.step_count
-        self.visitedPositions = [ [] for _ in scene.fvalues ]
-        if perfect_classification is None:
+        self.initial_pos = initial_pos
+        self.status = "none"
+        self.visited_positions = []
+        if params.perfect_classification is None:
             self.perfect_classification = None
         else:
             self.perfect_classification = \
-                perfect_classification[scene.filename]
+                params.perfect_classification[scene.filename]
 
-    def _walk_left_fine(self, lens_pos, count=1):
+    def _walk_left_fine(self, count=1):
         for _ in range(count):
-            visitedPositions = self.visitedPositions[lens_pos]
-            visitedPositions.append(max(0, min(visitedPositions[-1] - 1,
+            self.visited_positions.append(max(0, min(self.last_position() - 1,
                 self.scene.step_count - 1)))
 
-    def _walk_left_coarse(self, lens_pos, count=1):
+    def _walk_left_coarse(self, count=1):
         for _ in range(count):
-            visitedPositions = self.visitedPositions[lens_pos]
-            visitedPositions.append(max(0, min(visitedPositions[-1] - 8,
+            self.visited_positions.append(max(0, min(self.last_position() - 8,
                 self.scene.step_count - 1)))
 
-    def _walk_right_fine(self, lens_pos, count=1):
+    def _walk_right_fine(self, count=1):
         for _ in range(count):
-            visitedPositions = self.visitedPositions[lens_pos]
-            visitedPositions.append(max(0, min(visitedPositions[-1] + 1,
+            self.visited_positions.append(max(0, min(self.last_position() + 1,
                 self.scene.step_count - 1)))
 
-    def _walk_right_coarse(self, lens_pos, count=1):
+    def _walk_right_coarse(self, count=1):
         for _ in range(count):
-            visitedPositions = self.visitedPositions[lens_pos]
-            visitedPositions.append(max(0, min(visitedPositions[-1] + 8,
+            self.visited_positions.append(max(0, min(self.last_position() + 8,
                 self.scene.step_count - 1)))
 
-    def _walk_fine(self, lens_pos, direction, count=1):
+    def _walk_fine(self, direction, count=1):
         if direction in ("left", -1):
-            self._walk_left_fine(lens_pos, count)
+            self._walk_left_fine(count)
         elif direction in ("right", +1):
-            self._walk_right_fine(lens_pos, count)
+            self._walk_right_fine(count)
         else:
             assert False, direction
 
-    def _walk_coarse(self, lens_pos, direction, count=1):
+    def _walk_coarse(self, direction, count=1):
         if direction in ("left", -1):
-            self._walk_left_coarse(lens_pos, count)
+            self._walk_left_coarse(count)
         elif direction in ("right", +1):
-            self._walk_right_coarse(lens_pos, count)
+            self._walk_right_coarse(count)
         else:
             assert False, direction
 
@@ -81,23 +92,20 @@ class Evaluator(object):
         return max(lens_positions, 
                    key=(lambda pos : self.scene.fvalues[pos]))
 
-    def _do_local_search(self, lens_pos, maximum_pos, direction, rev_direction):
-        visitedPositions = self.visitedPositions[lens_pos]
-        while 0 < visitedPositions[-1] < self.scene.step_count - 1:
-            self._walk_fine(lens_pos, direction, 1)
-            if self.scene.fvalues[visitedPositions[-1]] > \
+    def _do_local_search(self, maximum_pos, direction, rev_direction):
+        while 0 < self.last_position() < self.scene.step_count - 1:
+            self._walk_fine(direction, 1)
+            if self.scene.fvalues[self.last_position()] > \
                     self.scene.fvalues[maximum_pos]:
-                maximum_pos = visitedPositions[-1]
+                maximum_pos = self.last_position()
             else:
                 # Backtrack and stop.
-                self._walk_fine(lens_pos, rev_direction, 1)
+                self._walk_fine(rev_direction, 1)
                 break
         return maximum_pos
 
-    def _go_to_max(self, lens_pos, lens_positions):
-        visitedPositions = self.visitedPositions[lens_pos]
-
-        current_pos = visitedPositions[-1]
+    def _go_to_max(self, lens_positions):
+        current_pos = self.last_position()
         maximum_pos = self._max_among(lens_positions)
 
         if maximum_pos < current_pos:
@@ -117,7 +125,7 @@ class Evaluator(object):
         # the maximum point.
         distance = abs(current_pos - maximum_pos)
         coarse_steps = distance / 8
-        self._walk_coarse(lens_pos, direction, coarse_steps)
+        self._walk_coarse(direction, coarse_steps)
 
         # If the remainder is 6-7, we will need to take 6-7 fine steps and it
         # would in theory be better to take a coarse step and go back the other
@@ -126,31 +134,28 @@ class Evaluator(object):
         fine_steps = distance % 8
         potential_maxs = []
         for _ in range(fine_steps):
-            self._walk_fine(lens_pos, direction, 1)
-            potential_maxs.append(visitedPositions[-1])
+            self._walk_fine(direction, 1)
+            potential_maxs.append(self.last_position())
 
-        assert visitedPositions[-1] == maximum_pos
+        assert self.last_position() == maximum_pos
 
         if (len(potential_maxs) > 0 and
             self._max_among(potential_maxs) != maximum_pos):
             # Found something better, go back that way.
-            self._walk_fine(lens_pos, rev_direction, 
+            self._walk_fine(rev_direction, 
                 abs(maximum_pos - self._max_among(potential_maxs)))
             maximum_pos = self._max_among(potential_maxs)
         else:
             # Keep going to see if we can find a higher position.
-            maximum_pos = self._do_local_search(lens_pos, 
+            maximum_pos = self._do_local_search(
                 maximum_pos, direction, rev_direction)
             # If we didn't take any fine steps at all to get to the
             # max lens position, we should look the other way too.
             if fine_steps == 0:
-                maximum_pos = self._do_local_search(lens_pos,
+                maximum_pos = self._do_local_search(
                     maximum_pos, rev_direction, direction)
 
-        self.status[lens_pos] = "foundmax"
-        self.result[lens_pos] = maximum_pos
-
-        assert visitedPositions[-1] == maximum_pos
+        self.status = "foundmax"
 
     def _sweep(self, direction, initial_positions):
         # Sweep the lens in one direction.
@@ -170,7 +175,7 @@ class Evaluator(object):
             norm_lens_pos = float(current_pos) / (self.scene.step_count - 1)
             evaluator = featuresleftright.leftright_feature_evaluator(
                 first, second, third, norm_lens_pos)
-            first_size = evaluate_tree(self.first_size_tree, evaluator)
+            first_size = evaluate_tree(self.params.first_size_tree, evaluator)
 
             if first_size == "coarse":
                 previously_coarse_step = True
@@ -213,7 +218,8 @@ class Evaluator(object):
                 evaluator = featuresturn.action_feature_evaluator(direction, 
                     self.scene.fvalues, lens_positions, 
                     self.scene.step_count)
-                classification = evaluate_tree(self.action_tree, evaluator)
+                classification = evaluate_tree(
+                    self.params.action_tree, evaluator)
             else:
                 classification = self.perfect_classification[make_key(
                     dir_str, lens_positions[0], current_pos)]
@@ -226,18 +232,19 @@ class Evaluator(object):
         # TODO: What should be the default action when an edge is reached?
         return "backtrack", lens_positions
 
-    def _backtrack(self, lens_pos, current_lens_pos):
+    def _backtrack(self, current_lens_pos):
         """From the current lens position, go back to the lens position we
         were at before and look on the other side."""
-        distance_from_initial = abs(lens_pos - current_lens_pos)
+        initial_pos = self.initial_pos
+        distance_from_initial = abs(initial_pos - current_lens_pos)
 
-        previous_direction_was_left = current_lens_pos < lens_pos
+        previous_direction_was_left = current_lens_pos < self.initial_pos
 
         # We need to reinitialize the list of lens positions used as a feature
         # during the sweep algorithm, to avoid mixing it with the positions
         # of the previous sweep. 
-        initial_positions = [lens_pos - self.step_size * 2, 
-                             lens_pos - self.step_size, lens_pos]
+        initial_positions = [initial_pos - self.params.step_size * 2, 
+                             initial_pos - self.params.step_size, initial_pos]
         if previous_direction_was_left:
             # Go right this time
             new_direction = +1
@@ -250,45 +257,45 @@ class Evaluator(object):
         # It's fine if we overshoot it a little bit if it saves some steps.
 
         coarse_steps = distance_from_initial / 8
-        self._walk_coarse(lens_pos, new_direction, coarse_steps)
+        self._walk_coarse(new_direction, coarse_steps)
 
         # An extra distance that coarse steps won't reach exactly
         remainder = distance_from_initial % 8
         if remainder > 4:
             # Take more fine steps to reach initial position.
-            self._walk_fine(lens_pos, new_direction, 8 - remainder)
+            self._walk_fine(new_direction, 8 - remainder)
         else:
             # Take one big coarse step, which will overshoot a bit.
-            self._walk_coarse(lens_pos, new_direction, 1)
-            initial_positions.append(self.visitedPositions[lens_pos][-1])
+            self._walk_coarse(new_direction, 1)
+            initial_positions.append(self.last_position())
 
         result, positions = self._sweep(new_direction, initial_positions)
 
-        self.visitedPositions[lens_pos].extend(
-            positions[len(initial_positions):])
+        self.visited_positions.extend(positions[len(initial_positions):])
 
         if result == "turn_peak":
-            self._go_to_max(lens_pos, positions)
+            self._go_to_max(positions)
         elif result == "backtrack":
             # If we need to backtrack a second time, we failed.
-            self.status[lens_pos] = "failed"
+            self.status = "failed"
         else:
             assert False
 
-    def _evaluate_at_position(self, lens_pos):
+    def evaluate(self):
+        """For every scene and every lens position, run a simulation and
+        store the statistics."""
         # Decide initial direction in which to look.
-        first  = self.scene.fvalues[lens_pos - self.step_size * 2]
-        second = self.scene.fvalues[lens_pos - self.step_size]
-        third  = self.scene.fvalues[lens_pos]
-        norm_lens_pos = float(lens_pos) / (self.scene.step_count - 1)
+        initial_pos = self.initial_pos
+        initial_positions = [initial_pos - self.params.step_size * 2, 
+                             initial_pos - self.params.step_size, initial_pos]
+        first, second, third = self.scene.get_focus_values(initial_positions)
+        norm_lens_pos = float(initial_pos) / (self.scene.step_count - 1)
 
         evaluator = featuresleftright.leftright_feature_evaluator(
             first, second, third, norm_lens_pos)
-        direction = evaluate_tree(self.left_right_tree, evaluator)
+        direction = evaluate_tree(self.params.left_right_tree, evaluator)
 
-        initial_positions = [lens_pos - self.step_size * 2, 
-                             lens_pos - self.step_size, lens_pos]
-        self.visitedPositions[lens_pos].extend(initial_positions)
+        self.visited_positions.extend(initial_positions)
         if direction == "left":
             initial_positions.reverse()
             result, positions = self._sweep(-1, initial_positions)
@@ -297,73 +304,54 @@ class Evaluator(object):
         else:
             assert False
 
-        self.visitedPositions[lens_pos].extend(
-            positions[len(initial_positions):])
+        self.visited_positions.extend(positions[len(initial_positions):])
 
         if result == "turn_peak":
-            self._go_to_max(lens_pos, positions)
+            self._go_to_max(positions)
         elif result == "backtrack":
-            self._backtrack(lens_pos, positions[-1])
+            self._backtrack(positions[-1])
         else:
             assert False
 
-    def evaluate(self):
-        """For every scene and every lens position, run a simulation and
-        store the statistics."""
-        for lens_pos in range(self.step_size * 2, self.scene.step_count):
-            self._evaluate_at_position(lens_pos)
+    def last_position(self):
+        return self.visited_positions[-1]
 
-    def _is_true_positive(self, status, result):
-        return (status == "foundmax" and 
-                self.scene.distance_to_closest_peak(result) <= 1)
+    def is_true_positive(self):
+        """Whether a peak was found and the peak is close to a real peak."""
+        return (self.status == "foundmax" and 
+                self.scene.distance_to_closest_peak(self.last_position()) <= 1)
 
-    def _is_false_positive(self, status, result):
-        return (status == "foundmax" and 
-                self.scene.distance_to_closest_peak(result) > 1)
+    def is_false_positive(self):
+        """Whether a peak was found and the peak not close to a real peak."""
+        return (self.status == "foundmax" and 
+                self.scene.distance_to_closest_peak(self.last_position()) > 1)
 
-    def _is_true_negative(self, status, visited):
-        return (status == "failed" and 
+    def is_true_negative(self):
+        """Whether we failed to find a peak and we didn't come 
+        close to a real peak."""
+        return (self.status == "failed" and 
                 all(self.scene.distance_to_closest_peak(pos) > 1
-                    for pos in visited))
+                    for pos in self.visited_positions))
 
-    def _is_false_negative(self, status, visited):
-        return (status == "failed" and 
+    def is_false_negative(self):
+        """Whether we failed to find a peak but we did come 
+        close to a real peak."""
+        return (self.status == "failed" and 
                 any(self.scene.distance_to_closest_peak(pos) <= 1
-                    for pos in visited))
+                    for pos in self.visited_positions))
 
-    def get_evaluation_at(self, lens_pos):
-        status = self.status[lens_pos]
-        result = self.result[lens_pos]
-        if self._is_true_positive(status, result):
+    def get_evaluation(self):
+        """Return whether a simulation for this scene starting at the given
+        lens position gave a true/false positive/negative.
+        """
+        if self.is_true_positive():
             return "true positive"
-        if self._is_false_positive(status, result):
+        if self.is_false_positive():
             return "false positive"
-        visited = self.visitedPositions[lens_pos]
-        if self._is_true_negative(status, visited):
+        if self.is_true_negative():
             return "true negative"
-        if self._is_false_negative(status, visited):
+        if self.is_false_negative():
             return "false negative"
-
-    def count_true_positive(self):
-        """Number of instances where a real peak has been marked as found."""
-        return sum(self._is_true_positive(status, result) 
-                   for status, result in zip(self.status, self.result))
-
-    def count_false_positive(self):
-        """Number of instances where a peak marked a found is not a real peak,
-        or not close enough to the real peak."""
-        return sum(self._is_false_positive(status, result) 
-                   for status, result in zip(self.status, self.result))
-
-    def count_true_negative(self):
-        """Number of instances where we failed to come close to a peak."""
-        return sum(self._is_true_negative(status, visited) for status, visited
-                   in zip(self.status, self.visitedPositions))
-
-    def count_false_negative(self):
-        """Number of instances where we came close to a peak but ignored it."""
-        return sum(self._is_false_negative(status, visited) for status, visited
-                         in zip(self.status, self.visitedPositions))
 
 
 def print_aligned_data_rows(rows):
@@ -374,16 +362,27 @@ def print_aligned_data_rows(rows):
                        for length, col in zip(column_lengths, row))
 
 
-def benchmark_scenes(left_right_tree, first_size_tree,
-                     action_tree, step_size, scenes,
-                     perfect_classification):
-    evaluators = [ Evaluator(left_right_tree, first_size_tree,
-                             action_tree, step_size, scene,
-                             perfect_classification) 
-                   for scene in scenes ]
-    for evaluator in evaluators:
+def benchmark_scene(params, scene):
+    """Runs the simulation for a scene for every lens position and returns a
+    tuple (# true positive, # false positive, 
+           # true negative, # false negative, # steps)
+    """
+    evaluators = [Evaluator(params, scene, initial_pos) 
+                  for initial_pos in params.initial_pos_range(scene)]
+    for evaluator in evaluators: 
         evaluator.evaluate()
+    t_pos = sum(evaluator.is_true_positive() for evaluator in evaluators)
+    t_neg = sum(evaluator.is_false_positive() for evaluator in evaluators)
+    f_pos = sum(evaluator.is_true_negative() for evaluator in evaluators)
+    f_neg = sum(evaluator.is_false_negative() for evaluator in evaluators)
+    steps = len(evaluator.visited_positions)
+    return (t_pos, t_neg, f_pos, f_neg, steps)
 
+
+def benchmark_scenes(params, scenes):
+    """Runs the simulation for every scene and print the number of true/false
+    positive/negatives for each scene.
+    """
     data_rows = [( "filename", "t-pos", "f-pos", "t-neg", 
                    "f-neg", "%", "steps" )]
     sum_t_pos = 0
@@ -393,14 +392,9 @@ def benchmark_scenes(left_right_tree, first_size_tree,
     sum_perct = 0
     sum_steps = 0
 
-    for evaluator in evaluators:
-        t_pos = evaluator.count_true_positive()
-        f_pos = evaluator.count_false_positive()
-        t_neg = evaluator.count_true_negative()
-        f_neg = evaluator.count_false_negative()
+    for scene in scenes:
+        t_pos, f_pos, t_neg, f_neg, steps = benchmark_scene(params, scene)
         perct = float(t_pos) / (t_pos + f_pos + t_neg + f_neg) * 100
-        steps = (float(sum(len(vps) for vps in evaluator.visitedPositions)) /
-                 len(evaluator.visitedPositions))
 
         sum_t_pos += t_pos
         sum_f_pos += f_pos
@@ -409,39 +403,38 @@ def benchmark_scenes(left_right_tree, first_size_tree,
         sum_perct += perct
         sum_steps += steps
 
-        data_rows.append((evaluator.scene.name, 
+        data_rows.append((scene.name, 
             "%d" % t_pos, "%d" % f_pos, "%d" % t_neg, "%d" % f_neg,
             "%.1f" % perct, "%d" % steps))
 
     data_rows.append(("average",
-        "%.1f" % (float(sum_t_pos) / len(evaluators)),
-        "%.1f" % (float(sum_f_pos) / len(evaluators)),
-        "%.1f" % (float(sum_t_neg) / len(evaluators)),
-        "%.1f" % (float(sum_f_neg) / len(evaluators)),
-        "%.1f" % (float(sum_perct) / len(evaluators)),
-        "%.1f" % (float(sum_steps) / len(evaluators))))
+        "%.1f" % (float(sum_t_pos) / len(scenes)),
+        "%.1f" % (float(sum_f_pos) / len(scenes)),
+        "%.1f" % (float(sum_t_neg) / len(scenes)),
+        "%.1f" % (float(sum_f_neg) / len(scenes)),
+        "%.1f" % (float(sum_perct) / len(scenes)),
+        "%.1f" % (float(sum_steps) / len(scenes))))
 
     print_aligned_data_rows(data_rows)
 
 
-def benchmark_specific(left_right_tree, first_size_tree,
-                       action_tree, step_size, 
-                       scenes, specific_scene, perfect_classification):
+def benchmark_specific(params, scenes, specific_scene):
+    """Runs the simulation and printing an R script to visualize the simulation
+    at every lens position for a specific scene.
+    """
     for scene in scenes:
         if scene.filename == specific_scene:
-            evaluator = Evaluator(left_right_tree, first_size_tree,
-                                  action_tree, 
-                                  step_size, scene, perfect_classification)
-            evaluator.evaluate()
+            for initial_pos in params.initial_pos_range(scene):
+                evaluator = Evaluator(params, scene, initial_pos)
+                evaluator.evaluate()
 
-            for lens_pos in range(2 * step_size, scene.step_count):
-                print_R_script(scene, lens_pos, 
-                    evaluator.visitedPositions[lens_pos],
-                    evaluator.get_evaluation_at(lens_pos),
-                    evaluator.result[lens_pos])
+                print_R_script(scene, initial_pos, 
+                    evaluator.visited_positions,
+                    evaluator.get_evaluation(),
+                    evaluator.last_position())
 
 
-def print_R_script(scene, lens_pos, visitedPositions, evaluation, result):
+def print_R_script(scene, lens_pos, visited_positions, evaluation, result):
 
     print "# %s at %d, %s\n" % (scene.filename, lens_pos, evaluation)
 
@@ -451,9 +444,9 @@ def print_R_script(scene, lens_pos, visitedPositions, evaluation, result):
 
     print_plot_focus_measures(scene.fvalues, show_grid=True)
 
-    xs = visitedPositions
-    ys = [ float(i) / max(10, len(visitedPositions))
-           for i in range(0, len(visitedPositions)) ]
+    xs = visited_positions
+    ys = [ float(i) / max(10, len(visited_positions))
+           for i in range(0, len(visited_positions)) ]
 
     print_plot_point_pairs(xs, ys, 25, "blue", "blue", True)
 
@@ -474,7 +467,7 @@ def load_classifications(filename):
 
 
 def print_script_usage():
-   print  """Script usage : ./makegroundtruthcomparison.py 
+    print """Script usage : ./makegroundtruthcomparison.py 
              --left-right-tree=<decision tree for deciding left vs right>
              --first-size-tree=<decision tree for deciding first coarse vs fine>
              --action-tree=<decision tree for deciding action to take>]
@@ -494,52 +487,43 @@ def main(argv):
         print_script_usage()
         sys.exit(2)
 
-    step_size = 1
-    left_right_tree = None
-    first_size_tree = None
-    action_tree = None
+    params = BenchmarkParameters()
     specific_scene = None
-    perfect_classification = None
 
     for opt, arg in opts:
         if opt == "--double-step":
-            step_size = 2
+            params.step_size = 2
         elif opt == "--left-right-tree":
-            features = { name : function 
+            features = { name: function 
                 for name, _, function in featuresleftright.all_features() }
-            left_right_tree = read_decision_tree(arg, features)
+            params.left_right_tree = read_decision_tree(arg, features)
         elif opt == "--first-size-tree":
-            features = { name : function 
+            features = { name: function 
                 for name, _, function in featuresleftright.all_features() }
-            first_size_tree = read_decision_tree(arg, features)
+            params.first_size_tree = read_decision_tree(arg, features)
         elif opt == "--action-tree":
-            features = { name : function 
+            features = { name: function 
                 for name, function in featuresturn.all_features() }
-            action_tree = read_decision_tree(arg, features)
+            params.action_tree = read_decision_tree(arg, features)
         elif opt == "--specific-scene":
             specific_scene = arg
         elif opt == "--perfect-file":
-            perfect_classification = load_classifications(arg)
+            params.perfect_classification = load_classifications(arg)
         else:
             print_script_usage()
             sys.exit(2)
 
-    if perfect_classification is None and (left_right_tree is None or 
-                                           first_size_tree is None or
-                                           action_tree is None):
+    # Make sure simulator has everything it needs.
+    if params.missing_params():
         print_script_usage()
         sys.exit(2)
 
     scenes = load_scenes(excluded_scenes=["cat.txt", "moon.txt"])
 
     if specific_scene is None:
-        benchmark_scenes(left_right_tree, first_size_tree,
-            action_tree, step_size, scenes,
-            perfect_classification)
+        benchmark_scenes(params, scenes)
     else:
-        benchmark_specific(left_right_tree, first_size_tree,
-                           action_tree, step_size, scenes,
-                           specific_scene, perfect_classification)
+        benchmark_specific(params, scenes, specific_scene)
 
 
 main(sys.argv[1:])

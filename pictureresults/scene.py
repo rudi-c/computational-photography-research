@@ -68,16 +68,19 @@ class Scene(object):
         return self.distance_to_closest_peak(lens_pos,
             lambda max : max >= lens_pos)
 
-    def __init__(self, filename=None):
+    def get_focus_values(self, positions):
+        """Return the focus values corresponding to multiple lens positions."""
+        return [self.fvalues[pos] for pos in positions]
+
+    def __init__(self, filename):
         self.filename = filename
         self.name = filename[:filename.rfind(".")] # remove extension
-        if filename is not None:
-            self.__load_from_file()
-        
         self.step_count = 0
         self.fvalues = []
         self.maxima = []
         self.norm_maxima = []
+
+        self.__load_from_file()
 
 
 def load_scenes(excluded_scenes=None):
