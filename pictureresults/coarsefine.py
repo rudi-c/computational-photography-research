@@ -4,12 +4,12 @@
 #      Supervised Machine Learning  "
 
 from math import log
-from featuresleftright import safeRatioMoreThan
+from featuresfirststep import safe_ratio_gt
 
 def coarse_if_previously_fine(f_cur, f_prev, _):
     """Assumes the previous step taken was a fine step. Return true
     if the next step should be a coarse step."""
-    if not safeRatioMoreThan(f_cur, f_prev, 8.0 / 8.0):
+    if not safe_ratio_gt(f_cur, f_prev, 8.0 / 8.0):
         # Coarse
         return True
     else:
@@ -26,25 +26,25 @@ def coarse_if_previously_coarse(f_cur, f_prev, f_prev2):
         elif f_prev == 0:
             return f_cur - f_prev > 1
         else:
-            return safeRatioMoreThan(log(f_cur - f_prev), 
+            return safe_ratio_gt(log(f_cur - f_prev), 
                 log(f_prev), 6.0 / 8.0)
 
     # Using 'if not' instead of 'if' to follow the layout of the algorithm
     # as written in the paper.
 
     # ratio(10, 8)
-    if not safeRatioMoreThan(f_cur, f_prev, 10.0 / 8.0):
+    if not safe_ratio_gt(f_cur, f_prev, 10.0 / 8.0):
         # downSlope(9, 8)
-        if not safeRatioMoreThan(f_prev2 * f_cur, f_prev * f_prev, 9.0 / 8.0):
+        if not safe_ratio_gt(f_prev2 * f_cur, f_prev * f_prev, 9.0 / 8.0):
             # Coarse
             return True
         else:
             # ratioI(9, 8)
-            if not safeRatioMoreThan(f_prev, f_cur, 9.0 / 8.0):
+            if not safe_ratio_gt(f_prev, f_cur, 9.0 / 8.0):
                 # logDiff(6, 8)
                 if not log_feature():
                     # upSlope(8, 4)
-                    if not safeRatioMoreThan(f_cur * f_prev2, 
+                    if not safe_ratio_gt(f_cur * f_prev2, 
                                              f_prev * f_prev, 8.0 / 4.0):
                         # Coarse
                         return True
@@ -64,9 +64,9 @@ def coarse_if_previously_coarse(f_cur, f_prev, f_prev2):
                 return True
     else:
         # downSlope(9, 8)
-        if not safeRatioMoreThan(f_prev2 * f_cur, f_prev * f_prev, 9.0 / 8.0):
+        if not safe_ratio_gt(f_prev2 * f_cur, f_prev * f_prev, 9.0 / 8.0):
             # ratio(11, 8)
-            if not safeRatioMoreThan(f_cur, f_prev, 11.0 / 8.0):
+            if not safe_ratio_gt(f_cur, f_prev, 11.0 / 8.0):
                 # Coarse
                 return True
             else:

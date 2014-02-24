@@ -13,7 +13,7 @@ from scene        import *
 from rtools       import *
 from direction import Direction
 import featuresturn     
-import featuresleftright
+import featuresfirststep
 
 def make_key(direction, initial_pos, current_pos):
     return "%s-%d-%d" % (direction, initial_pos, current_pos)
@@ -169,7 +169,7 @@ class Simulator(object):
             second = self.scene.fvalues[lens_positions[-2]]
             third  = self.scene.fvalues[current_pos]
             norm_lens_pos = float(current_pos) / (self.scene.step_count - 1)
-            evaluator = featuresleftright.leftright_feature_evaluator(
+            evaluator = featuresfirststep.firststep_feature_evaluator(
                 first, second, third, norm_lens_pos)
             first_size = evaluate_tree(self.params.first_size_tree, evaluator)
 
@@ -280,7 +280,7 @@ class Simulator(object):
         first, second, third = self.scene.get_focus_values(initial_positions)
         norm_lens_pos = float(initial_pos) / (self.scene.step_count - 1)
 
-        evaluator = featuresleftright.leftright_feature_evaluator(
+        evaluator = featuresfirststep.firststep_feature_evaluator(
             first, second, third, norm_lens_pos)
         direction = Direction(evaluate_tree(
             self.params.left_right_tree, evaluator))
@@ -483,11 +483,11 @@ def main(argv):
             params.step_size = 2
         elif opt == "--left-right-tree":
             features = { name: function 
-                for name, _, function in featuresleftright.all_features() }
+                for name, _, function in featuresfirststep.all_features() }
             params.left_right_tree = read_decision_tree(arg, features)
         elif opt == "--first-size-tree":
             features = { name: function 
-                for name, _, function in featuresleftright.all_features() }
+                for name, _, function in featuresfirststep.all_features() }
             params.first_size_tree = read_decision_tree(arg, features)
         elif opt == "--action-tree":
             features = { name: function 

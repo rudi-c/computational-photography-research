@@ -1,20 +1,25 @@
-# Functions that evaluate features.
+"""Set of functions relating to the classification of focus values obtained in
+the first few steps.
 
-# Features are lambda expressions taking an arbitrary number of
-# keyword arguments. Current arguments used include :
-# first (first focus measurement, [0, 1])
-# second (second focus measurement, [0, 1])
-# third (third focus measurement, [0, 1])
-# lens_pos (0 for the first lens position, 1 for the last lens position)
+These are used to build evaluate decision trees to determine whether the first
+step is a fine step or a coarse step and whether we should look left or right.
+
+Features are lambda expressions taking an arbitrary number of
+keyword arguments. Current arguments used include :
+first (first focus measurement, [0, 1])
+second (second focus measurement, [0, 1])
+third (third focus measurement, [0, 1])
+lens_pos (0 for the first lens position, 1 for the last lens position)
+"""
 
 from scene import *
 from math  import log
 
-def safeRatioLessThan(a, b, k):
+def safe_ratio_ls(a, b, k):
     """Compare the ratio of a, b with k and handle division by zero."""
     return b != 0 and float(a) / b < k
 
-def safeRatioMoreThan(a, b, k):
+def safe_ratio_gt(a, b, k):
     """Compare the ratio of a, b with k and handle division by zero."""
     return b != 0 and float(a) / b > k
 
@@ -24,49 +29,35 @@ def ratio2(k):
     # positive numbers for k only
     def r(**kwargs):
         first, second = kwargs["first"], kwargs["second"]
-        return safeRatioLessThan(first, second, k)
+        return safe_ratio_ls(first, second, k)
     return r
-
-# def ratio2Inverse(k):
-#     # positive numbers for k only
-#     def r(**kwargs):
-#         first, second = kwargs["first"], kwargs["second"]
-#         return safeRatioLessThan(second, first, k)
-#     return r
 
 def logRatio2(k):
     # positive numbers for k only
     def r(**kwargs):
         first, second = kwargs["first"], kwargs["second"]
-        return safeRatioLessThan(log(first + 1.0), log(second + 1.0), k)
+        return safe_ratio_ls(log(first + 1.0), log(second + 1.0), k)
     return r
-
-# def logRatio2Inverse(k):
-#     # positive numbers for k only
-#     def r(**kwargs):
-#         first, second = kwargs["first"], kwargs["second"]
-#         return safeRatioLessThan(log(second + 1.0), log(first + 1.0), k)
-#     return r
 
 def diffRatioAvg2(k):
     # numbers from -1 to 1 for k (in practice, -0.5 to 0.5)
     def r(**kwargs):
         first, second = kwargs["first"], kwargs["second"]
-        return safeRatioLessThan(2.0 * (second - first), (second + first), k)
+        return safe_ratio_ls(2.0 * (second - first), (second + first), k)
     return r
 
 def diffRatioMin2(k):
     # numbers from -1 to 1 for k (in practice, -0.5 to 0.5)
     def r(**kwargs):
         first, second = kwargs["first"], kwargs["second"]
-        return safeRatioLessThan(second - first, min(second, first), k)
+        return safe_ratio_ls(second - first, min(second, first), k)
     return r
 
 def diffRatioMax2(k):
     # numbers from -1 to 1 for k (in practice, -0.5 to 0.5)
     def r(**kwargs):
         first, second = kwargs["first"], kwargs["second"]
-        return safeRatioLessThan(second - first, max(second, first), k)
+        return safe_ratio_ls(second - first, max(second, first), k)
     return r
 
 def two_measure_features(filters=[]):
@@ -106,63 +97,49 @@ def ratio3(k):
     # positive numbers for k only
     def r(**kwargs):
         fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
-        return safeRatioLessThan(float(fst), trd, k)
+        return safe_ratio_ls(float(fst), trd, k)
     return r
-
-# def ratio3Inverse(k):
-#     # positive numbers for k only
-#     def r(**kwargs):
-#         fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
-#         return safeRatioLessThan(float(trd), fst, k)
-#     return r
 
 def logRatio3(k):
     # positive numbers for k only
     def r(**kwargs):
         fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
-        return safeRatioLessThan(log(fst + 1.0), log(trd + 1.0), k)
+        return safe_ratio_ls(log(fst + 1.0), log(trd + 1.0), k)
     return r
-
-# def logRatio3Inverse(k):
-#     # positive numbers for k only
-#     def r(**kwargs):
-#         fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
-#         return safeRatioLessThan(log(trd + 1.0), log(fst + 1.0), k)
-#     return r
 
 def diffRatioAvg3(k):
     # numbers from -1 to 1 for k (in practice, -0.5 to 0.5)
     def r(**kwargs):
         fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
-        return safeRatioLessThan(2.0 * (trd - fst), (trd + fst), k)
+        return safe_ratio_ls(2.0 * (trd - fst), (trd + fst), k)
     return r
 
 def diffRatioMin3(k):
     # numbers from -1 to 1 for k (in practice, -0.5 to 0.5)
     def r(**kwargs):
         fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
-        return safeRatioLessThan(trd - fst, min(trd, fst), k)
+        return safe_ratio_ls(trd - fst, min(trd, fst), k)
     return r
 
 def diffRatioMax3(k):
     # numbers from -1 to 1 for k (in practice, -0.5 to 0.5)
     def r(**kwargs):
         fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
-        return safeRatioLessThan(trd - fst, max(trd, fst), k)
+        return safe_ratio_ls(trd - fst, max(trd, fst), k)
     return r
 
 def curving(k):
     # positive and negative numbers for k alike
     def r(**kwargs):
         fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
-        return safeRatioLessThan(fst + trd - 2 * snd, snd, k)
+        return safe_ratio_ls(fst + trd - 2 * snd, snd, k)
     return r
 
 def curvingRatio(k):
     # positive and negative numbers for k alike
     def r(**kwargs):
         fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
-        return safeRatioLessThan(fst - snd, snd - trd, k)
+        return safe_ratio_ls(fst - snd, snd - trd, k)
     return r
 
 def downTrend(**kwargs):
@@ -275,7 +252,7 @@ def all_features(filters=None):
             other_features(filters))
 
 
-def leftright_feature_evaluator(first, second, third, lens_pos):
+def firststep_feature_evaluator(first, second, third, lens_pos):
     """Returns a function to evaluate a feature for deciding left vs right.
     The lens_pos argument needs to be normalized to [0, 1]!"""
     assert 0 <= lens_pos <= 1

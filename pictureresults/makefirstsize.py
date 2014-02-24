@@ -20,7 +20,7 @@
 import os
 import sys
 
-from featuresleftright import *
+from featuresfirststep import *
 
 def get_arff_header(features):
     """Return a string representing the header of the ARFF file"""

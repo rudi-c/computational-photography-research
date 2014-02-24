@@ -16,7 +16,7 @@ import os
 import sys
 
 from evaluatetree      import *
-from featuresleftright import *
+from featuresfirststep import *
 from rtools            import *
 from scene             import *
 from statistics        import *
@@ -125,7 +125,7 @@ def main(argv):
             second = scene.fvalues[lens_pos - step_size]
             third  = scene.fvalues[lens_pos]
             norm_lens_pos = float(lens_pos) / (scene.step_count - 1)
-            evaluator = leftright_feature_evaluator(first, second, 
+            evaluator = firststep_feature_evaluator(first, second, 
                                                     third, norm_lens_pos)
 
             dectree_class = evaluate_tree(tree, evaluator)

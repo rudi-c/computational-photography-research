@@ -16,7 +16,7 @@ import os
 import sys
 
 from evaluatetree      import *
-from featuresleftright import *
+from featuresfirststep import *
 from rtools            import *
 from scene             import *
 
@@ -65,7 +65,7 @@ def print_R_script(scene, tree, step_size):
         third  = scene.fvalues[pos_3rd]
         norm_lens_pos = float(lens_pos) / (scene.step_count - 1)
 
-        evaluator = leftright_feature_evaluator(first, second, 
+        evaluator = firststep_feature_evaluator(first, second, 
                                                 third, norm_lens_pos)
 
         evaluation = evaluate_tree(tree, evaluator)
