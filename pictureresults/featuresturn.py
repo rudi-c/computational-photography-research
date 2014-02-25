@@ -405,6 +405,13 @@ def all_features(filters=None):
         return [ (f.__name__, f) for f in functions ]
     
 
+def all_features_dict(filters=None):
+    """Returns a dictionnary { feature name: function }"""
+    if filters is None:
+        filters = []
+    return { name: function for name, function in all_features(filters) }
+
+
 def action_feature_evaluator(direction, focus_values, 
                              lens_positions, total_positions):
     """Returns a function to evaluate an action feature, flipping the data

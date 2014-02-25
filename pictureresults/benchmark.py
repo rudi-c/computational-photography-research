@@ -7,13 +7,14 @@ import getopt
 import json
 import sys
 
-from coarsefine   import *
-from evaluatetree import *
-from scene        import *
-from rtools       import *
-from direction import Direction
+import evaluatetree
 import featuresturn     
 import featuresfirststep
+import rtools
+from coarsefine import *
+from direction import Direction
+from featuresfirststep import first_three_lens_pos
+from scene import load_scenes
 
 
 class BenchmarkParameters(object):
@@ -152,13 +153,37 @@ class Simulator(object):
 
         self.status = "foundmax"
 
-    def _sweep(self, direction, initial_positions):
-        """Sweep the lens in one direction and return a
-        tuple (success state, positions visited along the way.
+    def _go_back_to_start(self, distance, direction, initial_positions):
+        """Go back to where we were initially at the start of the sweep.
+        It's fine if we overshoot it a little bit if it saves some steps.
         """
-        scene = self.scene
+        coarse_steps = distance / 8
+        self._walk_coarse(direction, coarse_steps)
 
-        lens_positions = list(initial_positions)
+        # An extra distance that coarse steps won't reach exactly
+        remainder = distance % 8
+        if remainder > 4:
+            # Take more fine steps to reach initial position.
+            self._walk_fine(direction, 8 - remainder)
+        else:
+            # Take one big coarse step, which will overshoot a bit.
+            self._walk_coarse(direction, 1)
+            initial_positions.append(self.last_position())
+
+    def _get_first_direction(self, initial_positions):
+        """Direction in which we should start sweeping initially."""
+        first, second, third = self.scene.get_focus_values(initial_positions)
+        norm_lens_pos = float(self.initial_pos) / (self.scene.step_count - 1)
+
+        evaluator = featuresfirststep.firststep_feature_evaluator(
+            first, second, third, norm_lens_pos)
+        return Direction(evaluatetree.evaluate_tree(
+            self.params.left_right_tree, evaluator))
+
+    def _first_step_is_coarse(self, direction, scene, lens_positions):
+        """Return whether the first step is a coarse step by evaluating
+        the decision tree for it.
+        """
         current_pos = lens_positions[-1]
 
         # Size of the first step determined by another decision tree.
@@ -169,31 +194,35 @@ class Simulator(object):
             norm_lens_pos = float(current_pos) / (self.scene.step_count - 1)
             evaluator = featuresfirststep.firststep_feature_evaluator(
                 first, second, third, norm_lens_pos)
-            first_size = evaluate_tree(self.params.first_size_tree, evaluator)
+            first_size = evaluatetree.evaluate_tree(
+                self.params.first_size_tree, evaluator)
 
             if first_size == "coarse":
-                previously_coarse_step = True
                 current_pos = self._clamp_to_scene(current_pos + direction * 8)
             else:
-                previously_coarse_step = False
                 current_pos = min(scene.step_count - 1, 
                                   max(0, current_pos + direction))
             lens_positions.append(current_pos)
 
+            return first_size == "coarse"
+
+
+    def _sweep(self, direction, initial_positions):
+        """Sweep the lens in one direction and return a
+        tuple (success state, positions visited along the way.
+        """
+        lens_positions = list(initial_positions)
+        previously_coarse_step = self._first_step_is_coarse(direction,
+            self.scene, lens_positions)
         current_pos = lens_positions[-1]
 
-        while 0 < current_pos < scene.step_count - 1:
+        while 0 < current_pos < self.scene.step_count - 1:
             # Determine next step size.
+            focus_values = self.scene.get_focus_values(lens_positions[-3:])
             if previously_coarse_step:
-                coarse_now = coarse_if_previously_coarse(
-                    scene.fvalues[current_pos],
-                    scene.fvalues[lens_positions[-2]],
-                    scene.fvalues[lens_positions[-3]])
+                coarse_now = coarse_if_previously_coarse(*focus_values)
             else:
-                coarse_now = coarse_if_previously_fine(
-                    scene.fvalues[current_pos],
-                    scene.fvalues[lens_positions[-2]],
-                    scene.fvalues[lens_positions[-3]])
+                coarse_now = coarse_if_previously_fine(*focus_values)
 
             # Move the lens forward.
             if coarse_now:
@@ -207,9 +236,8 @@ class Simulator(object):
             if self.perfect_classification is None:
                 # Obtain the ML classification at the new lens position.
                 evaluator = featuresturn.action_feature_evaluator(direction, 
-                    self.scene.fvalues, lens_positions, 
-                    self.scene.step_count)
-                classification = evaluate_tree(
+                    self.scene.fvalues, lens_positions, self.scene.step_count)
+                classification = evaluatetree.evaluate_tree(
                     self.params.action_tree, evaluator)
             else:
                 key = featuresturn.make_key(str(direction), lens_positions[0], 
@@ -227,38 +255,27 @@ class Simulator(object):
     def _backtrack(self, current_lens_pos):
         """From the current lens position, go back to the lens position we
         were at before and look on the other side."""
-        initial_pos = self.initial_pos
-        distance_from_initial = abs(initial_pos - current_lens_pos)
 
         previous_direction = Direction(current_lens_pos - self.initial_pos)
 
         # We need to reinitialize the list of lens positions used as a feature
         # during the sweep algorithm, to avoid mixing it with the positions
         # of the previous sweep. 
-        initial_positions = [initial_pos - self.params.step_size * 2, 
-                             initial_pos - self.params.step_size, initial_pos]
+        initial_positions = first_three_lens_pos(self.initial_pos, 
+                                                 self.params.step_size)
         if previous_direction.is_right():
             initial_positions.reverse()
         new_direction = previous_direction.reverse()
 
-        # Need to go back to where we were initially at the start of the sweep.
-        # It's fine if we overshoot it a little bit if it saves some steps.
+        # Go back to where we started.
+        distance_from_initial = abs(self.initial_pos - current_lens_pos)
+        self._go_back_to_start(distance_from_initial, 
+            new_direction, initial_positions)
 
-        coarse_steps = distance_from_initial / 8
-        self._walk_coarse(new_direction, coarse_steps)
-
-        # An extra distance that coarse steps won't reach exactly
-        remainder = distance_from_initial % 8
-        if remainder > 4:
-            # Take more fine steps to reach initial position.
-            self._walk_fine(new_direction, 8 - remainder)
-        else:
-            # Take one big coarse step, which will overshoot a bit.
-            self._walk_coarse(new_direction, 1)
-            initial_positions.append(self.last_position())
-
+        # Sweep again the other way.
         result, positions = self._sweep(new_direction, initial_positions)
 
+        # Don't count the initial positions which we've added already.
         self.visited_positions.extend(positions[len(initial_positions):])
 
         if result == "turn_peak":
@@ -272,23 +289,20 @@ class Simulator(object):
     def evaluate(self):
         """For every scene and every lens position, run a simulation and
         store the statistics."""
-        # Decide initial direction in which to look.
-        initial_pos = self.initial_pos
-        initial_positions = [initial_pos - self.params.step_size * 2, 
-                             initial_pos - self.params.step_size, initial_pos]
-        first, second, third = self.scene.get_focus_values(initial_positions)
-        norm_lens_pos = float(initial_pos) / (self.scene.step_count - 1)
-
-        evaluator = featuresfirststep.firststep_feature_evaluator(
-            first, second, third, norm_lens_pos)
-        direction = Direction(evaluate_tree(
-            self.params.left_right_tree, evaluator))
-
+        initial_positions = first_three_lens_pos(self.initial_pos, 
+                                                 self.params.step_size)
+        # The first 3 positions (first 2 steps) count as visited.
         self.visited_positions.extend(initial_positions)
+
+        # Decide initial direction in which to look.
+        direction = self._get_first_direction(initial_positions)
         if direction.is_left():
             initial_positions.reverse()
+
+        # Initial sweep
         result, positions = self._sweep(direction, initial_positions)
 
+        # Don't count the initial positions which we've added already.
         self.visited_positions.extend(positions[len(initial_positions):])
 
         if result == "turn_peak":
@@ -426,16 +440,16 @@ def print_R_script(scene, lens_pos, visited_positions, evaluation, result):
     print "# %s at %d, %s\n" % (scene.filename, lens_pos, evaluation)
 
     # Some R functions for plotting.
-    print_set_window_division(1, 1)
+    rtools.print_set_window_division(1, 1)
     print "library(scales)" # for alpha blending
 
-    print_plot_focus_measures(scene.fvalues, show_grid=True)
+    rtools.print_plot_focus_measures(scene.fvalues, show_grid=True)
 
     xs = visited_positions
     ys = [ float(i) / max(10, len(visited_positions))
            for i in range(0, len(visited_positions)) ]
 
-    print_plot_point_pairs(xs, ys, 25, "blue", "blue", True)
+    rtools.print_plot_point_pairs(xs, ys, 25, "blue", "blue", True)
 
     if result >= 0:
         print "segments(%d, 0.0, %d, 1.0)" % (result, result)
@@ -481,17 +495,14 @@ def main(argv):
         if opt == "--double-step":
             params.step_size = 2
         elif opt == "--left-right-tree":
-            features = { name: function 
-                for name, _, function in featuresfirststep.all_features() }
-            params.left_right_tree = read_decision_tree(arg, features)
+            params.left_right_tree = evaluatetree.read_decision_tree(
+                arg, featuresfirststep.all_features_dict())
         elif opt == "--first-size-tree":
-            features = { name: function 
-                for name, _, function in featuresfirststep.all_features() }
-            params.first_size_tree = read_decision_tree(arg, features)
+            params.first_size_tree = evaluatetree.read_decision_tree(
+                arg, featuresfirststep.all_features_dict())
         elif opt == "--action-tree":
-            features = { name: function 
-                for name, function in featuresturn.all_features() }
-            params.action_tree = read_decision_tree(arg, features)
+            params.action_tree = evaluatetree.read_decision_tree(
+                arg, featuresturn.all_features_dict())
         elif opt == "--specific-scene":
             specific_scene = arg
         elif opt == "--perfect-file":

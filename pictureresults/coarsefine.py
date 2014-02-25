@@ -8,7 +8,7 @@ depending on previous focus values, as described in
 from math import log
 from featuresfirststep import safe_ratio_gt
 
-def coarse_if_previously_fine(f_cur, f_prev, _):
+def coarse_if_previously_fine(f_prev2, f_prev, f_cur):
     """Assumes the previous step taken was a fine step. Return true
     if the next step should be a coarse step."""
     if not safe_ratio_gt(f_cur, f_prev, 8.0 / 8.0):
@@ -18,7 +18,7 @@ def coarse_if_previously_fine(f_cur, f_prev, _):
         # Fine
         return False
 
-def coarse_if_previously_coarse(f_cur, f_prev, f_prev2):
+def coarse_if_previously_coarse(f_prev2, f_prev, f_cur):
     """Assumes the previous step taken was a coarse step. Return true
     if the next step should be a coarse step."""
 

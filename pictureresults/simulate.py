@@ -1,14 +1,21 @@
 #!/usr/bin/python
+"""
+Simulates sweeping through scenes in either direction in order to create
+instances of data that will be used to train a classifier for deciding
+whether we should turn back to peak, backtrack or continue.
+"""
 
-import os
 import random
 import sys
 
+import coarsefine
+import rtools
 from direction import Direction
-from scene import *
-from coarsefine import *
+from scene import load_scenes
+from featuresfirststep import first_three_lens_pos
 from featuresturn import *
-from rtools import *
+
+seed = 1
 
 def make_instance(scene, features, params, instances, direction,
                   lens_positions, classification, weight):
@@ -67,7 +74,7 @@ def assert_balanced_sampling(instances):
     """Make sure we have approximately the same number of instances of each
     class, within 10%"""
     probabilities = get_balancing_probabilities(instances)
-    assert all( [ probabilities[k] > 0.9 for k in probabilities.keys() ] )
+    assert all(probabilities[k] > 0.9 for k in probabilities.keys())
 
 
 def get_balancing_weight_factors(instances):
@@ -99,12 +106,13 @@ def assert_balanced_weighting(instances):
     """Make sure we have approximately the same the sum of weights in 
     instances of each class, within 10%"""
     factors = get_balancing_weight_factors(instances)
-    assert all( [ factors[k] > 0.9 for k in factors.keys() ] )
+    assert all(factors[k] > 0.9 for k in factors.keys())
 
 
 def simulate_sweep(scene, features, instances, initial_lens_positions, 
                    direction, classifier, params):
-    lens_positions = initial_lens_positions
+    """Perform the sweep, taking small and large steps as needed."""
+    lens_positions = list(initial_lens_positions)
     current_pos = lens_positions[-1]
     previously_coarse_step = True
 
@@ -112,16 +120,11 @@ def simulate_sweep(scene, features, instances, initial_lens_positions,
 
     while current_pos > 0 and current_pos < scene.step_count - 1:
         # Determine next step size.
+        focus_values = scene.get_focus_values(lens_positions[-3:])
         if previously_coarse_step:
-            coarse_now = coarse_if_previously_coarse(
-                scene.fvalues[current_pos],
-                scene.fvalues[lens_positions[-2]],
-                scene.fvalues[lens_positions[-3]])
+            coarse_now = coarsefine.coarse_if_previously_coarse(*focus_values)
         else:
-            coarse_now = coarse_if_previously_fine(
-                scene.fvalues[current_pos],
-                scene.fvalues[lens_positions[-2]],
-                scene.fvalues[lens_positions[-3]])
+            coarse_now = coarsefine.coarse_if_previously_fine(*focus_values)
 
         # Move the lens forward.
         if coarse_now:
@@ -141,8 +144,8 @@ def simulate_sweep(scene, features, instances, initial_lens_positions,
         if classification == Action.CONTINUE:
             keep_ratio *= params.continueRatio
         else:
-            assert classification == Action.TURN_PEAK or    \
-                   classification == Action.BACKTRACK
+            assert (classification == Action.TURN_PEAK or
+                    classification == Action.BACKTRACK)
             keep_ratio *= params.turnbackRatio
 
         # Create a new instance for this lens position.
@@ -153,24 +156,24 @@ def simulate_sweep(scene, features, instances, initial_lens_positions,
 
 
 def simulate_scenes(scenes, features, step_size, params):
+    """Perform simulation for every scene."""
     instances = []
-    for scene in scenes:
 
-        # We simulate a sweep at each starting position.
+    for scene in scenes:
+        # We simulate a sweep at each starting position. Note that we are 
+        # assuming that the initial three focus measures were obtained 
+        # by moving right.
         for lens_pos in range(step_size * 2, scene.step_count):
 
-            # Going left. Note that we are assuming that the initial
-            # three focus measures were obtained by moving right.
-            initial_lens_positions = [ lens_pos, lens_pos - step_size,
-                                       lens_pos - step_size * 2 ]
-            simulate_sweep(scene, features, instances, initial_lens_positions, 
-                Direction("left"), get_move_left_classification, params)
-
-            # Right
-            initial_lens_positions = [ lens_pos - step_size * 2,
-                                       lens_pos - step_size, lens_pos ]
+            # Going right.
+            initial_lens_positions = first_three_lens_pos(lens_pos, step_size)
             simulate_sweep(scene, features, instances, initial_lens_positions, 
                 Direction("right"), get_move_right_classification, params)
+
+            # Going left. 
+            initial_lens_positions.reverse()
+            simulate_sweep(scene, features, instances, initial_lens_positions, 
+                Direction("left"), get_move_left_classification, params)
 
     # Balance datasets.
     if params.outlierHandling == OutlierHandling.SAMPLING:
@@ -210,13 +213,16 @@ def print_R_script(scene, lens_positions, instances):
             ys_backtrack.append(weight)
 
     # Some R functions for plotting.
-    print_set_window_division(1, 1)
+    rtools.print_set_window_division(1, 1)
     print "library(scales)" # for alpha blending
-    print_plot_focus_measures(scene.fvalues, (-0.1, 1))
+    rtools.print_plot_focus_measures(scene.fvalues, (-0.1, 1))
 
-    print_plot_point_pairs(xs_continue, ys_continue, 25, "black", "black")
-    print_plot_point_pairs(xs_turn_peak, ys_turn_peak, 25, "green", "green")
-    print_plot_point_pairs(xs_backtrack, ys_backtrack, 25, "red", "red")
+    rtools.print_plot_point_pairs(xs_continue, 
+        ys_continue, 25, "black", "black")
+    rtools.print_plot_point_pairs(xs_turn_peak, 
+        ys_turn_peak, 25, "green", "green")
+    rtools.print_plot_point_pairs(xs_backtrack, 
+        ys_backtrack, 25, "red", "red")
 
     print "\n# Plot me!\n"
 
@@ -240,8 +246,7 @@ def simulate_samples(scenes, features, step_size, params):
 
         lens_pos = random.randint(step_size * 2 + 1, scene.step_count - 1)
 
-        initial_lens_positions = [ lens_pos - step_size * 2,
-                                   lens_pos - step_size, lens_pos ]
+        initial_lens_positions = first_three_lens_pos(lens_pos, step_size)
         lens_positions = simulate_sweep(scene, features, instances,
             initial_lens_positions, +1, get_move_right_classification, params)
 
@@ -286,7 +291,6 @@ def main(argv):
     filters = []
     step_size = 1
     show_random_sample = False
-    seed = 1
 
     params = ParameterSet()
 

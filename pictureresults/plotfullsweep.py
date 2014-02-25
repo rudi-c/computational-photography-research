@@ -27,10 +27,10 @@ def simulate(scene):
 
         if last_step_coarse:
             step_coarse = coarsefine.coarse_if_previously_coarse(
-                f_cur, f_prev, f_prev2)
+                f_prev2, f_prev, f_cur)
         else:
             step_coarse = coarsefine.coarse_if_previously_fine(
-                f_cur, f_prev, f_prev2)
+                f_prev2, f_prev, f_cur)
 
         if step_coarse:
             output.append((position, 0))
