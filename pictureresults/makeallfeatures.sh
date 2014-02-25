@@ -47,7 +47,7 @@ do
 done
 
 echo "Making features and training for first step size..."
-./makefirstsize.py --nearest --three-measures > results/firstsize.arff
+./makefirstsizefeatures.py --nearest --three-measures > results/firstsize.arff
 feature_select results/firstsize.arff results/firstsize_filtered.arff
 java -cp $CP weka.classifiers.trees.J48 -t results/firstsize_filtered.arff \
     -C 0.25 -M 128 > results/firstsize_weka.txt
