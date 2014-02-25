@@ -1,15 +1,31 @@
 #!/usr/bin/python
+"""
+Outputs statistics about available scenes in the form of R code.
+The statistics are :
+P(peak exists on the left | lens position)
+P(peak does not exists on the left | lens position)
+P(peak exists on the right | lens position)
+P(peak does not exists on the right | lens position)
+P(highest peak on the left | lens position)
+P(highest peak on the right | lens position)
+P(most peaks on the left | lens position)
+P(most peaks on the right | lens position)
+P(nearest peak on the left | lens position)
+P(nearest peak on the right | lens position)
+P(nearhighest peak on the left | lens position)
+P(nearhighest peak on the right | lens position)
 
-# This script will look in a folder called 'FocusMeasures' for .txt
-# files with two numbers in each line : (row #, focus value).
-#
-# The script also expects a file called 'maxima.txt' that contains
-# the output of running localMax.exe
+This script will look in the folder defined in scene.py for .txt
+files with two numbers in each line : (row #, focus value).
+
+The script also expects a file called 'maxima.txt' that contains
+the output of running localMax.exe
+"""
 
 import os
 import sys
 
-from scene import *
+from scene import load_scenes
 from statistics import *
 
 # Number of lens positions to calculate probabilities for.

@@ -1,8 +1,14 @@
 #!/usr/bin/python
+"""
+This script generates R code for making an action plot. The plot shows,
+for each scene, starting lens position and direction, the correct
+classification at each step for a sweep. That is, whether at each step,
+the correct action is to 
+1) Turn back to peak (we found a peak) [green]
+2) Backtrack (give up looking in one direction and try the other) [red]
+3) Continue [black]
+"""
 
-import getopt
-import inspect
-import os
 import sys
 
 from scene import *

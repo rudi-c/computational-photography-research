@@ -15,8 +15,6 @@ from direction import Direction
 import featuresturn     
 import featuresfirststep
 
-def make_key(direction, initial_pos, current_pos):
-    return "%s-%d-%d" % (direction, initial_pos, current_pos)
 
 class BenchmarkParameters(object):
 
@@ -214,15 +212,16 @@ class Simulator(object):
                 classification = evaluate_tree(
                     self.params.action_tree, evaluator)
             else:
-                classification = self.perfect_classification[make_key(
-                    str(direction), lens_positions[0], current_pos)]
+                key = featuresturn.make_key(str(direction), lens_positions[0], 
+                                            current_pos)
+                classification = self.perfect_classification[key]
 
             if classification != "continue":
                 assert (classification == "turn_peak" or
                         classification == "backtrack")
                 return classification, lens_positions
 
-        # TODO: What should be the default action when an edge is reached?
+        # The default action when an edge is reached is to backtrack.
         return "backtrack", lens_positions
 
     def _backtrack(self, current_lens_pos):

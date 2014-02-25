@@ -1,3 +1,8 @@
+"""
+Function that load and evaluate a Weka decisiontree that has been parsed 
+and converted into json format.
+"""
+
 import operator
 import json
 import os
@@ -9,7 +14,9 @@ comparator_map = { "<" : operator.lt, "<=" : operator.le,
 
 def read_decision_tree(filename, features):
     """Transform a JSON representation of the decision tree into one that can
-    be used directly (with lambdas for feature evaluation and comparison)"""
+    be used directly (with lambdas for feature evaluation and comparison).
+    Takes a dictionnary of { feature names : features (lambdas) } 
+    """
     def parse_tree(json_tree):
         if isinstance(json_tree, str) or isinstance(json_tree, unicode):
             # Reached leaf.
@@ -34,6 +41,10 @@ def read_decision_tree(filename, features):
 
 
 def evaluate_tree(tree, evaluator):
+    """Evaluate a tree loaded with read_decision_tree. Takes an evaluator,
+    which is a function taking a particular feature at a node and evalulating
+    that featuring on some data.
+    """
     if isinstance(tree, str):
         # Reached leaf.
         return tree

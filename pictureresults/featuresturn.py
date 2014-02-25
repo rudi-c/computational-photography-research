@@ -1,18 +1,30 @@
-# Functions that evaluate features.
+"""
+Functions that evaluate features.
+Set of functions relating to classification during the sweep process, where at
+each step we must decide one of three actions :
+1) Turn back to peak (we found a peak)
+2) Backtrack (give up looking in one direction and try the other)
+3) Continue
 
-# Features are lambda expressions taking an arbitrary number of
-# keyword arguments. Current arguments used include :
-# lens_positions (an array of all the lens positions visited so far,
-#                 the current one at the end)
-# focus_values (a mapping from lens positions to calculated focus values. This
-#               should have as many elements as the number of lens positions)
-# total_positions (total number of lens positions for this lens)
-#
-# Note : Some features assume that at least one step has been taken (i.e.,
-#        that len(lens_positions) >= 2)
+Features are lambda expressions taking an arbitrary number of
+keyword arguments. Current arguments used include :
+lens_positions (an array of all the lens positions visited so far,
+                the current one at the end)
+focus_values (a mapping from lens positions to calculated focus values. This
+              should have as many elements as the number of lens positions)
+total_positions (total number of lens positions for this lens)
+Note : Some features assume that at least one step has been taken (i.e.,
+       that len(lens_positions) >= 2)
+"""
 
 from direction import Direction
 from math import sqrt
+
+def make_key(direction, initial_pos, current_pos):
+    """Returns a key to identify a particular instance (from direction,
+    initial position and current position."""
+    return "%s-%d-%d" % (direction, initial_pos, current_pos)
+
 
 def count_step_size(lens_positions):
     """Returns a tuple (# of small steps taken, # large steps taken)"""
@@ -26,6 +38,7 @@ def count_step_size(lens_positions):
 ### It might be useful for the machine learning algorithm to know explicitely
 ### if we're moving left (-1) or right (+1). 
 def left_or_right(**kwargs):
+    """-1 if we are moving left, +1 if we are moving right"""
     lens_positions = kwargs["lens_positions"]
     if lens_positions[0] < lens_positions[-1]:
         return +1
