@@ -53,9 +53,9 @@ for file in \
     timbuk.txt \
     ubuntu.txt
 do
-    ./makeclassifierplot.py -s $file -t $left_right_tree \
+    ./plotleftright.py -s $file -t $left_right_tree \
         -c $left_right_classifier >> left_right_classification.R
-    ./makefirstsizeplot.py -s $file -t $first_step_tree \
+    ./plotfirstsize.py -s $file -t $first_step_tree \
         >> first_step_classification.R
     ./plotfullsweep.py -s $file >> stepsizes.R
 done

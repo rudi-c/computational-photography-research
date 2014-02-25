@@ -249,18 +249,25 @@ def other_features(filters=None):
 ### Convenience function to return groups of features ###
 
 def measure_features(filters=None):
-    """ Returns an array of (attribute name, attribute range, function)"""
+    """Returns an array of (attribute name, attribute range, function)"""
     if filters is None:
         filters = []
     return two_measure_features(filters) + three_measure_features(filters)
 
 
 def all_features(filters=None):
-    """ Returns an array of (attribute name, attribute range, function)"""
+    """Returns an array of (attribute name, attribute range, function)"""
     if filters is None:
         filters = []
     return (two_measure_features(filters) + three_measure_features(filters) +
             other_features(filters))
+
+
+def all_features_dict(filters=None):
+    """Returns a dictionnary { feature name: function }"""
+    if filters is None:
+        filters = []
+    return { name: function for name, _, function in all_features(filters) }
 
 
 def firststep_feature_evaluator(first, second, third, lens_pos):

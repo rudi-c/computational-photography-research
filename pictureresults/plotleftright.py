@@ -1,27 +1,21 @@
 #!/usr/bin/python
+"""
+This script evaluate classifications (look left or right) for a given 
+decision tree as well as the correct classifications, for comparison.
 
-# This script evaluate classifications for a given decision tree as well
-# as the correct classifications, for comparison.
-#
-# The output is meant to be convenient to plot in R.
-#
-# The tree should be of the form :
-# node = | (function_name falsetree truetree)
-#        | leaf (left or right)
-# Example : (ratio2_7 (upTrend left right) left)
+The output is an R script for plotting the results.
+"""
 
 import getopt
-import inspect
-import os
 import sys
 
-from evaluatetree      import *
-from featuresfirststep import *
-from rtools            import *
-from scene             import *
+from scene import Scene, load_maxima
+import evaluatetree
+import featuresfirststep
+import rtools
 
 def print_script_usage():
-   print  """Script usage : ./makeclassifierplot.py 
+    print """Script usage : ./makeclassifierplot.py 
              [-s <scene to load (.txt)>]
              [-t <decision tree to evaluate>]
              [-c <classifier (highest, nearest, near_high)>]
@@ -34,7 +28,7 @@ def print_R_script(scene, tree, classifier, step_size):
 
     # Some R functions for plotting.
     print "library(scales)" # for alpha blending
-    print_plot_focus_measures(scene.fvalues)
+    rtools.print_plot_focus_measures(scene.fvalues)
 
     # The correct classifications.
     classes = [ "left" if classifier(scene, lens_pos) else "right"
@@ -43,18 +37,18 @@ def print_R_script(scene, tree, classifier, step_size):
     # What we actually get.
     results = []
     for lens_pos in range(2 * step_size, scene.step_count):
-        first  = scene.fvalues[lens_pos - step_size * 2]
-        second = scene.fvalues[lens_pos - step_size]
-        third  = scene.fvalues[lens_pos]
+        initial_positions = featuresfirststep.first_three_lens_pos(
+            lens_pos, step_size)
+        first, second, third = scene.get_focus_values(initial_positions)
         norm_lens_pos = float(lens_pos) / (scene.step_count - 1)
 
-        evaluator = firststep_feature_evaluator(first, second, 
-                                                third, norm_lens_pos)
+        evaluator = featuresfirststep.firststep_feature_evaluator(
+            first, second, third, norm_lens_pos)
 
-        evaluation = evaluate_tree(tree, evaluator)
+        evaluation = evaluatetree.evaluate_tree(tree, evaluator)
         results.append(evaluation)
 
-    print_classification_points(classes, results, ["left", "right"])
+    rtools.print_classification_points(classes, results, ["left", "right"])
 
     print "# Plot me!\n"
 
@@ -63,14 +57,14 @@ def main(argv):
 
     # Parse script arguments
     try:
-        opts, args = getopt.getopt(argv, "s:t:c:d",
-                                  ["scene=", "tree=", "classifier=",
-                                   "double-step"])
+        opts, _ = getopt.getopt(argv, "s:t:c:d",
+                                ["scene=", "tree=", "classifier=",
+                                 "double-step"])
     except getopt.GetoptError:
-        print_script_usage
+        print_script_usage()
         sys.exit(2)
 
-    functions = { key : value for (key, _, value) in all_features() }
+    features = featuresfirststep.all_features_dict()
 
     scene = None
     tree = None
@@ -82,14 +76,14 @@ def main(argv):
             scene = Scene(arg)
             load_maxima([scene])
         elif opt in ("-t", "--tree"):
-            tree = read_decision_tree(arg, functions)
+            tree = evaluatetree.read_decision_tree(arg, features)
         elif opt in ("-c", "--classifier"):
             if arg == "highest":
-                classifier = highest_on_left
+                classifier = featuresfirststep.highest_on_left
             elif arg == "nearest":
-                classifier = nearest_on_left
+                classifier = featuresfirststep.nearest_on_left
             elif arg == "near_high":
-                classifier = highest_and_near_on_left
+                classifier = featuresfirststep.highest_and_near_on_left
         elif opt in ("-d", "--double-step"):
             step_size = 2
 
