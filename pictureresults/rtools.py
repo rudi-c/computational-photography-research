@@ -1,10 +1,12 @@
-# Functions useful for printing R scripts for plotting and visualizing results.
+"""
+Functions useful for printing R scripts for plotting and visualizing results.
+"""
 
 def print_array_assignment(var_name, array):
     """Print the assignment of an array of floats to a variable in R
     to up to 3 decimal places - e.g. array <- c(1.000, 2.000, 3.000)"""
-    data = ",".join(["%.3f" % v if isinstance(v, float) else str(v) 
-                     for v in array])
+    data = ",".join("%.3f" % v if isinstance(v, float) else str(v) 
+                    for v in array)
     print "%s <- c(%s)" % (var_name, data)
                            
 

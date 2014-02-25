@@ -1,22 +1,21 @@
+"""Functions to evaluate statistics about scenes."""
 
-def smaller(a, b):
-    return a < b
+import operator
 
-def greater(a, b):
-    return a > b
+smaller = left = operator.lt
+greater = right = operator.gt
 
-left = smaller
-right = greater
 
 def valid_comparator(comparator):
-    return comparator == left or comparator == right or \
-           comparator == smaller or \
-           comparator == greater
+    """Make sure that a lambda is valid for use in computing statistics."""
+    return comparator == operator.lt or comparator == operator.gt
 
 
 def probability_peak_exist(lens_pos, scenes, comparator):
+    """Calculate probability that a peak exists in the direction given 
+    by the comparator.
+    """
     assert valid_comparator(comparator)
-
     count = 0
     for scene in scenes:
         for n_maximum in scene.norm_maxima:
@@ -46,6 +45,9 @@ def probability_not_right_peak(lens_pos, scenes):
 
 
 def probability_highest_peak(lens_pos, scenes, comparator):
+    """Calculate probability that the highest peak is in the direction given 
+    by the comparator.
+    """
     assert valid_comparator(comparator)
     assert lens_pos >= 0 and lens_pos <= 1
     
@@ -72,6 +74,9 @@ def probability_highest_right(lens_pos, scenes):
 
 
 def probability_most_peaks(lens_pos, scenes, comparator):
+    """Calculate probability that there are more peaks in the direction given 
+    by the comparator.
+    """
     assert valid_comparator(comparator)
 
     count = 0
@@ -94,7 +99,11 @@ def probability_most_right(lens_pos, scenes):
     """P( most peaks to the left | lens position )"""
     return probability_most_peaks(lens_pos, scenes, smaller)
 
+
 def probability_nearest(lens_pos, scenes, comparator):
+    """Calculate probability that the nearest peak is in the direction given 
+    by the comparator.
+    """
     assert valid_comparator(comparator)
 
     count = 0
@@ -107,15 +116,21 @@ def probability_nearest(lens_pos, scenes, comparator):
             count += 1
     return float(count) / len(scenes)
 
+
 def probability_nearest_left(lens_pos, scenes):
     """P( nearest peak to the left | lens position )"""
     return probability_nearest(lens_pos, scenes, left)
+
 
 def probability_nearest_right(lens_pos, scenes):
     """P( nearest peak to the right | lens position )"""
     return probability_nearest(lens_pos, scenes, right)
 
+
 def probability_nearhighest(lens_pos, scenes, comparator):
+    """Calculate probability that the nearhighest peak is in the direction  
+    given by the comparator.
+    """
     assert valid_comparator(comparator)
 
     count = 0
@@ -139,9 +154,11 @@ def probability_nearhighest(lens_pos, scenes, comparator):
             count += 1
     return float(count) / len(scenes)
 
+
 def probability_nearhighest_left(lens_pos, scenes):
     """P( peak that maximizes height / distance is left | lens position )"""
     return probability_nearhighest(lens_pos, scenes, left)
+
 
 def probability_nearhighest_right(lens_pos, scenes):
     """P( peak that maximizes height / distance is right | lens position )"""

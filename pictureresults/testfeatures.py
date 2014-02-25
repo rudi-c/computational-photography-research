@@ -1,6 +1,7 @@
 #!/usr/bin/python
-
-# Tests for featuresturn.py
+"""
+Tests for featuresturn.py
+"""
 
 from featuresturn import *
 

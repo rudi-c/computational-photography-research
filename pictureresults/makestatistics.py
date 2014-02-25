@@ -22,7 +22,6 @@ The script also expects a file called 'maxima.txt' that contains
 the output of running localMax.exe
 """
 
-import os
 import sys
 
 from scene import load_scenes
@@ -35,8 +34,8 @@ steps = 250
 
 def print_statistics(scenes, lens_positions, function):
     print "# %s" % function.__doc__
-    probabilities = [ function(pos, scenes) for pos in lens_positions ]
-    print "data <- c(%s)" % ",".join(["%.3f" % p for p in probabilities])
+    probabilities = [function(pos, scenes) for pos in lens_positions]
+    print "data <- c(%s)" % ",".join("%.3f" % p for p in probabilities)
     print "plot(data)"
 
 
