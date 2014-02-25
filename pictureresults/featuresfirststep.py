@@ -1,4 +1,5 @@
-"""Set of functions relating to the classification of focus values obtained in
+"""
+Set of functions relating to the classification of focus values obtained in
 the first few steps.
 
 These are used to build evaluate decision trees to determine whether the first
@@ -12,81 +13,99 @@ third (third focus measurement, [0, 1])
 lens_pos (0 for the first lens position, 1 for the last lens position)
 """
 
-from scene import *
-from math  import log
+import math
+import scene
 
-def safe_ratio_ls(a, b, k):
-    """Compare the ratio of a, b with k and handle division by zero."""
-    return b != 0 and float(a) / b < k
 
-def safe_ratio_gt(a, b, k):
-    """Compare the ratio of a, b with k and handle division by zero."""
-    return b != 0 and float(a) / b > k
+def safe_ratio_ls(numerator, denominator, k):
+    """Compare the fraction with k and handle division by zero."""
+    return denominator != 0 and float(numerator) / denominator < k
+
+def safe_ratio_gt(numerator, denominator, k):
+    """Compare the fraction with k and handle division by zero."""
+    return denominator != 0 and float(numerator) / denominator > k
+
+def make_ratio_features(feature_maker, outputs, ratios):
+    """Create a list of features for a given family of features for various
+    parameters k in the argument 'ratios'.
+    """
+    name = feature_maker.__name__
+    return [("%s_%d" % (name, k), outputs, feature_maker(ratio))
+            for k, ratio in enumerate(ratios)]
+
+def first_three_lens_pos(lens_pos, step_size=1):
+    """Return the first three lens positions that are visited every time in
+    our algorithm, which are used to make the initial decision of whether
+    to look left or right.
+    """
+    return [lens_pos - 2 * step_size, lens_pos - 1 * step_size, lens_pos]
 
 ### Features taking the focus measure value at two lens positions ###
 
 def ratio2(k):
-    # positive numbers for k only
-    def r(**kwargs):
+    """Ratio of two numbers."""
+    assert k > 0
+    def feature(**kwargs):
         first, second = kwargs["first"], kwargs["second"]
         return safe_ratio_ls(first, second, k)
-    return r
+    return feature
 
-def logRatio2(k):
-    # positive numbers for k only
-    def r(**kwargs):
+def log_ratio2(k):
+    """Ratio of the log of two numbers."""
+    assert k > 0
+    def feature(**kwargs):
         first, second = kwargs["first"], kwargs["second"]
-        return safe_ratio_ls(log(first + 1.0), log(second + 1.0), k)
-    return r
+        return safe_ratio_ls(math.log(first + 1.0), math.log(second + 1.0), k)
+    return feature
 
-def diffRatioAvg2(k):
-    # numbers from -1 to 1 for k (in practice, -0.5 to 0.5)
-    def r(**kwargs):
+def diff_over_avg2(k):
+    """Difference between two numbers normalized by their average."""
+    assert -1 < k < 1
+    def feature(**kwargs):
         first, second = kwargs["first"], kwargs["second"]
         return safe_ratio_ls(2.0 * (second - first), (second + first), k)
-    return r
+    return feature
 
-def diffRatioMin2(k):
-    # numbers from -1 to 1 for k (in practice, -0.5 to 0.5)
-    def r(**kwargs):
+def diff_over_min2(k):
+    """Difference between two numbers normalized by the smallest of the two."""
+    assert -1 < k < 1
+    def feature(**kwargs):
         first, second = kwargs["first"], kwargs["second"]
         return safe_ratio_ls(second - first, min(second, first), k)
-    return r
+    return feature
 
-def diffRatioMax2(k):
-    # numbers from -1 to 1 for k (in practice, -0.5 to 0.5)
-    def r(**kwargs):
+def diff_over_max2(k):
+    """Difference between two numbers normalized by the largest of the two."""
+    assert -1 < k < 1
+    def feature(**kwargs):
         first, second = kwargs["first"], kwargs["second"]
         return safe_ratio_ls(second - first, max(second, first), k)
-    return r
+    return feature
 
-def two_measure_features(filters=[]):
+def two_measure_features(filters=None):
     """ Returns an array of (attribute name, attribute range, function) 
         where the functions take two arguments."""
+    if filters is None:
+        filters = []
 
-    # We're using arrays instead of dicts to maintain a constant order.
+    # We're using arrays instead of dicts here to maintain a constant order.
     features = []
 
     # Ratio are chosen to be symmetrical.
     # e.g. 0.75 and 1.25 are not symmetrical ratios, but 0.75 and 1.333 are
     ratios = [ 1.64, 1.32, 1.16, 1.08, 1.04, 1.02, 1.01, 1.00,
                1/1.01, 1/1.02, 1/1.04, 1/1.08, 1/1.16, 1/1.32, 1/1.64 ]
-    features += [("ratio2_" + str(k), "{0,1}", ratio2(ratios[k]) )
-                 for k in range(0, len(ratios))]
-    features += [("logRatio2_" + str(k), "{0,1}", logRatio2(ratios[k]) )
-                 for k in range(0, len(ratios))]
+    features.extend(make_ratio_features(ratio2, "{0,1}", ratios))
+    features.extend(make_ratio_features(log_ratio2, "{0,1}", ratios))
 
     ratios = [ -0.64, -0.32, -0.16, -0.08, -0.04, -0.02, -0.01, 0.0,
                 0.01,  0.02,  0.04,  0.08,  0.16,  0.32,  0.64 ]
-    features += [("diffRatioAvg2_" + str(k), "{0,1}", diffRatioAvg2(ratios[k]) )
-                 for k in range(0, len(ratios))]
-    features += [("diffRatioMin2_" + str(k), "{0,1}", diffRatioMin2(ratios[k]) )
-                 for k in range(0, len(ratios))]
-    features += [("diffRatioMax2_" + str(k), "{0,1}", diffRatioMax2(ratios[k]) )
-                 for k in range(0, len(ratios))]
+    features.extend(make_ratio_features(diff_over_avg2, "{0,1}", ratios))
+    features.extend(make_ratio_features(diff_over_min2, "{0,1}", ratios))
+    features.extend(make_ratio_features(diff_over_max2, "{0,1}", ratios))
 
-    if len(filters) > 0:
-        return [(name, values, feature) for name, values, feature in features 
+    if filters:
+        return [(name, outputs, feature) for name, outputs, feature in features 
                 if name in filters]
     else:
         return features
@@ -94,66 +113,72 @@ def two_measure_features(filters=[]):
 ### Features taking the focus measure value at three lens positions ###
 
 def ratio3(k):
-    # positive numbers for k only
-    def r(**kwargs):
+    """Ratio of two numbers."""
+    assert k > 0
+    def feature(**kwargs):
         fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
         return safe_ratio_ls(float(fst), trd, k)
-    return r
+    return feature
 
-def logRatio3(k):
-    # positive numbers for k only
-    def r(**kwargs):
+def log_ratio3(k):
+    """Ratio of the log of two numbers."""
+    assert k > 0
+    def feature(**kwargs):
         fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
-        return safe_ratio_ls(log(fst + 1.0), log(trd + 1.0), k)
-    return r
+        return safe_ratio_ls(math.log(fst + 1.0), math.log(trd + 1.0), k)
+    return feature
 
-def diffRatioAvg3(k):
-    # numbers from -1 to 1 for k (in practice, -0.5 to 0.5)
-    def r(**kwargs):
+def diff_over_avg3(k):
+    """Difference between two numbers normalized by their average."""
+    assert -1 < k < 1
+    def feature(**kwargs):
         fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
         return safe_ratio_ls(2.0 * (trd - fst), (trd + fst), k)
-    return r
+    return feature
 
-def diffRatioMin3(k):
-    # numbers from -1 to 1 for k (in practice, -0.5 to 0.5)
-    def r(**kwargs):
+def diff_over_min3(k):
+    """Difference between two numbers normalized by the smallest of the two."""
+    assert -1 < k < 1
+    def feature(**kwargs):
         fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
         return safe_ratio_ls(trd - fst, min(trd, fst), k)
-    return r
+    return feature
 
-def diffRatioMax3(k):
-    # numbers from -1 to 1 for k (in practice, -0.5 to 0.5)
-    def r(**kwargs):
+def diff_over_max3(k):
+    """Difference between two numbers normalized by the largest of the two."""
+    assert -1 < k < 1
+    def feature(**kwargs):
         fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
         return safe_ratio_ls(trd - fst, max(trd, fst), k)
-    return r
+    return feature
 
 def curving(k):
-    # positive and negative numbers for k alike
-    def r(**kwargs):
+    """Method 1 of calculating the second derivative."""
+    def feature(**kwargs):
         fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
         return safe_ratio_ls(fst + trd - 2 * snd, snd, k)
-    return r
+    return feature
 
-def curvingRatio(k):
-    # positive and negative numbers for k alike
-    def r(**kwargs):
+def curving_ratio(k):
+    """Method 2 of calculating the second derivative."""
+    def feature(**kwargs):
         fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
         return safe_ratio_ls(fst - snd, snd - trd, k)
-    return r
+    return feature
 
 def downTrend(**kwargs):
+    """Monotonically decreasing."""
     fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
     return fst >= snd and snd >= trd
 
 def upTrend(**kwargs):
+    """Monotonically increasing."""
     fst, snd, trd = kwargs["first"], kwargs["second"], kwargs["third"]
     return fst <= snd and snd <= trd
 
 def three_measure_features(filters=None):
     """ Returns an array of (attribute name, attribute range, function) 
         where the functions take three arguments."""
-
     if filters is None:
         filters = []
 
@@ -165,24 +190,16 @@ def three_measure_features(filters=None):
     # e.g. 0.75 and 1.25 are not symmetrical ratios, but 0.75 and 1.333 are
     ratios = [ 1.64, 1.32, 1.16, 1.08, 1.04, 1.02, 1.01, 1.00,
                1/1.01, 1/1.02, 1/1.04, 1/1.08, 1/1.16, 1/1.32, 1/1.64 ]
-    features += [("ratio3_" + str(k), "{0,1}", ratio3(ratios[k]) )
-                 for k in range(0, len(ratios))]
-    features += [("logRatio3_" + str(k), "{0,1}", logRatio3(ratios[k]) )
-                 for k in range(0, len(ratios))]
+    features.extend(make_ratio_features(ratio3, "{0,1}", ratios))
+    features.extend(make_ratio_features(log_ratio3, "{0,1}", ratios))
 
     ratios = [ -0.64, -0.32, -0.16, -0.08, -0.04, -0.02, -0.01, 0.0,
                 0.01,  0.02,  0.04,  0.08,  0.16,  0.32,  0.64 ]
-    features += [("diffRatioAvg3_" + str(k), "{0,1}", diffRatioAvg3(ratios[k]) )
-                 for k in range(0, len(ratios))]
-    features += [("diffRatioMin3_" + str(k), "{0,1}", diffRatioMin3(ratios[k]) )
-                 for k in range(0, len(ratios))]
-    features += [("diffRatioMax3_" + str(k), "{0,1}", diffRatioMax3(ratios[k]) )
-                 for k in range(0, len(ratios))]
-
-    features += [("curving_" + str(k), "{0,1}", curving(ratios[k]) )
-                 for k in range(0, len(ratios))]
-    features += [("curvingRatio_" + str(k), "{0,1}", curvingRatio(ratios[k]) )
-                 for k in range(0, len(ratios))]
+    features.extend(make_ratio_features(diff_over_avg3, "{0,1}", ratios))
+    features.extend(make_ratio_features(diff_over_min3, "{0,1}", ratios))
+    features.extend(make_ratio_features(diff_over_max3, "{0,1}", ratios))
+    features.extend(make_ratio_features(curving, "{0,1}", ratios))
+    features.extend(make_ratio_features(curving_ratio, "{0,1}", ratios))
 
     if len(filters) > 0:
         return [(name, values, feature) for name, values, feature in features 
@@ -194,7 +211,7 @@ def three_measure_features(filters=None):
 
 def bracket(brackets):
     # start and end to be numbers from 0 to 1
-    def f(**kwargs):
+    def feature(**kwargs):
         lens_pos = kwargs["lens_pos"]
         assert 0 <= lens_pos <= 1
         assert lens_pos >= brackets[0]
@@ -205,28 +222,22 @@ def bracket(brackets):
                 return i
         return len(brackets) - 1
 
-    return f
+    return feature
 
 def other_features(filters=None):
     """ Returns an array of (attribute name, attribute range, function)"""
-
     if filters is None:
         filters = []
 
     # I've decided not to distribute the brackets evenly because it matters
     # less if the lens is near the center than if it is near the end
-
-    # Twelve brackets
-    # brackets = [ 0.0, 0.05, 0.10, 0.15, 0.25, 0.35, 0.50, 0.65, 0.75, 0.85, 0.90, 0.95 ]
     
     # Five brackets. Experiments seem to suggest this is sufficient. Twelve
     # may lead to overfitting. Three might be to restrictive for the leftmost
     # and rightmost peaks.
     brackets = [ 0.0, 0.08, 0.20, 0.80, 0.92 ]
 
-    bracket_range = "{" + \
-        ",".join([str(i) for i in range(0, len(brackets))]) + "}"
-
+    bracket_range = "{" + ",".join(str(i) for i in range(len(brackets))) + "}"
     features = [ ( "bracket", bracket_range, bracket(brackets) )]
 
     if len(filters) > 0:
@@ -235,7 +246,7 @@ def other_features(filters=None):
     else:
         return features
 
-###
+### Convenience function to return groups of features ###
 
 def measure_features(filters=None):
     """ Returns an array of (attribute name, attribute range, function)"""
@@ -264,9 +275,12 @@ def firststep_feature_evaluator(first, second, third, lens_pos):
     return evaluate
 
 
-### Classifiers ###
+### Classifiers for deciding to look left or right ###
 
 def highest_on_left(scene, lens_pos):
+    """Return true if the highest peak in the scene is on the left of 
+    the lens position.
+    """
     # Find the location of the highest peak
     highest = scene.maxima[0]
     for maxima in scene.maxima:
@@ -275,6 +289,9 @@ def highest_on_left(scene, lens_pos):
     return highest < lens_pos
 
 def nearest_on_left(scene, lens_pos):
+    """Return true if the nearest peak in the scene to the lens position is
+    on its left side.
+    """
     # Find the location of the nearest peak
     nearest = scene.maxima[0]
     for maxima in scene.maxima:
@@ -283,6 +300,9 @@ def nearest_on_left(scene, lens_pos):
     return nearest < lens_pos
 
 def highest_and_near_on_left(scene, lens_pos):
+    """Return true if the peak that maximizes (height)/(distance) in the scene 
+    is on the left of the lens position.
+    """
     # Find the location of the peak that maximizes height
     # and distance, equally weighted in a product
     best = scene.maxima[0]

@@ -19,19 +19,19 @@ function feature_select {
 
 mkdir -p results
 echo "Making features for classifier \"highest\""
-./makefeatures.py --dup-edges --highest > results/highest2.arff
-./makefeatures.py --dup-edges --highest --three-measures > results/highest3.arff
-./makefeatures.py --dup-edges --highest --all-features > results/highestall.arff
+./makeleftrightfeatures.py --dup-edges --highest > results/highest2.arff
+./makeleftrightfeatures.py --dup-edges --highest --three-measures > results/highest3.arff
+./makeleftrightfeatures.py --dup-edges --highest --all-features > results/highestall.arff
 
 echo "Making features for classifier \"nearest\""
-./makefeatures.py --dup-edges --nearest > results/nearest2.arff
-./makefeatures.py --dup-edges --nearest --three-measures > results/nearest3.arff
-./makefeatures.py --dup-edges --nearest --all-features > results/nearestall.arff
+./makeleftrightfeatures.py --dup-edges --nearest > results/nearest2.arff
+./makeleftrightfeatures.py --dup-edges --nearest --three-measures > results/nearest3.arff
+./makeleftrightfeatures.py --dup-edges --nearest --all-features > results/nearestall.arff
 
 echo "Making features for classifier \"highnear\""
-./makefeatures.py --dup-edges --high-and-near > results/highnear2.arff
-./makefeatures.py --dup-edges --high-and-near --three-measures > results/highnear3.arff
-./makefeatures.py --dup-edges --high-and-near --all-features > results/highnearall.arff
+./makeleftrightfeatures.py --dup-edges --high-and-near > results/highnear2.arff
+./makeleftrightfeatures.py --dup-edges --high-and-near --three-measures > results/highnear3.arff
+./makeleftrightfeatures.py --dup-edges --high-and-near --all-features > results/highnearall.arff
 
 echo "Training left-right trees..."
 for training_data in highest2 highest3 highestall \
