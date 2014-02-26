@@ -473,13 +473,14 @@ def load_classifications(filename):
 
 
 def print_script_usage():
-    print """Script usage : ./makegroundtruthcomparison.py 
-             --left-right-tree=<decision tree for deciding left vs right>
-             --first-size-tree=<decision tree for deciding first coarse vs fine>
-             --action-tree=<decision tree for deciding action to take>]
-             [-d, --double-step <double step size used>]
-             [--specific-scene=<a scene's filename, will print R script]
-             [--perfect-file=<use classification from file instead of tree>]"""
+    print >> sys.stderr, \
+        """Script usage : ./benchmark.py 
+           --left-right-tree=<decision tree for deciding left vs right>
+           --first-size-tree=<decision tree for deciding first coarse vs fine>
+           --action-tree=<decision tree for deciding action to take>]
+           [-d, --double-step <double step size used>]
+           [--specific-scene=<a scene's filename, will print R script]
+           [--perfect-file=<use classification from file instead of tree>]"""
 
 
 def main(argv):

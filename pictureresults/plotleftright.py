@@ -15,11 +15,12 @@ import featuresfirststep
 import rtools
 
 def print_script_usage():
-    print """Script usage : ./makeclassifierplot.py 
-             [-s <scene to load (.txt)>]
-             [-t <decision tree to evaluate>]
-             [-c <classifier (highest, nearest, near_high)>]
-             [-d <double step size used>]"""
+    print >> sys.stderr, \
+        """Script usage : ./plotleftright.py 
+           [-s <scene to load (.txt)>]
+           [-t <decision tree to evaluate>]
+           [-c <classifier (highest, nearest, near_high)>]
+           [-d <double step size used>]"""
 
 
 def print_R_script(scene, tree, classifier, step_size):

@@ -75,10 +75,11 @@ def print_R_script(scene):
 
 
 def print_script_usage():
-    print """Script usage : ./evaluatestepsize.py 
-             [-t <decision tree to evaluate>]
-             [-c <classifier (highest, nearest, near_high)>]
-             [-d <double step size used>]"""
+    print >> sys.stderr, \
+        """Script usage : ./plotfullsweep.py 
+           [-t <decision tree to evaluate>]
+           [-c <classifier (highest, nearest, near_high)>]
+           [-d <double step size used>]"""
 
 
 def main(argv):

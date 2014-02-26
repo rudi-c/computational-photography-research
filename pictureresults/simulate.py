@@ -288,12 +288,13 @@ def get_arff_header(features):
 
 
 def print_script_usage():
-    print """Script usage : ./makegroundtruthcomparison.py 
-             [-d, --double-step <double step size used>]
-             [--closest-peak, --backtrack-faster, -use-weights : simulation options]
-             [--show-random-sample : instead of full simulation, randomly
-                                     simulate a few scenes for plotting ]
-             [-lv, --leave-out=<name of a file to leave out>]"""
+    print >> sys.stderr, \
+        """Script usage : ./simulate.py 
+           [-d, --double-step <double step size used>]
+           [--closest-peak, --backtrack-faster, -use-weights : simulation options]
+           [--show-random-sample : instead of full simulation, randomly
+                                   simulate a few scenes for plotting ]
+           [-lv, --leave-out=<name of a file to leave out>]"""
 
 
 def main(argv):

@@ -43,10 +43,11 @@ def print_R_script(ground_probabilities, our_probabilities):
 
 
 def print_script_usage():
-   print  """Script usage : ./makegroundtruthcomparison.py 
-             [-t <decision tree to evaluate>]
-             [-c <classifier (highest, nearest, near_high)>]
-             [-d <double step size used>]"""
+    print >> sys.stderr, \
+        """Script usage : ./makegroundtruthcomparison.py 
+           [-t <decision tree to evaluate>]
+           [-c <classifier (highest, nearest, near_high)>]
+           [-d <double step size used>]"""
 
 
 def main(argv):
