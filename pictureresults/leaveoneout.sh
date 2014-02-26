@@ -6,11 +6,11 @@ cat /dev/null > results.txt
 for file in \
     backyard.txt \
     bench.txt \
+    book.txt \
     books1.txt \
     books2.txt \
     books3.txt \
     books4.txt \
-    book.txt \
     bridge.txt \
     building1.txt \
     building2.txt \
