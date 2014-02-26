@@ -7,6 +7,10 @@ ACTION_ARFF=results/action.arff
 
 attribute_select=false
 discretize=false
+redirect=false
+leaveout=""
+useonly=""
+plotfile=""
 
 # Loop until all parameters are used up
 while [ "$1" != "" ]; do
@@ -16,10 +20,14 @@ while [ "$1" != "" ]; do
         # -f | --file )           shift
         #                         filename=$1
         #                         ;;
-        -as | --attribute-select ) attribute_select=true
-                                ;;
-        -ds | --discretize ) discretize=true
-                                ;;
+        -as | --attribute-select ) attribute_select=true ;;
+        -ds | --discretize ) discretize=true ;;
+        -lv ) shift
+              redirect=true
+              leaveout="--leave-out="$1
+              useonly="--use-only="$1
+              plotfile=$1
+              echo "leaving out "$1 ;;
         # -h | --help )           usage
         #                         exit
         #                         ;;
@@ -30,10 +38,9 @@ while [ "$1" != "" ]; do
     shift
 done
 
-
 # Generate instances to train with.
 echo "Simulating..."
-./simulate.py > $ACTION_ARFF
+./simulate.py $leaveout > $ACTION_ARFF
 
 # Make a copy of the data, which we will modify if filters used.
 ACTION_DATA=/tmp/action_data.arff
@@ -81,9 +88,20 @@ java -cp $CP weka.classifiers.trees.J48 \
 
 # Evaluate tree effectiveness.
 echo "Evaluating..."
-./benchmark.py --left-right-tree=/tmp/tree_leftright.json \
-            --first-size-tree=/tmp/tree_firstsize.json \
-            --action-tree=/tmp/tree_action.json
+mkdir -p simulations
+if [ "$redirect" = true ]; then
+    # This is for leave-on-out cross validation.
+    ./benchmark.py --left-right-tree=/tmp/tree_leftright.json \
+                --first-size-tree=/tmp/tree_firstsize.json \
+                --action-tree=/tmp/tree_action.json $useonly >> results.txt
+    ./benchmark.py --left-right-tree=/tmp/tree_leftright.json \
+                --action-tree=results/manual_tree.json \
+                --specific-scene=landscape3.txt > simulations/$plotfile.R
+else
+    ./benchmark.py --left-right-tree=/tmp/tree_leftright.json \
+                --first-size-tree=/tmp/tree_firstsize.json \
+                --action-tree=/tmp/tree_action.json
+fi
 
 # Evaluate the effectiveness given perfect classifications
 # ./makeperfectaction.py > perfect.json

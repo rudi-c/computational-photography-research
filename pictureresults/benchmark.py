@@ -14,7 +14,7 @@ import rtools
 from coarsefine import *
 from direction import Direction
 from featuresfirststep import first_three_lens_pos
-from scene import load_scenes
+from scene import Scene, load_scenes
 
 
 class BenchmarkParameters(object):
@@ -252,20 +252,19 @@ class Simulator(object):
         # The default action when an edge is reached is to backtrack.
         return "backtrack", lens_positions
 
-    def _backtrack(self, current_lens_pos):
+    def _backtrack(self, current_lens_pos, previous_direction):
         """From the current lens position, go back to the lens position we
         were at before and look on the other side."""
 
-        previous_direction = Direction(current_lens_pos - self.initial_pos)
+        new_direction = previous_direction.reverse()
 
         # We need to reinitialize the list of lens positions used as a feature
         # during the sweep algorithm, to avoid mixing it with the positions
         # of the previous sweep. 
         initial_positions = first_three_lens_pos(self.initial_pos, 
                                                  self.params.step_size)
-        if previous_direction.is_right():
+        if new_direction.is_left():
             initial_positions.reverse()
-        new_direction = previous_direction.reverse()
 
         # Go back to where we started.
         distance_from_initial = abs(self.initial_pos - current_lens_pos)
@@ -308,7 +307,7 @@ class Simulator(object):
         if result == "turn_peak":
             self._go_to_max(positions)
         elif result == "backtrack":
-            self._backtrack(positions[-1])
+            self._backtrack(positions[-1], direction)
         else:
             assert False
 
@@ -384,8 +383,12 @@ def benchmark_scenes(params, scenes):
     """Runs the simulation for every scene and print the number of true/false
     positive/negatives for each scene.
     """
-    data_rows = [( "filename", "t-pos", "f-pos", "t-neg", 
-                   "f-neg", "%", "steps" )]
+    if len(scenes) > 1:
+        data_rows = [( "filename", "t-pos", "f-pos", "t-neg", 
+                       "f-neg", "%", "steps" )]
+    else:
+        data_rows = []
+
     sum_t_pos = 0
     sum_f_pos = 0
     sum_t_neg = 0
@@ -408,13 +411,15 @@ def benchmark_scenes(params, scenes):
             "%d" % t_pos, "%d" % f_pos, "%d" % t_neg, "%d" % f_neg,
             "%.1f" % perct, "%d" % steps))
 
-    data_rows.append(("average",
-        "%.1f" % (float(sum_t_pos) / len(scenes)),
-        "%.1f" % (float(sum_f_pos) / len(scenes)),
-        "%.1f" % (float(sum_t_neg) / len(scenes)),
-        "%.1f" % (float(sum_f_neg) / len(scenes)),
-        "%.1f" % (float(sum_perct) / len(scenes)),
-        "%.1f" % (float(sum_steps) / len(scenes))))
+    # No need to calculate the average with only one scene.
+    if len(scenes) > 1:
+        data_rows.append(("average",
+            "%.1f" % (float(sum_t_pos) / len(scenes)),
+            "%.1f" % (float(sum_f_pos) / len(scenes)),
+            "%.1f" % (float(sum_t_neg) / len(scenes)),
+            "%.1f" % (float(sum_f_neg) / len(scenes)),
+            "%.1f" % (float(sum_perct) / len(scenes)),
+            "%.1f" % (float(sum_steps) / len(scenes))))
 
     print_aligned_data_rows(data_rows)
 
@@ -480,20 +485,24 @@ def print_script_usage():
 def main(argv):
     # Parse script arguments
     try:
-        opts, _ = getopt.getopt(argv, "d",
+        opts, _ = getopt.getopt(argv, "d:uo",
             ["left-right-tree=", "first-size-tree=",
              "action-tree=", "double-step",
-             "specific-scene=", "perfect-file="])
+             "specific-scene=", "perfect-file=",
+             "use-only="])
     except getopt.GetoptError:
         print_script_usage()
         sys.exit(2)
 
     params = BenchmarkParameters()
     specific_scene = None
+    use_only_file = None
 
     for opt, arg in opts:
-        if opt == "--double-step":
+        if opt in ("-d", "--double-step"):
             params.step_size = 2
+        elif opt in ("-uo", "--use-only"):
+            use_only_file = arg
         elif opt == "--left-right-tree":
             params.left_right_tree = evaluatetree.read_decision_tree(
                 arg, featuresfirststep.all_features_dict())
@@ -517,6 +526,8 @@ def main(argv):
         sys.exit(2)
 
     scenes = load_scenes(excluded_scenes=["cat.txt", "moon.txt"])
+    if use_only_file:
+        scenes = [scene for scene in scenes if scene.filename == use_only_file]
 
     if specific_scene is None:
         benchmark_scenes(params, scenes)

@@ -5,6 +5,7 @@ instances of data that will be used to train a classifier for deciding
 whether we should turn back to peak, backtrack or continue.
 """
 
+import getopt
 import random
 import sys
 
@@ -286,39 +287,61 @@ def get_arff_header(features):
             + "@ATTRIBUTE action {continue, turn_peak, backtrack } \n")
 
 
+def print_script_usage():
+    print """Script usage : ./makegroundtruthcomparison.py 
+             [-d, --double-step <double step size used>]
+             [--closest-peak, --backtrack-faster, -use-weights : simulation options]
+             [--show-random-sample : instead of full simulation, randomly
+                                     simulate a few scenes for plotting ]
+             [-lv, --leave-out=<name of a file to leave out>]"""
+
+
 def main(argv):
+    # Parse script arguments
+    try:
+        opts, _ = getopt.getopt(argv, "d:lv",
+            ["double-step", "closest-peak", "backtrack-faster",
+             "use-weights", "show-random-sample",
+             "leave-out="])
+    except getopt.GetoptError:
+        print_script_usage()
+        sys.exit(2)
+
     features = all_features
-    filters = []
     step_size = 1
     show_random_sample = False
+    leave_out = ""
 
     params = ParameterSet()
 
     # Process command line options. Anything remaining will be considered
     # to be filters for features.
-    for arg in argv:
-        if arg == "--double-step":
+    for opt, arg in opts:
+        if opt in ("-d", "--double-step"):
             step_size = 2
-        elif arg == "--closest-peak":
+        elif opt in ("-lv", "--leave-out"):
+            leave_out = arg
+        elif opt == "--closest-peak":
             params.peakHandling = PeakHandling.CLOSEST
-        elif arg == "--backtrack-faster":
+        elif opt == "--backtrack-faster":
             params.backtrackHandling = BacktrackHandling.FASTER
-        elif arg == "--use-weights":
+        elif opt == "--use-weights":
             params.outlierHandling = OutlierHandling.WEIGHTING
             params.uniformSamplingRate = 0.10
-        elif arg == "--show-random-sample":
+        elif opt == "--show-random-sample":
             show_random_sample = True
         else:
-            filters.append(arg)
+            print_script_usage()
+            sys.exit(2)
 
     random.seed(seed)
 
-    scenes = load_scenes(excluded_scenes=["cat.txt", "moon.txt"])
+    scenes = load_scenes(excluded_scenes=["cat.txt", "moon.txt", leave_out])
 
     if show_random_sample:
-        simulate_samples(scenes, features(filters), step_size, params)
+        simulate_samples(scenes, features(), step_size, params)
     else:
-        simulate_full(scenes, features(filters), step_size, params)
+        simulate_full(scenes, features(), step_size, params)
 
 
 main(sys.argv[1:])
