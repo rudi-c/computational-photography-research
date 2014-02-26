@@ -83,24 +83,23 @@ echo "Parsing first step trees..."
 ./$PARSER results/firstsize_weka.txt > /tmp/tree_firstsize.json
 echo "Training action tree..."
 java -cp $CP weka.classifiers.trees.J48 \
-    -t $ACTION_DATA -C 0.25 -M 128 | ./$PARSER > /tmp/tree_action.json
+    -t $ACTION_DATA -C 0.25 -M 64 | ./$PARSER > /tmp/tree_action.json
 
+arg1="--left-right-tree=/tmp/tree_leftright.json "
+arg2="--first-size-tree=/tmp/tree_firstsize.json "
+arg3="--action-tree=/tmp/tree_action.json "
+treeargs=$arg1$arg2$arg3
 
 # Evaluate tree effectiveness.
 echo "Evaluating..."
 mkdir -p simulations
 if [ "$redirect" = true ]; then
     # This is for leave-on-out cross validation.
-    ./benchmark.py --left-right-tree=/tmp/tree_leftright.json \
-                --first-size-tree=/tmp/tree_firstsize.json \
-                --action-tree=/tmp/tree_action.json $useonly >> results.txt
-    ./benchmark.py --left-right-tree=/tmp/tree_leftright.json \
-                --action-tree=results/manual_tree.json \
-                --specific-scene=landscape3.txt > simulations/$plotfile.R
+    ./benchmark.py $treeargs $useonly >> results.txt
+    ./benchmark.py $treeargs \
+                --specific-scene=$plotfile > simulations/$plotfile.R
 else
-    ./benchmark.py --left-right-tree=/tmp/tree_leftright.json \
-                --first-size-tree=/tmp/tree_firstsize.json \
-                --action-tree=/tmp/tree_action.json
+    ./benchmark.py $treeargs
 fi
 
 # Evaluate the effectiveness given perfect classifications
@@ -110,17 +109,15 @@ fi
 #     --action-tree=/tmp/tree_action.json --perfect-file=perfect.json
 
 # ./benchmark.py --left-right-tree=/tmp/tree_leftright.json \
-#     --action-tree=/tmp/tree_action.json --perfect-file=perfect.json \
 #     --first-size-tree=/tmp/tree_firstsize.json \
+#     --action-tree=/tmp/tree_action.json --perfect-file=perfect.json \
 #     --specific-scene=landscape3.txt > test.R
 
 # ./benchmark.py --left-right-tree=/tmp/tree_leftright.json \
+#     --first-size-tree=/tmp/tree_firstsize.json \
 #     --action-tree=/tmp/tree_action.json \
 #     --specific-scene=backyard.txt > test.R
 
 # ./benchmark.py --left-right-tree=/tmp/tree_leftright.json \
-#             --action-tree=results/manual_tree.json
-
-# ./benchmark.py --left-right-tree=/tmp/tree_leftright.json \
-#     --action-tree=results/manual_tree.json\
-#     --specific-scene=landscape3.txt > test.R
+#     --first-size-tree=/tmp/tree_firstsize.json \
+#     --action-tree=/tmp/tree_action.json

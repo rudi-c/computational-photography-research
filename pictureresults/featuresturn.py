@@ -476,11 +476,11 @@ class ParameterSet:
 
         # Factor by which to multiply the weight or sampling rate when we
         # encounter a lens position where the classification is to continue
-        self.continueRatio = 0.993
+        self.continueRatio = 0.99
 
         # Factor by which to multiply the weight or sampling rate when we
         # encounter a lens position where the classification is to turn back
-        self.turnbackRatio = 0.96
+        self.turnbackRatio = 0.93
 
 
 

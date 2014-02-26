@@ -249,8 +249,19 @@ class Simulator(object):
                         classification == "backtrack")
                 return classification, lens_positions
 
-        # The default action when an edge is reached is to backtrack.
-        return "backtrack", lens_positions
+        # We've reached an edge, but the decision tree still does not want
+        # to turn back, so what do we do now?
+        # After thinking a lot about it, I think the best thing to do is to
+        # introduce a condition manually. It's a bit ad-hoc, but we really need
+        # to be able to handle this case robustly, as there are lot of cases
+        # (i.e., landscape shots) where peaks will be at the edge.
+        ratio_min_to_max = featuresturn.ratio_min_to_max(
+            focus_values=self.scene.fvalues, lens_positions=lens_positions)
+        if ratio_min_to_max > 0.8:
+            return "backtrack", lens_positions
+        else:
+            return "turn_peak", lens_positions
+
 
     def _backtrack(self, current_lens_pos, previous_direction):
         """From the current lens position, go back to the lens position we

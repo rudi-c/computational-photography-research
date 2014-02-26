@@ -18,6 +18,13 @@ from featuresturn import *
 
 seed = 1
 
+# How many times more instances with the classification "continne" we want
+# compared to one of the other two classifications. We generally want an
+# unbalanced dataset so that the decision tree is biased towards "continue".
+# It's more acceptable to take a few more steps than to backtrack too early
+# and fail.
+continue_multiplier = 3.0
+
 def make_instance(scene, features, params, instances, direction,
                   lens_positions, classification, weight):
     """Adds a new instance by evaluate the features on the data acquired so
@@ -54,7 +61,8 @@ def get_balancing_probabilities(instances):
                           for _, classification in instances)
 
     min_count = min(count_continue, count_turn_peak, count_backtrack)
-    probabilities = { Action.CONTINUE  : float(min_count) / count_continue,
+    probabilities = { Action.CONTINUE  : continue_multiplier * 
+                                         float(min_count) / count_continue,
                       Action.TURN_PEAK : float(min_count) / count_turn_peak,
                       Action.BACKTRACK : float(min_count) / count_backtrack }
     return probabilities
@@ -75,7 +83,10 @@ def assert_balanced_sampling(instances):
     """Make sure we have approximately the same number of instances of each
     class, within 10%"""
     probabilities = get_balancing_probabilities(instances)
-    assert all(probabilities[k] > 0.9 for k in probabilities.keys())
+    total = continue_multiplier + 2
+    assert (probabilities[Action.CONTINUE] > continue_multiplier / total * 0.9
+            and probabilities[Action.TURN_PEAK] > 1.0 / total * 0.9
+            and probabilities[Action.BACKTRACK] > 1.0 / total * 0.9)
 
 
 def get_balancing_weight_factors(instances):
@@ -89,7 +100,8 @@ def get_balancing_weight_factors(instances):
                         if classification == Action.BACKTRACK)
 
     min_sum = min(sum_continue, sum_turn_peak, sum_backtrack)
-    factors = { Action.CONTINUE  : float(min_sum) / sum_continue,
+    factors = { Action.CONTINUE  : continue_multiplier *
+                                   float(min_sum) / sum_continue,
                 Action.TURN_PEAK : float(min_sum) / sum_turn_peak,
                 Action.BACKTRACK : float(min_sum) / sum_backtrack }
     return factors
@@ -107,7 +119,10 @@ def assert_balanced_weighting(instances):
     """Make sure we have approximately the same the sum of weights in 
     instances of each class, within 10%"""
     factors = get_balancing_weight_factors(instances)
-    assert all(factors[k] > 0.9 for k in factors.keys())
+    total = continue_multiplier + 2
+    assert (factors[Action.CONTINUE] > continue_multiplier / total * 0.9
+            and factors[Action.TURN_PEAK] > 1.0 / total * 0.9
+            and factors[Action.BACKTRACK] > 1.0 / total * 0.9)
 
 
 def simulate_sweep(scene, features, instances, initial_lens_positions, 
