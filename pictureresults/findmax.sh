@@ -49,3 +49,22 @@ do
 done
 
 ./makestatistics.py
+
+for file in \
+	blackboard1.txt \
+	blackboard2.txt \
+	pillow1.txt \
+	pillow2.txt \
+	pillow3.txt \
+	projector1.txt \
+	projector2.txt \
+	projector3.txt \
+	screws1.txt \
+	screws2.txt \
+	whiteboard1.txt \
+	whiteboard2.txt \
+	whiteboard3.txt
+do
+	echo $file >> $maximaFile
+	./localMax.exe < lowlightnorm/$file >> $maximaFile
+done

@@ -83,7 +83,7 @@ echo "Parsing first step trees..."
 ./$PARSER results/firstsize_weka.txt > /tmp/tree_firstsize.json
 echo "Training action tree..."
 java -cp $CP weka.classifiers.trees.J48 \
-    -t $ACTION_DATA -C 0.25 -M 128 | ./$PARSER > /tmp/tree_action.json
+    -t $ACTION_DATA -C 0.25 -M 256 | ./$PARSER > /tmp/tree_action.json
 
 arg1="--left-right-tree=/tmp/tree_leftright.json "
 arg2="--first-size-tree=/tmp/tree_firstsize.json "
