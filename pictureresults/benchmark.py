@@ -387,7 +387,11 @@ def benchmark_scene(params, scene):
     f_neg = sum(evaluator.is_false_negative() for evaluator in evaluators)
     total_steps = sum(len(evaluator.visited_positions) 
                       for evaluator in evaluators)
-    return (t_pos, t_neg, f_pos, f_neg, float(total_steps) / len(evaluators))
+    avg_distance = sum(scene.distance_to_closest_peak(initial_pos)
+                       for initial_pos in params.initial_pos_range(scene))
+    avg_distance = float(avg_distance) / len(params.initial_pos_range(scene))
+    return (t_pos, t_neg, f_pos, f_neg, 
+            float(total_steps) / len(evaluators), avg_distance)
 
 
 def benchmark_scenes(params, scenes):
@@ -396,7 +400,7 @@ def benchmark_scenes(params, scenes):
     """
     if len(scenes) > 1:
         data_rows = [( "filename", "t-pos", "f-pos", "t-neg", 
-                       "f-neg", "%", "steps" )]
+                       "f-neg", "%", "steps", "avgdist" )]
     else:
         data_rows = []
 
@@ -406,9 +410,11 @@ def benchmark_scenes(params, scenes):
     sum_f_neg = 0
     sum_perct = 0
     sum_steps = 0
+    sum_avgds = 0
 
     for scene in scenes:
-        t_pos, f_pos, t_neg, f_neg, steps = benchmark_scene(params, scene)
+        t_pos, f_pos, t_neg, f_neg, \
+               steps, avg_distance = benchmark_scene(params, scene)
         perct = float(t_pos) / (t_pos + f_pos + t_neg + f_neg) * 100
 
         sum_t_pos += t_pos
@@ -417,10 +423,11 @@ def benchmark_scenes(params, scenes):
         sum_f_neg += f_neg
         sum_perct += perct
         sum_steps += steps
+        sum_avgds += avg_distance
 
         data_rows.append((scene.name, 
             "%d" % t_pos, "%d" % f_pos, "%d" % t_neg, "%d" % f_neg,
-            "%.1f" % perct, "%d" % steps))
+            "%.1f" % perct, "%d" % steps, "%.1f" % avg_distance))
 
     # No need to calculate the average with only one scene.
     if len(scenes) > 1:
@@ -430,7 +437,8 @@ def benchmark_scenes(params, scenes):
             "%.1f" % (float(sum_t_neg) / len(scenes)),
             "%.1f" % (float(sum_f_neg) / len(scenes)),
             "%.1f" % (float(sum_perct) / len(scenes)),
-            "%.1f" % (float(sum_steps) / len(scenes))))
+            "%.1f" % (float(sum_steps) / len(scenes)),
+            "%.1f" % (float(sum_avgds) / len(scenes))))
 
     print_aligned_data_rows(data_rows)
 
@@ -537,7 +545,7 @@ def main(argv):
         print_script_usage()
         sys.exit(2)
 
-    scenes = load_scenes(excluded_scenes=["cat.txt", "moon.txt"])
+    scenes = load_scenes(folder="focusraw/")
     if use_only_file:
         scenes = [scene for scene in scenes if scene.filename == use_only_file]
 
