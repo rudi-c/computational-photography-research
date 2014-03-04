@@ -352,7 +352,8 @@ def main(argv):
 
     random.seed(seed)
 
-    scenes = load_scenes(excluded_scenes=["cat.txt", "moon.txt", leave_out])
+    scenes = load_scenes(folder="focusraw",
+        excluded_scenes=["cat.txt", "moon.txt", leave_out])
 
     if show_random_sample:
         simulate_samples(scenes, features(), step_size, params)

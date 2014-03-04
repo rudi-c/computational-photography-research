@@ -6,6 +6,7 @@ import os
 
 # Where to find the data.
 SCENES_FOLDER = "focusraw/"
+#SCENES_FOLDER = "lowlightgaussraw/"
 MAXIMA_FILE = "maxima.txt"
 
 class Scene(object):
@@ -22,10 +23,10 @@ class Scene(object):
                             "should only have two columns.")
         return float(parts[1])
 
-    def __load_from_file(self):
+    def __load_from_file(self, folder):
         """Load scene information from file."""
         try:
-            f = open(SCENES_FOLDER + self.filename)
+            f = open(folder + self.filename)
             lines = f.readlines()
             f.close()
         except IOError:
@@ -72,7 +73,7 @@ class Scene(object):
         """Return the focus values corresponding to multiple lens positions."""
         return [self.fvalues[pos] for pos in positions]
 
-    def __init__(self, filename):
+    def __init__(self, filename, folder):
         self.filename = filename
         self.name = filename[:filename.rfind(".")] # remove extension
         self.step_count = 0
@@ -80,22 +81,25 @@ class Scene(object):
         self.maxima = []
         self.norm_maxima = []
 
-        self.__load_from_file()
+        self.__load_from_file(folder)
 
 
-def load_scenes(excluded_scenes=None):
+def load_scenes(excluded_scenes=None, folder=None):
     """Loads scenes (sets of pictures at every lens position). Expects a folder
     focusraw/ and a file maxima.txt to exist in the same directory.
     """
     if excluded_scenes is None:
         excluded_scenes = []
+    if folder is None:
+        folder = SCENES_FOLDER
 
-    if not os.path.isdir(SCENES_FOLDER):
-        raise IOError("Scenes folder \"%s\" folder not found." % SCENES_FOLDER)
+    if not os.path.isdir(folder):
+        raise IOError("Scenes folder \"%s\" folder not found." % folder)
 
-    scenes = [ Scene(f) 
-               for f in os.listdir(SCENES_FOLDER) 
-               if os.path.isfile(SCENES_FOLDER + f)
+    scenes = [ Scene(f, folder) 
+               for f in os.listdir(folder) 
+               if f.endswith(".txt")
+               if os.path.isfile(folder + "/" + f)
                if not f in excluded_scenes ]
     load_maxima(scenes)
     return scenes
