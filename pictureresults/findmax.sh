@@ -48,7 +48,7 @@ do
 	./localMax.exe < focusmeasures/$file >> $maximaFile
 done
 
-./makestatistics.py
+./makestatistics.py > stats.R
 
 for file in \
 	blackboard1.txt \
@@ -66,5 +66,5 @@ for file in \
 	whiteboard3.txt
 do
 	echo $file >> $maximaFile
-	./localMax.exe < lowlightnorm/$file >> $maximaFile
+	./localMax.exe < lowlightgaussnorm/$file >> $maximaFile
 done
