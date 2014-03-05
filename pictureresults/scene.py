@@ -26,11 +26,11 @@ class Scene(object):
     def __load_from_file(self, folder):
         """Load scene information from file."""
         try:
-            f = open(folder + self.filename)
+            f = open(folder + "/" + self.filename)
             lines = f.readlines()
             f.close()
         except IOError:
-            raise IOError("Could not open scene file \"%d\"." % self.filename)
+            raise IOError("Could not open scene file \"%s\"." % self.filename)
 
         focus_values = [self.__get_focus_value(line) for
                         line in lines]
