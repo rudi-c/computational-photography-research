@@ -8,6 +8,7 @@ import json
 import sys
 
 import evaluatetree
+import random
 import featuresturn     
 import featuresfirststep
 import rtools
@@ -16,6 +17,8 @@ from direction import Direction
 from featuresfirststep import first_three_lens_pos
 from scene import Scene, load_scenes
 
+seed = 1
+backlash_amount = 4
 
 class BenchmarkParameters(object):
 
@@ -25,6 +28,7 @@ class BenchmarkParameters(object):
         self.action_tree = None
         self.step_size = 1
         self.perfect_classification = None
+        self.backlash = False
 
     def missing_params(self):
         """Returns whether enough parameters have been set for simulation."""
@@ -91,21 +95,45 @@ class Simulator(object):
         return max(lens_positions, 
                    key=(lambda pos : self.scene.fvalues[pos]))
 
-    def _do_local_search(self, maximum_pos, direction, rev_direction):
-        while 0 < self.last_position() < self.scene.step_count - 1:
+    def _can_keep_moving(self, lens_pos, direction):
+        return ((0 < self.last_position() or direction.is_right()) and
+                (self.last_position() < self.scene.step_count - 1
+                 or direction.is_left()))
+
+    def _do_local_search(self, lens_pos, direction, rev_direction):
+        while self._can_keep_moving(lens_pos, direction):
             self._walk_fine(direction, 1)
-            if self.scene.fvalues[self.last_position()] > \
-                    self.scene.fvalues[maximum_pos]:
-                maximum_pos = self.last_position()
+            if (self.scene.fvalues[self.last_position()] >
+                self.scene.fvalues[lens_pos]):
+                # We've seen an increase by moving one extra step, so
+                # keep moving.
+                lens_pos = self.last_position()
             else:
-                # Backtrack and stop.
-                self._walk_fine(rev_direction, 1)
-                break
-        return maximum_pos
+                # We've seen a decrease. Consider moving just one extra step.
+                if self._can_keep_moving(lens_pos, direction):
+                    self._walk_fine(direction, 1)
+                    if (self.scene.fvalues[self.last_position()] >
+                        self.scene.fvalues[lens_pos]):
+                        # We've seen an increase by moving one extra step, so
+                        # keep moving.
+                        lens_pos = self.last_position()
+                    else:
+                        # Backtrack and stop.
+                        self._walk_fine(rev_direction, 2)
+                        break
+                else:
+                    # Backtrack and stop.
+                    self._walk_fine(rev_direction, 1)
+                    break
+        return lens_pos
 
     def _go_to_max(self, lens_positions):
         current_pos = self.last_position()
         maximum_pos = self._max_among(lens_positions)
+
+        # Throw off the location of the maximum by a random amount.
+        if self.params.backlash:
+            maximum_pos += random.randint(-backlash_amount, backlash_amount)
 
         if maximum_pos < current_pos:
             direction = Direction("left")
@@ -123,52 +151,33 @@ class Simulator(object):
         coarse_steps = distance / 8
         self._walk_coarse(direction, coarse_steps)
 
-        # If the remainder is 6-7, we will need to take 6-7 fine steps and it
-        # would in theory be better to take a coarse step and go back the other
-        # way. Fortunately, in practice this is very rare so we ignore this
-        # optimization on the number of lens movements needed to reach the max.
         fine_steps = distance % 8
-        potential_maxs = []
-        for _ in range(fine_steps):
-            self._walk_fine(direction, 1)
-            potential_maxs.append(self.last_position())
 
-        assert self.last_position() == maximum_pos
-
-        if (len(potential_maxs) > 0 and
-            self._max_among(potential_maxs) != maximum_pos):
-            # Found something better, go back that way.
-            self._walk_fine(rev_direction, 
-                abs(maximum_pos - self._max_among(potential_maxs)))
-            maximum_pos = self._max_among(potential_maxs)
-        else:
-            # Keep going to see if we can find a higher position.
+        # Keep going to see if we can find a higher position.
+        start_pos = self.last_position()
+        maximum_pos = self._do_local_search(
+            start_pos, direction, rev_direction)
+        # If we didn't move further, we might want to look in the other
+        # direction too.
+        if start_pos == maximum_pos:
             maximum_pos = self._do_local_search(
-                maximum_pos, direction, rev_direction)
-            # If we didn't take any fine steps at all to get to the
-            # max lens position, we should look the other way too.
-            if fine_steps == 0:
-                maximum_pos = self._do_local_search(
-                    maximum_pos, rev_direction, direction)
+                self.last_position(), rev_direction, direction)
 
         self.status = "foundmax"
 
-    def _go_back_to_start(self, distance, direction, initial_positions):
+    def _go_back_to_start(self, distance, direction):
         """Go back to where we were initially at the start of the sweep.
         It's fine if we overshoot it a little bit if it saves some steps.
         """
         coarse_steps = distance / 8
         self._walk_coarse(direction, coarse_steps)
 
-        # An extra distance that coarse steps won't reach exactly
-        remainder = distance % 8
-        if remainder > 4:
-            # Take more fine steps to reach initial position.
-            self._walk_fine(direction, 8 - remainder)
-        else:
-            # Take one big coarse step, which will overshoot a bit.
-            self._walk_coarse(direction, 1)
-            initial_positions.append(self.last_position())
+        # Always walk 2 fine steps, rather than the remaining distance to
+        # where we started. Because of backlash, we don't know exactly
+        # where we started anyway and it doesn't matter if the sweep starts
+        # at a slightly different location. These two fine steps serve as the
+        # "initial positions" for the new sweep.
+        self._walk_fine(direction, 2)
 
     def _get_first_direction(self, initial_positions):
         """Direction in which we should start sweeping initially."""
@@ -269,18 +278,17 @@ class Simulator(object):
 
         new_direction = previous_direction.reverse()
 
-        # We need to reinitialize the list of lens positions used as a feature
-        # during the sweep algorithm, to avoid mixing it with the positions
-        # of the previous sweep. 
-        initial_positions = first_three_lens_pos(self.initial_pos, 
-                                                 self.params.step_size)
-        if new_direction.is_left():
-            initial_positions.reverse()
-
         # Go back to where we started.
         distance_from_initial = abs(self.initial_pos - current_lens_pos)
+
+        # Throw off the location of the starting point by a random amount.
+        if self.params.backlash:
+            distance_from_initial += random.randint(
+                -backlash_amount, backlash_amount)
+
         self._go_back_to_start(distance_from_initial, 
-            new_direction, initial_positions)
+            new_direction)
+        initial_positions = self.visited_positions[-3:]
 
         # Sweep again the other way.
         result, positions = self._sweep(new_direction, initial_positions)
@@ -511,6 +519,7 @@ def print_script_usage():
            --first-size-tree=<decision tree for deciding first coarse vs fine>
            --action-tree=<decision tree for deciding action to take>]
            [-d, --double-step <double step size used>]
+           [--backlash <simulate backlash noise>]
            [--specific-scene=<a scene's filename, will print R script]
            [--perfect-file=<use classification from file instead of tree>]"""
 
@@ -520,7 +529,7 @@ def main(argv):
     try:
         opts, _ = getopt.getopt(argv, "d:uo",
             ["left-right-tree=", "first-size-tree=",
-             "action-tree=", "double-step",
+             "action-tree=", "double-step", "backlash",
              "specific-scene=", "perfect-file=",
              "use-only="])
     except getopt.GetoptError:
@@ -549,9 +558,13 @@ def main(argv):
             specific_scene = arg
         elif opt == "--perfect-file":
             params.perfect_classification = load_classifications(arg)
+        elif opt == "--backlash":
+            params.backlash = True
         else:
             print_script_usage()
             sys.exit(2)
+
+    random.seed(seed)
 
     # Make sure simulator has everything it needs.
     if params.missing_params():
