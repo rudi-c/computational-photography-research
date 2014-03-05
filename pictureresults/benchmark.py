@@ -372,7 +372,7 @@ def print_aligned_data_rows(rows):
                        for length, col in zip(column_lengths, row))
 
 
-def benchmark_scene(params, scene):
+def benchmark_scene(params, scene, steps_count_list):
     """Runs the simulation for a scene for every lens position and returns a
     tuple (# true positive, # false positive, 
            # true negative, # false negative, # steps)
@@ -390,6 +390,10 @@ def benchmark_scene(params, scene):
     avg_distance = sum(scene.distance_to_closest_peak(initial_pos)
                        for initial_pos in params.initial_pos_range(scene))
     avg_distance = float(avg_distance) / len(params.initial_pos_range(scene))
+
+    steps_count_list.extend(
+        [len(evaluator.visited_positions) for evaluator in evaluators])
+
     return (t_pos, t_neg, f_pos, f_neg, 
             float(total_steps) / len(evaluators), avg_distance)
 
@@ -404,6 +408,7 @@ def benchmark_scenes(params, scenes):
     else:
         data_rows = []
 
+    steps_count_list = []
     sum_t_pos = 0
     sum_f_pos = 0
     sum_t_neg = 0
@@ -413,8 +418,8 @@ def benchmark_scenes(params, scenes):
     sum_avgds = 0
 
     for scene in scenes:
-        t_pos, f_pos, t_neg, f_neg, \
-               steps, avg_distance = benchmark_scene(params, scene)
+        t_pos, f_pos, t_neg, f_neg, steps, avg_distance = \
+            benchmark_scene(params, scene, steps_count_list)
         perct = float(t_pos) / (t_pos + f_pos + t_neg + f_neg) * 100
 
         sum_t_pos += t_pos
@@ -441,6 +446,14 @@ def benchmark_scenes(params, scenes):
             "%.1f" % (float(sum_avgds) / len(scenes))))
 
     print_aligned_data_rows(data_rows)
+
+    # This text file can be loaded later to make a histogram of the number
+    # of steps taken.
+    rows = [",".join(str(step) for step in steps_count_list[i:i+20])
+            for i in range(0, len(steps_count_list), 20)]
+    f = open("steps.txt", 'w+')
+    f.write(",\n".join(rows))
+    f.close()
 
 
 def benchmark_specific(params, scenes, specific_scene):
@@ -545,7 +558,8 @@ def main(argv):
         print_script_usage()
         sys.exit(2)
 
-    scenes = load_scenes(folder="focusraw/")
+    scenes = load_scenes(folder="focusraw/",
+        excluded_scenes=["cat.txt", "moon.txt"])
     if use_only_file:
         scenes = [scene for scene in scenes if scene.filename == use_only_file]
 
