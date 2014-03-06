@@ -8,6 +8,7 @@ ACTION_ARFF=results/action.arff
 attribute_select=false
 discretize=false
 redirect=false
+backlash=false
 leaveout=""
 useonly=""
 plotfile=""
@@ -22,7 +23,8 @@ while [ "$1" != "" ]; do
         #                         ;;
         -as | --attribute-select ) attribute_select=true ;;
         -ds | --discretize ) discretize=true ;;
-        -lv ) shift
+        -bl | --backlash ) backlash=true ;;
+        -lv | --leaveout ) shift
               redirect=true
               leaveout="--leave-out="$1
               useonly="--use-only="$1
@@ -89,6 +91,11 @@ arg1="--left-right-tree=/tmp/tree_leftright.json "
 arg2="--first-size-tree=/tmp/tree_firstsize.json "
 arg3="--action-tree=/tmp/tree_action.json "
 treeargs=$arg1$arg2$arg3
+
+if [ "$backlash" = true ]; then
+    arg=" --backlash"
+    treeargs=$treeargs$arg
+fi
 
 # Evaluate tree effectiveness.
 echo "Evaluating..."
