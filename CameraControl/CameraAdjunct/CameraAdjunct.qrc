@@ -1,0 +1,96 @@
+<RCC>
+<qresource>
+
+    <file>Resources/Battery/battery-020.png</file>
+    <file>Resources/Battery/battery-040.png</file>
+    <file>Resources/Battery/battery-060.png</file>
+    <file>Resources/Battery/battery-080.png</file>
+    <file>Resources/Battery/battery-100.png</file>
+
+    <file>Resources/ShootingMode/A-DEP.png</file>
+    <file>Resources/ShootingMode/B.png</file>
+    <file>Resources/ShootingMode/M.png</file>
+    <file>Resources/ShootingMode/Av.png</file>
+    <file>Resources/ShootingMode/Tv.png</file>
+    <file>Resources/ShootingMode/P.png</file>
+    <file>Resources/ShootingMode/closeup.png</file>
+    <file>Resources/ShootingMode/creativeauto.png</file>
+    <file>Resources/ShootingMode/flashoff.png</file>
+    <file>Resources/ShootingMode/fullauto.png</file>
+    <file>Resources/ShootingMode/landscape.png</file>
+    <file>Resources/ShootingMode/night.png</file>
+    <file>Resources/ShootingMode/portrait.png</file>
+    <file>Resources/ShootingMode/sports.png</file>
+    <file>Resources/ShootingMode/movie.png</file>
+
+    <file>Resources/MeteringMode/center-weighted.png</file>
+    <file>Resources/MeteringMode/evaluative.png</file>
+    <file>Resources/MeteringMode/partial.png</file>
+    <file>Resources/MeteringMode/spot.png</file>
+
+    <file>Resources/WhiteBalance/awb.png</file>
+    <file>Resources/WhiteBalance/cloudy.png</file>
+    <file>Resources/WhiteBalance/custom.png</file>
+    <file>Resources/WhiteBalance/daylight.png</file>
+    <file>Resources/WhiteBalance/flash.png</file>
+    <file>Resources/WhiteBalance/fluorescent.png</file>
+    <file>Resources/WhiteBalance/shade.png</file>
+    <file>Resources/WhiteBalance/tungsten.png</file>
+
+    <file>Resources/DriveMode/continuous.png</file>
+    <file>Resources/DriveMode/continuous-high.png</file>
+    <file>Resources/DriveMode/continuous-low.png</file>
+    <file>Resources/DriveMode/continuous-silent.png</file>
+    <file>Resources/DriveMode/self-timer2.png</file>
+    <file>Resources/DriveMode/self-timerC.png</file>
+    <file>Resources/DriveMode/self-timerR.png</file>
+    <file>Resources/DriveMode/single.png</file>
+    <file>Resources/DriveMode/single-silent.png</file>
+
+    <file>Resources/Toolbar/import.png</file>
+    <file>Resources/Toolbar/liveview.png</file>
+    <file>Resources/Toolbar/log.png</file>
+    <file>Resources/Toolbar/multi-shot.png</file>
+    <file>Resources/Toolbar/settings.png</file>
+    <file>Resources/Toolbar/shutter.png</file>
+    <file>Resources/Toolbar/tools.png</file>
+    <file>Resources/Toolbar/video.png</file>
+
+    <file>Resources/Help/collapse-all.png</file>
+    <file>Resources/Help/go-home.png</file>
+    <file>Resources/Help/go-next.png</file>
+    <file>Resources/Help/go-previous.png</file>
+    <file>Resources/Help/show-in-toc.png</file>
+
+    <file>Resources/Focus/start.png</file>
+    <file>Resources/Focus/stop.png</file>
+    <file>Resources/Focus/arrow-left1.png</file>
+    <file>Resources/Focus/arrow-left2.png</file>
+    <file>Resources/Focus/arrow-left3.png</file>
+    <file>Resources/Focus/arrow-right1.png</file>
+    <file>Resources/Focus/arrow-right2.png</file>
+    <file>Resources/Focus/arrow-right3.png</file>
+
+    <file>Resources/Misc/ISO.png</file>
+    <file>Resources/Misc/alert.png</file>
+    <file>Resources/Misc/button-small.png</file>
+    <file>Resources/Misc/button.png</file>
+    <file>Resources/Misc/camera.png</file>
+    <file>Resources/Misc/checklist.png</file>
+    <file>Resources/Misc/color-lined.png</file>
+    <file>Resources/Misc/connected.png</file>
+    <file>Resources/Misc/disconnected.png</file>
+    <file>Resources/Misc/dof-focus.png</file>
+    <file>Resources/Misc/dof-unfocus.png</file>
+    <file>Resources/Misc/ok.png</file>
+    <file>Resources/Misc/t2i.png</file>
+    <file>Resources/Misc/timing.png</file>
+    <file>Resources/Misc/tip.png</file>
+    <file>Resources/Misc/triangle-down.png</file>
+    <file>Resources/Misc/triangle-left.png</file>
+    <file>Resources/Misc/warning.png</file>
+    <file>Resources/Misc/zoom-in.png</file>
+    <file>Resources/Misc/zoom-out.png</file>
+
+</qresource>
+</RCC>
