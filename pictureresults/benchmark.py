@@ -50,6 +50,7 @@ class Simulator(object):
         self.initial_pos = initial_pos
         self.status = "none"
         self.visited_positions = []
+        self.backlash_count = 0
         if params.perfect_classification is None:
             self.perfect_classification = None
         else:
@@ -157,11 +158,13 @@ class Simulator(object):
         start_pos = self.last_position()
         maximum_pos = self._do_local_search(
             start_pos, direction, rev_direction)
+        self.backlash_count += 1
         # If we didn't move further, we might want to look in the other
         # direction too.
         if start_pos == maximum_pos:
             maximum_pos = self._do_local_search(
                 self.last_position(), rev_direction, direction)
+            self.backlash_count += 2
 
         self.status = "foundmax"
 
@@ -298,6 +301,7 @@ class Simulator(object):
 
         if result == "turn_peak":
             self._go_to_max(positions)
+            self.backlash_count += 1
         elif result == "backtrack":
             # If we need to backtrack a second time, we failed.
             self.status = "failed"
@@ -316,6 +320,7 @@ class Simulator(object):
         direction = self._get_first_direction(initial_positions)
         if direction.is_left():
             initial_positions.reverse()
+            self.backlash_count += 1
 
         # Initial sweep
         result, positions = self._sweep(direction, initial_positions)
@@ -325,8 +330,10 @@ class Simulator(object):
 
         if result == "turn_peak":
             self._go_to_max(positions)
+            self.backlash_count += 1
         elif result == "backtrack":
             self._backtrack(positions[-1], direction)
+            self.backlash_count += 1
         else:
             assert False
 
@@ -380,7 +387,7 @@ def print_aligned_data_rows(rows):
                        for length, col in zip(column_lengths, row))
 
 
-def benchmark_scene(params, scene, steps_count_list):
+def benchmark_scene(params, scene, steps_count_list, backlash_count_list):
     """Runs the simulation for a scene for every lens position and returns a
     tuple (# true positive, # false positive, 
            # true negative, # false negative, # steps)
@@ -401,6 +408,8 @@ def benchmark_scene(params, scene, steps_count_list):
 
     steps_count_list.extend(
         [len(evaluator.visited_positions) for evaluator in evaluators])
+    backlash_count_list.extend(
+        [evaluator.backlash_count for evaluator in evaluators])
 
     return (t_pos, t_neg, f_pos, f_neg, 
             float(total_steps) / len(evaluators), avg_distance)
@@ -417,6 +426,7 @@ def benchmark_scenes(params, scenes):
         data_rows = []
 
     steps_count_list = []
+    backlash_count_list = []
     sum_t_pos = 0
     sum_f_pos = 0
     sum_t_neg = 0
@@ -426,8 +436,8 @@ def benchmark_scenes(params, scenes):
     sum_avgds = 0
 
     for scene in scenes:
-        t_pos, f_pos, t_neg, f_neg, steps, avg_distance = \
-            benchmark_scene(params, scene, steps_count_list)
+        t_pos, f_pos, t_neg, f_neg, steps, avg_distance = benchmark_scene(
+            params, scene, steps_count_list, backlash_count_list)
         perct = float(t_pos) / (t_pos + f_pos + t_neg + f_neg) * 100
 
         sum_t_pos += t_pos
@@ -460,6 +470,12 @@ def benchmark_scenes(params, scenes):
     rows = [",".join(str(step) for step in steps_count_list[i:i+20])
             for i in range(0, len(steps_count_list), 20)]
     f = open("steps.txt", 'w+')
+    f.write(",\n".join(rows))
+    f.close()
+    # And a histograph of the number of backlashes.
+    rows = [",".join(str(step) for step in backlash_count_list[i:i+20])
+            for i in range(0, len(backlash_count_list), 20)]
+    f = open("backlash.txt", 'w+')
     f.write(",\n".join(rows))
     f.close()
 
@@ -572,7 +588,8 @@ def main(argv):
         sys.exit(2)
 
     scenes = load_scenes(folder="focusraw/",
-        excluded_scenes=["cat.txt", "moon.txt"])
+        excluded_scenes=["cat.txt", "moon.txt", 
+                         "projector2.txt", "projector3.txt"])
     if use_only_file:
         scenes = [scene for scene in scenes if scene.filename == use_only_file]
 
