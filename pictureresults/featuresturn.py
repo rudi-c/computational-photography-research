@@ -122,8 +122,12 @@ def absolute_distance_taken(**kwargs):
     latest = lens_positions[-1]
     return float(abs(latest - first))
 
-
-functions_steps_and_distance = [start_position, steps_taken, large_steps_taken, 
+# Not sure it's possible to know start position.
+# functions_steps_and_distance = [start_position, steps_taken, large_steps_taken, 
+#                                 small_steps_taken, ratio_small_steps,
+#                                 ratio_large_steps, distance_taken,
+#                                 absolute_steps_taken, absolute_distance_taken]
+functions_steps_and_distance = [steps_taken, large_steps_taken, 
                                 small_steps_taken, ratio_small_steps,
                                 ratio_large_steps, distance_taken,
                                 absolute_steps_taken, absolute_distance_taken]
@@ -170,9 +174,10 @@ def ratio_right_to_left(**kwargs):
         return 10.0
     return min(float(total_positions - latest - 1) / latest, 10.0)
 
-
-functions_distance_edge = [ distance_to_left, distance_to_right,
-                            ratio_left_to_right, ratio_right_to_left ]
+# Remove these features since it's hard to get the 
+# functions_distance_edge = [ distance_to_left, distance_to_right,
+#                             ratio_left_to_right, ratio_right_to_left ]
+functions_distance_edge = []
 
 ### Scagnostics ###
 
@@ -225,7 +230,9 @@ def alternation_ratio(**kwargs):
     return float(count) / (len(lens_positions) - 2)
 
 
-functions_scagnostics = [ monotonicity, abs_monotonicity, alternation_ratio ]
+# Remove monotoniticity since it's expensive.
+# functions_scagnostics = [ monotonicity, abs_monotonicity, alternation_ratio ]
+functions_scagnostics = [ alternation_ratio ]
 
 ### Features related to comparison with the maximum we've got so far ###
 

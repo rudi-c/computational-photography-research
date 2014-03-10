@@ -81,7 +81,7 @@ fi
 
 # Train trees with Weka
 echo "Parsing first step trees..."
-./$PARSER results/nearestall_weka.txt > /tmp/tree_leftright.json
+./$PARSER results/nearest3_weka.txt > /tmp/tree_leftright.json
 ./$PARSER results/firstsize_weka.txt > /tmp/tree_firstsize.json
 echo "Training action tree..."
 java -cp $CP weka.classifiers.trees.J48 \
