@@ -37,5 +37,5 @@ for file in \
     ubuntu.txt \
     vase.txt
 do
-    ./benchmark.sh -lv $file
+    ./benchmark.sh -lv $file --backlash
 done

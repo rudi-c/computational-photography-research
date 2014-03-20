@@ -521,11 +521,11 @@ def get_move_right_classification(start_lens_pos, current_lens_pos,
     visited_maxima = [ maximum for maximum in maxima 
                        if maximum >= start_lens_pos ]
 
-    # If we don't wait until there is at least a few lens positions before 
-    # turning back, the classification suggests that we might turn back 
-    # immediately before we chose to go left or right.
-    if abs(current_lens_pos - start_lens_pos) < 6:
-        return Action.CONTINUE
+    # # If we don't wait until there is at least a few lens positions before 
+    # # turning back, the classification suggests that we might turn back 
+    # # immediately before we chose to go left or right.
+    # if abs(current_lens_pos - start_lens_pos) < 6:
+    #     return Action.CONTINUE
 
     # Find the closest maxima on the left.
     left_closest = _predecessor(current_lens_pos, maxima)
@@ -550,12 +550,12 @@ def get_move_right_classification(start_lens_pos, current_lens_pos,
 
         # If we just passed peak, we should continue looking
         # forward for just a bit to confirm that this is a peak.
-        if current_lens_pos - left_closest_visited <= 5:
+        if current_lens_pos - left_closest_visited <= 8:
             return Action.CONTINUE
         elif params.peakHandling == PeakHandling.CLOSEST:
             if right_closest is None:
                 return Action.TURN_PEAK
-            elif (current_lens_pos - left_closest_visited - 5 <
+            elif (current_lens_pos - left_closest_visited - 8 <
                   right_closest - current_lens_pos):
                 return Action.TURN_PEAK
             else:
@@ -565,7 +565,7 @@ def get_move_right_classification(start_lens_pos, current_lens_pos,
             return Action.TURN_PEAK
 
     # If there are no more peaks to the right, we should backtrack.
-    if right_closest is None:
+    if right_closest is None and abs(current_lens_pos - start_lens_pos) > 32:
         return Action.BACKTRACK
 
     # Default case : continue looking

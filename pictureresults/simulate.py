@@ -18,12 +18,12 @@ from featuresturn import *
 
 seed = 1
 
-# How many times more instances with the classification "continne" we want
+# How many times more instances with the classification "continue" we want
 # compared to one of the other two classifications. We generally want an
 # unbalanced dataset so that the decision tree is biased towards "continue".
 # It's more acceptable to take a few more steps than to backtrack too early
 # and fail.
-continue_multiplier = 3.0
+continue_multiplier = 4.0
 
 def make_instance(scene, features, params, instances, direction,
                   lens_positions, classification, weight):
@@ -141,6 +141,9 @@ def simulate_sweep(scene, features, instances, initial_lens_positions,
             coarse_now = coarsefine.coarse_if_previously_coarse(*focus_values)
         else:
             coarse_now = coarsefine.coarse_if_previously_fine(*focus_values)
+
+        if random.random() < 0.1:
+            coarse_now = not coarse_now
 
         # Move the lens forward.
         if coarse_now:
@@ -352,8 +355,9 @@ def main(argv):
 
     random.seed(seed)
 
-    scenes = load_scenes(folder="focusraw",
-        excluded_scenes=["cat.txt", "moon.txt", leave_out])
+    scenes = load_scenes(folder="focusraw/",
+        excluded_scenes=["cat.txt", "moon.txt",
+                         "projector2.txt", "projector3.txt", leave_out])
 
     if show_random_sample:
         simulate_samples(scenes, features(), step_size, params)
