@@ -18,166 +18,26 @@ Note : Some features assume that at least one step has been taken (i.e.,
 """
 
 from direction import Direction
-from math import sqrt
+import math
+
+step_size = 8
 
 def make_key(direction, initial_pos, current_pos):
     """Returns a key to identify a particular instance (from direction,
     initial position and current position."""
     return "%s-%d-%d" % (direction, initial_pos, current_pos)
 
-
-def count_step_size(lens_positions):
-    """Returns a tuple (# of small steps taken, # large steps taken)"""
-    small = sum(1 for p1, p2 in zip(lens_positions[:-1], lens_positions[1:])
-                 if abs(p1 - p2) == 1)
-    large = sum(1 for p1, p2 in zip(lens_positions[:-1], lens_positions[1:])
-                 if abs(p1 - p2) > 1)
-    return (small, large)
-
-
-### It might be useful for the machine learning algorithm to know explicitely
-### if we're moving left (-1) or right (+1). 
-def left_or_right(**kwargs):
-    """-1 if we are moving left, +1 if we are moving right"""
-    lens_positions = kwargs["lens_positions"]
-    if lens_positions[0] < lens_positions[-1]:
-        return +1
-    else:
-        return -1
-
 ### Features related to the number of steps and distance ###
 
-def start_position(**kwargs):
-    """Where the lens started, in the range [0, 1]."""
+def distance_swept(**kwargs):
+    """Number of steps taken up to now, normalized by the total number of 
+    lens positions."""
     total_positions = kwargs["total_positions"]
-    lens_positions = kwargs["lens_positions"]
-    return float(lens_positions[0]) / total_positions
+    focus_measures = kwargs["focus_measures"]
 
+    return float(len(focus_measures) - 1) / total_positions
 
-def steps_taken(**kwargs):
-    """Number of steps taken up to now, regardless of step size,
-    normalized by the total number of lens positions."""
-    total_positions = kwargs["total_positions"]
-    lens_positions = kwargs["lens_positions"]
-    return float(len(lens_positions) - 1) / total_positions
-
-
-def large_steps_taken(**kwargs):
-    """Number of large steps taken up to now, normalized by the 
-    total number of lens positions."""
-    total_positions = kwargs["total_positions"]
-    lens_positions = kwargs["lens_positions"]
-    _, large = count_step_size(lens_positions)
-    return float(large) / total_positions
-
-
-def small_steps_taken(**kwargs):
-    """Number of large steps taken up to now, normalized by the 
-    total number of lens positions."""
-    total_positions = kwargs["total_positions"]
-    lens_positions = kwargs["lens_positions"]
-    small, _ = count_step_size(lens_positions)
-    return float(small) / total_positions
-
-
-def ratio_small_steps(**kwargs):
-    """Proportion of our steps taken that were small steps."""
-    lens_positions = kwargs["lens_positions"]
-    small, large = count_step_size(lens_positions)
-    return float(small) / (small + large) # avoid division by zero
-
-
-def ratio_large_steps(**kwargs):
-    """Proportion of our steps taken that were large steps."""
-    lens_positions = kwargs["lens_positions"]
-    small, large = count_step_size(lens_positions)
-    return float(large) / (small + large) # avoid division by zero
-
-
-def distance_taken(**kwargs):
-    """Number of lens position since initial points, normalized by
-    the total number of lens positions"""
-    total_positions = kwargs["total_positions"]
-    lens_positions = kwargs["lens_positions"]
-    first  = lens_positions[0]
-    latest = lens_positions[-1]
-    return float(abs(latest - first)) / total_positions
-
-# I think in general it's better to normalize, but it could be that the
-# calculation for some other features (such as slope) gives bogus results
-# when there are only 1-2 steps, so I'm hoping these two features can help
-# the machine learning algorithm deal with those.
-
-def absolute_steps_taken(**kwargs):
-    """Number of steps taken up to now, regardless of step size,
-    not normalized."""
-    lens_positions = kwargs["lens_positions"]
-    return float(len(lens_positions) - 1)
-
-
-def absolute_distance_taken(**kwargs):
-    """Number of lens position since initial points, not normalized"""    
-    lens_positions = kwargs["lens_positions"]
-    first  = lens_positions[0]
-    latest = lens_positions[-1]
-    return float(abs(latest - first))
-
-# Not sure it's possible to know start position.
-# functions_steps_and_distance = [start_position, steps_taken, large_steps_taken, 
-#                                 small_steps_taken, ratio_small_steps,
-#                                 ratio_large_steps, distance_taken,
-#                                 absolute_steps_taken, absolute_distance_taken]
-functions_steps_and_distance = [steps_taken, large_steps_taken, 
-                                small_steps_taken, ratio_small_steps,
-                                ratio_large_steps, distance_taken,
-                                absolute_steps_taken, absolute_distance_taken]
-
-### Features related to the distances to the last lens positions on either side
-
-def distance_to_left(**kwargs):
-    """Number of lens positions from the leftmost position, normalized by
-    the total number of lens positions"""
-    total_positions = kwargs["total_positions"]
-    lens_positions = kwargs["lens_positions"]
-    latest = lens_positions[-1]
-    return float(latest) / (total_positions - 1)
-
-
-def distance_to_right(**kwargs):
-    """Number of lens positions from the rightmost position, normalized by
-    the total number of lens positions"""
-    total_positions = kwargs["total_positions"]
-    lens_positions = kwargs["lens_positions"]
-    latest = lens_positions[-1]
-    return float(total_positions - latest - 1) / (total_positions - 1)
-
-
-def ratio_left_to_right(**kwargs):
-    """How the distance to the leftmost position compares with the distance
-    to the rightmost positions. Maxes at 10.0."""
-    total_positions = kwargs["total_positions"]
-    lens_positions = kwargs["lens_positions"]
-    latest = lens_positions[-1]
-    dist_to_right = total_positions - latest - 1
-    if dist_to_right == 0:
-        return 10.0
-    return min(float(latest) / dist_to_right, 10.0)
-
-
-def ratio_right_to_left(**kwargs):
-    """How the distance to the leftmost position compares with the distance
-    to the rightmost positions. Maxes at 10.0."""
-    total_positions = kwargs["total_positions"]
-    lens_positions = kwargs["lens_positions"]
-    latest = lens_positions[-1]
-    if latest == 0:
-        return 10.0
-    return min(float(total_positions - latest - 1) / latest, 10.0)
-
-# Remove these features since it's hard to get the 
-# functions_distance_edge = [ distance_to_left, distance_to_right,
-#                             ratio_left_to_right, ratio_right_to_left ]
-functions_distance_edge = []
+functions_steps_and_distance = [ distance_swept ]
 
 ### Scagnostics ###
 
@@ -193,10 +53,10 @@ def monotonicity(**kwargs):
     Correlation coefficient, with gives +1 if the function is perfectly
     monotonic and increasing and -1 if the function is perfectly monotonic
     and decreasing"""
-    focus_values = kwargs["focus_values"]
-    lens_positions = kwargs["lens_positions"]
-    ranks_xs = rank(lens_positions)
-    ranks_ys = rank([focus_values[x] for x in lens_positions])
+    focus_measures = kwargs["focus_measures"]
+
+    ranks_xs = rank(range(len(focus_measures)))
+    ranks_ys = rank([f for f in focus_measures])
     mean_xs = float(sum(ranks_xs)) / len(ranks_xs)
     mean_ys = float(sum(ranks_ys)) / len(ranks_ys)
     covariance = sum( (x - mean_xs) * (y - mean_ys) 
@@ -210,7 +70,7 @@ def monotonicity(**kwargs):
         # not much we can do here, but this should be very rare.
         return 0
 
-    return float(covariance) / sqrt(variance_x * variance_y)
+    return float(covariance) / math.sqrt(variance_x * variance_y)
 
 
 def abs_monotonicity(**kwargs):
@@ -221,68 +81,63 @@ def abs_monotonicity(**kwargs):
 def alternation_ratio(**kwargs):
     """Measure of noise by counting the number of triples of lens positions
     which are not monotonic (value goes down and up or up and down)."""
-    focus_values = kwargs["focus_values"]
-    lens_positions = kwargs["lens_positions"]
-    triples = zip(lens_positions, lens_positions[1:], lens_positions[2:])
-    count = sum( (focus_values[x1] < focus_values[x2]) !=
-                 (focus_values[x2] < focus_values[x3])
-                 for x1, x2, x3 in triples )
-    return float(count) / (len(lens_positions) - 2)
+    focus_measures = kwargs["focus_measures"]
+
+    triples = zip(focus_measures, focus_measures[1:], focus_measures[2:])
+    count = sum( (f1 < f2) != (f2 < f3)
+                 for f1, f2, f3 in triples )
+    return float(count) / (len(focus_measures) - 2)
 
 
-# Remove monotoniticity since it's expensive.
-# functions_scagnostics = [ monotonicity, abs_monotonicity, alternation_ratio ]
-functions_scagnostics = [ alternation_ratio ]
+functions_scagnostics = [ monotonicity, abs_monotonicity, alternation_ratio ]
 
 ### Features related to comparison with the maximum we've got so far ###
 
 def ratio_to_max(**kwargs):
     """How the focus value at the current position compares to the largest
     value found so far"""
-    focus_values = kwargs["focus_values"]
-    lens_positions = kwargs["lens_positions"]
-    latest = lens_positions[-1]
-    max_so_far = float(max( focus_values[x] for x in lens_positions ))
-    return focus_values[latest] / max_so_far
+    focus_measures = kwargs["focus_measures"]
+
+    max_so_far = float(max(focus_measures))
+    return focus_measures[-1] / max_so_far
 
 
 def ratio_to_range(**kwargs):
     """How the focus value at the current position compares to the range of
     values (min and max) found so far"""
-    focus_values = kwargs["focus_values"]
-    lens_positions = kwargs["lens_positions"]
-    latest = lens_positions[-1]
-    max_so_far = float(max( focus_values[x] for x in lens_positions ))
-    min_so_far = float(min( focus_values[x] for x in lens_positions ))
+    focus_measures = kwargs["focus_measures"]
+
+    latest = focus_measures[-1]
+    max_so_far = float(max(focus_measures))
+    min_so_far = float(min(focus_measures))
     if min_so_far == max_so_far:
         return 0.5 # I think this is a fair "in-between" value
-    return (focus_values[latest] - min_so_far) / (max_so_far - min_so_far)
+    return (latest - min_so_far) / (max_so_far - min_so_far)
 
 
 def distance_to_max(**kwargs):
-    """The distance (in lens positions) between the current position and the
+    """The distance (in steps taken) between the current position and the
     position of the largest value found so far, normalized by the total number
     of lens positions"""
     total_positions = kwargs["total_positions"]
-    focus_values = kwargs["focus_values"]
-    lens_positions = kwargs["lens_positions"]
-    latest = lens_positions[-1]
-    max_so_far = float(max( focus_values[x] for x in lens_positions ))
-    max_positions = ( x for x in lens_positions 
-                        if focus_values[x] == max_so_far )
-    # There may be more than one maximum in exceptional cases - pick the
-    # closest one.
-    closest = min( abs(latest - max_pos) for max_pos in max_positions )
+    focus_measures = kwargs["focus_measures"]
+
+    max_so_far = float(max(focus_measures))
+    max_distances = ( len(focus_measures) - i 
+                      for i, focus_value in enumerate(focus_measures) 
+                      if focus_value == max_so_far )
+    # Though unlikely, there could be multiple peaks with the same value.
+    closest = min(max_distances)
     return float(closest) / total_positions
 
 
 def ratio_min_to_max(**kwargs):
     """How the smallest focus value found so far compares to the largest focus
     value found so far."""
-    focus_values = kwargs["focus_values"]
-    lens_positions = kwargs["lens_positions"]
-    max_so_far = max( focus_values[x] for x in lens_positions )
-    min_so_far = min( focus_values[x] for x in lens_positions )
+    focus_measures = kwargs["focus_measures"]
+
+    max_so_far = float(max(focus_measures))
+    min_so_far = float(min(focus_measures))
     return float(min_so_far) / max_so_far
 
 
@@ -291,45 +146,51 @@ functions_maximum = [ ratio_to_max, ratio_to_range, distance_to_max,
 
 ### Features related to the overall trend of focus values ###
 
-def slope(x1, x2, focus_values, total_positions):
-    normalized_diff = float(x2 - x1) / total_positions
-    average = (focus_values[x2] + focus_values[x1]) / 2
-    return (focus_values[x2] - focus_values[x1]) / normalized_diff / average
+def slope(steps_in_between, f1, f2, total_positions):
+    normalized_diff = float(steps_in_between * step_size) / total_positions
+    average = (f2 + f1) / 2
+    return (f2 - f1) / normalized_diff / average
 
 
 def simple_slope(**kwargs):
     """Simple calculation of the slope using only the endpoints,
     normalized by the total number of lens positions and the
     average value of the two endpoints."""
-    focus_values = kwargs["focus_values"]
     total_positions = kwargs["total_positions"]
-    lens_positions = kwargs["lens_positions"]
-    first  = lens_positions[0]
-    latest = lens_positions[-1]
-    return slope(first, latest, focus_values, total_positions)
+    focus_measures = kwargs["focus_measures"]
+
+    first  = focus_measures[0]
+    latest = focus_measures[-1]
+    return slope(len(focus_measures), first, latest, total_positions)
            
 
 def regression_slope(**kwargs):
     """Slope as obtained by linear regression (least squares),
     normalized by the total number of lens positions and the
     average value of the positions."""
-    focus_values = kwargs["focus_values"]
     total_positions = kwargs["total_positions"]
-    lens_positions = kwargs["lens_positions"]
+    focus_measures = kwargs["focus_measures"]
 
-    mean_xs = float(sum(lens_positions)) / len(lens_positions) / total_positions
-    mean_ys = (float(sum(focus_values[x] for x in lens_positions)) /
-               len(lens_positions))
-    covariance = sum( (float(x) / total_positions - mean_xs) * 
-                          (focus_values[x] - mean_ys)
-                      for x in lens_positions )
-    variance_x = sum( (float(x) / total_positions - mean_xs) ** 2 
-                      for x in lens_positions )
+    xs = [ float(x * step_size) / total_positions 
+           for x in range(len(focus_measures)) ]
+    mean_xs = sum(xs) / len(focus_measures)
+    mean_ys = float(sum(focus_measures)) / len(focus_measures)
+    covariance = sum( (x - mean_xs) * (focus_value - mean_ys)
+                      for x, focus_value in zip(xs, focus_measures) )
+    variance_x = sum( (x - mean_xs) ** 2 for x in xs )
     assert variance_x != 0
     return covariance / variance_x / mean_ys
 
 
-functions_trend_slope = [ simple_slope, regression_slope ]
+def simple_slope_up(**kwargs):
+    return 0 if simple_slope(**kwargs) < 0 else 1
+
+
+def regression_slope_up(**kwargs):
+    return 0 if regression_slope(**kwargs) < 0 else 1
+
+functions_trend_slope = [ simple_slope, regression_slope,
+                          simple_slope_up, regression_slope_up ]
 
 ### Features related to the local slope ###
 
@@ -337,62 +198,62 @@ def current_slope(**kwargs):
     """Slope between the current lens position and the previous 
     lens position, normalized by the total number of lens positions
     and the average value of the two positions."""
-    focus_values = kwargs["focus_values"]
     total_positions = kwargs["total_positions"]
-    lens_positions = kwargs["lens_positions"]
-    latest = lens_positions[-1]
-    previous = lens_positions[-2]
-    return slope(previous, latest, focus_values, total_positions)
+    focus_measures = kwargs["focus_measures"]
+
+    latest = focus_measures[-1]
+    previous = focus_measures[-2]
+    return slope(len(focus_measures), previous, latest, total_positions)
 
 
 def current_slope_large(**kwargs):
-    """Slope between the current lens position and another position at least
-    4 lens positions away, normalized by the total number of lens positions
+    """Slope between the current lens position and the previous previous 
+    lens position, normalized by the total number of lens positions
     and the average value of the two positions."""
-
-    # The point of this feature is that it should be more noise-resilient than
-    # current slope when the last step taken was a fine step
-    focus_values = kwargs["focus_values"]
     total_positions = kwargs["total_positions"]
-    lens_positions = kwargs["lens_positions"]
-    latest = lens_positions[-1]
-    remaining = lens_positions[:-1]
-    while len(remaining) > 1 and abs(latest - remaining[-1]) < 4:
-        remaining = remaining[:-1]
-    previous = remaining[-1]
-    return slope(previous, latest, focus_values, total_positions)
+    focus_measures = kwargs["focus_measures"]
+
+    latest = focus_measures[-1]
+    previous = focus_measures[-3]
+    return slope(len(focus_measures), previous, latest, total_positions)
+
+
+def current_slope_up(**kwargs):
+    return 0 if current_slope(**kwargs) < 0 else 1
+
+
+def current_slope_large_up(**kwargs):
+    return 0 if current_slope_large(**kwargs) < 0 else 1
 
 
 def downslope_1st_half(**kwargs):
     """Proportion of lens movements where the focus value went down in the
     first half of our lens movements"""
-    focus_values = kwargs["focus_values"]
-    total_positions = kwargs["total_positions"]
-    lens_positions = kwargs["lens_positions"]
+    focus_measures = kwargs["focus_measures"]
     
-    major_half = len(lens_positions) / 2 + 1
-    lens_positions = lens_positions[:max(2, major_half)]
-    count = sum( focus_values[x1] > focus_values[x2] for x1, x2 
-                 in zip(lens_positions[:-1], lens_positions[1:]) )
-    return float(count) / (len(lens_positions) - 1)
+    halfpoint = int(math.ceil(float(len(focus_measures)) / 2))
+    focus_measures = focus_measures[:halfpoint]
+    count = sum( f1 > f2 for f1, f2 
+                 in zip(focus_measures[:-1], focus_measures[1:]) )
+    return float(count) / (len(focus_measures) - 1)
 
 
 def downslope_2nd_half(**kwargs):
     """Proportion of lens movements where the focus value went down in the
     second half of our lens movements"""
-    focus_values = kwargs["focus_values"]
-    total_positions = kwargs["total_positions"]
-    lens_positions = kwargs["lens_positions"]
+    focus_measures = kwargs["focus_measures"]
     
-    half_rounded_down = len(lens_positions) / 2
-    lens_positions = lens_positions[min(len(lens_positions) - 2, 
-                                        half_rounded_down):]
-    count = sum( focus_values[x1] > focus_values[x2] for x1, x2 
-                 in zip(lens_positions[:-1], lens_positions[1:]) )
-    return float(count) / (len(lens_positions) - 1)
+    halfpoint = int(math.floor(float(len(focus_measures)) / 2))
+    focus_measures = focus_measures[halfpoint:]
+    count = sum( f1 > f2 for f1, f2 
+                 in zip(focus_measures[:-1], focus_measures[1:]) )
+    return float(count) / (len(focus_measures) - 1)
+
+
 
 
 functions_local_slope = [ current_slope, current_slope_large,
+                          current_slope_up, current_slope_large_up,
                           downslope_1st_half, downslope_2nd_half ]
 
 ### For convenience ###
@@ -401,7 +262,7 @@ def all_features(filters=None):
     """Returns an array of (attribute name, function)"""
     if filters is None:
         filters = []
-    functions = (functions_steps_and_distance + functions_distance_edge +
+    functions = (functions_steps_and_distance +
                  functions_scagnostics + functions_maximum +
                  functions_trend_slope + functions_local_slope)
 
@@ -419,31 +280,11 @@ def all_features_dict(filters=None):
     return { name: function for name, function in all_features(filters) }
 
 
-def action_feature_evaluator(direction, focus_values, 
-                             lens_positions, total_positions):
-    """Returns a function to evaluate an action feature, flipping the data
-    if neccessary so the features only need to evaluate the case where the
-    lens is moving to the right."""
-    assert len(focus_values) >= len(lens_positions)
-
-    if direction.is_left():
-        rev_positions = [ total_positions - pos - 1 for pos in lens_positions ]
-        rev_values = { total_positions - pos - 1 : focus_values[pos]
-                       for pos in lens_positions }
-        feature_args = { "focus_values"    : rev_values,
-                         "lens_positions"  : rev_positions,
-                         "total_positions" : total_positions}
-    elif direction.is_right():
-        feature_args = { "focus_values"    : focus_values,
-                         "lens_positions"  : lens_positions,
-                         "total_positions" : total_positions}
-    else:
-        raise Exception("Unknown direction : %s." % direction)
-
-    # Make sure the lens positions are increasing (we are indeed moving right)
-    assert all( x1 < x2 for x1, x2 in zip(feature_args["lens_positions"][:-1], 
-                                          feature_args["lens_positions"][1:]) )
-
+def action_feature_evaluator(focus_measures, total_positions):
+    """Returns a function to evaluate an action feature."""
+    assert len(focus_measures) >= 3
+    feature_args = { "focus_measures"  : list(focus_measures),
+                     "total_positions" : total_positions}
     def evaluate(feature):
         return feature(**feature_args)
 
@@ -475,7 +316,7 @@ class ParameterSet:
         # Probability that any given instance will be kept (this is to
         # reduce the amount of data, which we can afford since it's quite
         # redudant)
-        self.uniformSamplingRate = 0.25
+        self.uniformSamplingRate = 0.4
 
         # Whether we weight less important instance or sample them at
         # lower rates
@@ -488,7 +329,6 @@ class ParameterSet:
         # Factor by which to multiply the weight or sampling rate when we
         # encounter a lens position where the classification is to turn back
         self.turnbackRatio = 0.93
-
 
 
 def _successor(value, array):
@@ -542,6 +382,12 @@ def get_move_right_classification(start_lens_pos, current_lens_pos,
                 return Action.BACKTRACK
         else:
             assert params.backtrackHandling == BacktrackHandling.NOPEAKSONLY
+
+        left_closest_to_start = _predecessor(start_lens_pos, maxima)
+        if (left_closest_to_start is not None and
+            start_lens_pos - left_closest_to_start <= 8 and
+            current_lens_pos - left_closest_to_start > 8):
+            return Action.TURN_PEAK
     else:
         # If we're at the last lens position, we need need to turn back to
         # the peak -now-.
