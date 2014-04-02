@@ -58,6 +58,14 @@ class Scene(object):
             if condition is None or condition(maximum):
                 min_dist = min(min_dist, abs(lens_pos - maximum))
         return min_dist
+
+    def distance_to_highest_peak(self, lens_pos):
+        """Distance to the highest peak."""
+        highest = 0
+        for maxima in self.maxima:
+            if self.fvalues[highest] < self.fvalues[maxima]:
+                highest = maxima
+        return abs(lens_pos - highest)
     
     def distance_to_closest_left_peak(self, lens_pos):
         """Distance to the closest peak on the left side of a lens position."""
