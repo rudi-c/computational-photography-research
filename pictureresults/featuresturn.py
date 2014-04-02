@@ -316,7 +316,7 @@ class ParameterSet:
         # Probability that any given instance will be kept (this is to
         # reduce the amount of data, which we can afford since it's quite
         # redudant)
-        self.uniformSamplingRate = 0.4
+        self.uniformSamplingRate = 0.6
 
         # Whether we weight less important instance or sample them at
         # lower rates

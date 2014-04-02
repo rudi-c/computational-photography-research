@@ -18,12 +18,17 @@ from featuresturn import *
 
 seed = 1
 
-# How many times more instances with the classification "continue" we want
-# compared to one of the other two classifications. We generally want an
-# unbalanced dataset so that the decision tree is biased towards "continue".
-# It's more acceptable to take a few more steps than to backtrack too early
-# and fail.
-continue_multiplier = 2.0
+# Probability multiplier for each class.
+multiplier_continue = 3.0
+multiplier_turn_peak = 1.0
+multiplier_backtrack = 1.0
+
+# Normalize
+total = multiplier_continue + multiplier_turn_peak + multiplier_backtrack
+multiplier_continue /= (total / 3.0)
+multiplier_turn_peak /= (total / 3.0)
+multiplier_backtrack /= (total / 3.0)
+
 
 def make_instance(scene, features, params, instances, direction,
                   focus_measures, classification, weight):
@@ -60,10 +65,12 @@ def get_balancing_probabilities(instances):
                           for _, classification in instances)
 
     min_count = min(count_continue, count_turn_peak, count_backtrack)
-    probabilities = { Action.CONTINUE  : continue_multiplier * 
+    probabilities = { Action.CONTINUE  : multiplier_continue * 
                                          float(min_count) / count_continue,
-                      Action.TURN_PEAK : float(min_count) / count_turn_peak,
-                      Action.BACKTRACK : float(min_count) / count_backtrack }
+                      Action.TURN_PEAK : multiplier_turn_peak * 
+                                         float(min_count) / count_turn_peak,
+                      Action.BACKTRACK : multiplier_backtrack *
+                                         float(min_count) / count_backtrack }
     return probabilities
 
 
@@ -82,10 +89,9 @@ def assert_balanced_sampling(instances):
     """Make sure we have approximately the same number of instances of each
     class, within 10%"""
     probabilities = get_balancing_probabilities(instances)
-    total = continue_multiplier + 2
-    assert (probabilities[Action.CONTINUE] > continue_multiplier / total * 0.9
-            and probabilities[Action.TURN_PEAK] > 1.0 / total * 0.9
-            and probabilities[Action.BACKTRACK] > 1.0 / total * 0.9)
+    assert (probabilities[Action.CONTINUE] > multiplier_continue / 3.0 * 0.9
+            and probabilities[Action.TURN_PEAK] > multiplier_turn_peak / 3.0 * 0.9
+            and probabilities[Action.BACKTRACK] > multiplier_backtrack / 3.0 * 0.9)
 
 
 def get_balancing_weight_factors(instances):
@@ -99,10 +105,12 @@ def get_balancing_weight_factors(instances):
                         if classification == Action.BACKTRACK)
 
     min_sum = min(sum_continue, sum_turn_peak, sum_backtrack)
-    factors = { Action.CONTINUE  : continue_multiplier *
+    factors = { Action.CONTINUE  : multiplier_continue *
                                    float(min_sum) / sum_continue,
-                Action.TURN_PEAK : float(min_sum) / sum_turn_peak,
-                Action.BACKTRACK : float(min_sum) / sum_backtrack }
+                Action.TURN_PEAK : multiplier_turn_peak *
+                                   float(min_sum) / sum_turn_peak,
+                Action.BACKTRACK : multiplier_backtrack *
+                                   float(min_sum) / sum_backtrack }
     return factors
 
 
@@ -118,10 +126,9 @@ def assert_balanced_weighting(instances):
     """Make sure we have approximately the same the sum of weights in 
     instances of each class, within 10%"""
     factors = get_balancing_weight_factors(instances)
-    total = continue_multiplier + 2
-    assert (factors[Action.CONTINUE] > continue_multiplier / total * 0.9
-            and factors[Action.TURN_PEAK] > 1.0 / total * 0.9
-            and factors[Action.BACKTRACK] > 1.0 / total * 0.9)
+    assert (factors[Action.CONTINUE] > multiplier_continue * 0.9
+            and factors[Action.TURN_PEAK] > multiplier_turn_peak * 0.9
+            and factors[Action.BACKTRACK] > multiplier_backtrack * 0.9)
 
 
 def simulate_sweep(scene, features, instances, initial_lens_position, 
@@ -143,7 +150,7 @@ def simulate_sweep(scene, features, instances, initial_lens_position,
         # a bit of noise that could occur in practice due to camera shake,
         # etc.
         focus_measures.append(scene.fvalues[current_pos] + 
-                              random.random() * 0.05 * smallest)
+                              random.random() * 0.10 * smallest)
 
         # Obtain the correct classification at the new lens position.
         classification = classifier(initial_lens_position, current_pos,
