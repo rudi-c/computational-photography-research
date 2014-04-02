@@ -18,7 +18,7 @@ from featuresfirststep import first_three_lens_pos
 from scene import Scene, load_scenes
 
 seed = 1
-backlash_amount = 4
+maximum_backlash = 3
 
 class BenchmarkParameters(object):
 
@@ -61,47 +61,75 @@ class Simulator(object):
         return max(0, min(self.scene.step_count - 1, lens_pos))
 
     def _walk_left_fine(self, count=1):
+        """Take a number of fine steps towards the left (far focus)."""
         for _ in range(count):
             self.visited_positions.append(
                 self._clamp_to_scene(self.last_position() - 1))
 
-    def _walk_left_coarse(self, count=1):
+    def _walk_left_coarse(self, count=1, backlash_amount=0):
+        """Take a number of coarse steps towards the left (far focus)."""
         for _ in range(count):
-            self.visited_positions.append(
-                self._clamp_to_scene(self.last_position() - 8))
+            self.visited_positions.append(self._clamp_to_scene(
+                self.last_position() - (8 + backlash_amount)))
 
     def _walk_right_fine(self, count=1):
+        """Take a number of fine steps towards the right (far focus)."""
         for _ in range(count):
             self.visited_positions.append(
                 self._clamp_to_scene(self.last_position() + 1))
 
-    def _walk_right_coarse(self, count=1):
+    def _walk_right_coarse(self, count=1, backlash_amount=0):
+        """Take a number of coarse steps towards the right (far focus)."""
         for _ in range(count):
-            self.visited_positions.append(
-                self._clamp_to_scene(self.last_position() + 8))
+            self.visited_positions.append(self._clamp_to_scene(
+                self.last_position() + (8 + backlash_amount)))
 
     def _walk_fine(self, direction, count=1):
+        """Take a number of fine steps in a given direction."""
         if direction.is_left():
             self._walk_left_fine(count)
         else:
             self._walk_right_fine(count)
 
-    def _walk_coarse(self, direction, count=1):
-        if direction.is_left():
-            self._walk_left_coarse(count)
+    def _walk_coarse(self, direction, count=1, backlash=False):
+        """Take a number of coarse steps in a given direction. If backlash
+        is set to true, the first coarse step will move by a random number of
+        lens positions."""
+        assert maximum_backlash < 8
+        if count <= 0:
+            return
+        if backlash:
+            backlash_amount = random.randint(-maximum_backlash, 
+                                             maximum_backlash)
+            if direction.is_left():
+                self._walk_left_coarse(1, backlash_amount)
+                self._walk_left_coarse(count - 1)
+            else:
+                self._walk_right_coarse(1, backlash_amount)
+                self._walk_right_coarse(count - 1)
         else:
-            self._walk_right_coarse(count)
+            if direction.is_left():
+                self._walk_left_coarse(count)
+            else:
+                self._walk_right_coarse(count)
 
     def _max_among(self, lens_positions):
+        """Return the largest focus value among a set of lens positions."""
         return max(lens_positions, 
                    key=(lambda pos : self.scene.fvalues[pos]))
 
     def _can_keep_moving(self, lens_pos, direction):
+        """Whether it is possible to keep moving in the given direction at
+        the current lens position (checks for edges)."""
         return ((0 < self.last_position() or direction.is_right()) and
                 (self.last_position() < self.scene.step_count - 1
                  or direction.is_left()))
 
     def _do_local_search(self, lens_pos, direction, rev_direction):
+        """Perform a local search (incremental hillclimbing in a 
+        given direction). The hillclimbing has a tolerance of two steps.
+        i.e., Up to two steps that don't increase the focus value can be taken
+        before we stop climbing."""
         while self._can_keep_moving(lens_pos, direction):
             self._walk_fine(direction, 1)
             if (self.scene.fvalues[self.last_position()] >
@@ -129,14 +157,10 @@ class Simulator(object):
         return lens_pos
 
     def _go_to_max(self, lens_positions):
+        """Return to the location of the largest focus value seen so far and
+        perform a local search to find the exact location of the peak."""
         current_pos = self.last_position()
         maximum_pos = self._max_among(self.visited_positions)
-
-        # Throw off the location of the maximum by a random amount.
-        # Except if we're already at the max position, since then we don't
-        # have to move.
-        if self.params.backlash and current_pos != maximum_pos:
-            maximum_pos += random.randint(-backlash_amount, backlash_amount)
 
         if maximum_pos < current_pos:
             direction = Direction("left")
@@ -152,7 +176,9 @@ class Simulator(object):
         # without going over it.
         distance = abs(current_pos - maximum_pos)
         coarse_steps = distance / 8
-        self._walk_coarse(direction, coarse_steps)
+
+        # Since we are turning around, we simulate backlash.
+        self._walk_coarse(direction, coarse_steps, self.params.backlash)
 
         # Keep going in fine steps to see if we can find a higher position.
         start_pos = self.last_position()
@@ -174,7 +200,8 @@ class Simulator(object):
         using only coarse steps. It's fine if we don't quite reach it.
         """
         coarse_steps = distance / 8
-        self._walk_coarse(direction, coarse_steps)
+        # Since we are turning around, we simulate backlash.
+        self._walk_coarse(direction, coarse_steps, self.params.backlash)
 
     def _get_first_direction(self, initial_positions):
         """Direction in which we should start sweeping initially."""
@@ -258,11 +285,6 @@ class Simulator(object):
 
         # Go back to where we started.
         distance_from_initial = abs(self.initial_pos - current_lens_pos)
-
-        # Throw off the location of the starting point by a random amount.
-        if self.params.backlash:
-            distance_from_initial += random.randint(
-                -backlash_amount, backlash_amount)
 
         self._go_back_to_start(distance_from_initial, 
             new_direction)
