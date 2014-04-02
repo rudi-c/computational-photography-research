@@ -38,7 +38,6 @@ for file in \
 	books2.txt \
 	books3.txt \
 	books4.txt \
-	gametree.txt \
 	gorillapod.txt \
 	granola.txt \
 	timbuk.txt \
@@ -47,6 +46,10 @@ do
 	echo $file >> $maximaFile
 	./localMax.exe < focusmeasures/$file >> $maximaFile
 done
+
+# For gametree.txt, localmax misses a maxima.
+echo gametree.txt >> $maximaFile
+echo " "`./localMax.exe < focusmeasures/gametree.txt`" 56" >> $maximaFile
 
 ./makestatistics.py > stats.R
 

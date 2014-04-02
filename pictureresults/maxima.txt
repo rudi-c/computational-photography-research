@@ -56,8 +56,6 @@ books3.txt
  6
 books4.txt
  4
-gametree.txt
- 27 62 79
 gorillapod.txt
  0 24 47 69
 granola.txt
@@ -66,6 +64,8 @@ timbuk.txt
  0
 ubuntu.txt
  66
+gametree.txt
+  27 62 79 56
 blackboard1.txt
  82 112
 blackboard2.txt
