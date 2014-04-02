@@ -240,9 +240,11 @@ class Simulator(object):
         # introduce a condition manually. It's a bit ad-hoc, but we really need
         # to be able to handle this case robustly, as there are lot of cases
         # (i.e., landscape shots) where peaks will be at the edge.
-        ratio_min_to_max = featuresturn.ratio_min_to_max(
-            focus_measures=focus_measures)
-        if ratio_min_to_max > 0.8:
+        min_val = min(self.scene.get_focus_values(
+            self.visited_positions + visited_positions))
+        max_val = max(self.scene.get_focus_values(
+            self.visited_positions + visited_positions))
+        if float(min_val) / max_val > 0.8:
             return "backtrack", visited_positions
         else:
             return "turn_peak", visited_positions
@@ -269,7 +271,6 @@ class Simulator(object):
         # Sweep again the other way.
         result, positions = self._sweep(new_direction, initial_position)
 
-        # Don't count the initial positions which we've added already.
         self.visited_positions.extend(positions)
 
         if result == "turn_peak":
@@ -286,6 +287,7 @@ class Simulator(object):
         store the statistics."""
         initial_positions = first_three_lens_pos(self.initial_pos, 
                                                  self.params.step_size)
+
         # The first 3 positions (first 2 steps) count as visited.
         self.visited_positions.extend(initial_positions)
 
@@ -297,7 +299,6 @@ class Simulator(object):
 
         result, positions = self._sweep(direction, initial_positions[-1])
 
-        # Don't count the initial positions which we've added already.
         self.visited_positions.extend(positions)
 
         if result == "turn_peak":
