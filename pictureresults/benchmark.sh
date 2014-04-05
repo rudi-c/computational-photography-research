@@ -3,6 +3,7 @@
 
 CP="$CLASSPATH:/usr/share/java/weka-3.6.6.jar"
 PARSER="../../weka-json-parser/parsej48.py"
+WEKA_OUT="results/weka_out.txt"
 ACTION_ARFF=results/action.arff
 
 attribute_select=false
@@ -85,7 +86,8 @@ echo "Parsing first step trees..."
 ./$PARSER results/firstsize_weka.txt > /tmp/tree_firstsize.json
 echo "Training action tree..."
 java -cp $CP weka.classifiers.trees.J48 \
-    -t $ACTION_DATA -C 0.25 -M 512 | ./$PARSER > /tmp/tree_action.json
+    -t $ACTION_DATA -C 0.25 -M 512 > $WEKA_OUT
+cat $WEKA_OUT | ./$PARSER > /tmp/tree_action.json
 
 # Assign higher cost to certain classications. Doesn't work as hoped.
 # java -cp $CP weka.classifiers.meta.CostSensitiveClassifier \
