@@ -19,6 +19,7 @@ from scene import Scene, load_scenes
 
 seed = 1
 maximum_backlash = 3
+two_step_tolerance = False
 
 class BenchmarkParameters(object):
 
@@ -137,7 +138,7 @@ class Simulator(object):
                 # We've seen an increase by moving one extra step, so
                 # keep moving.
                 lens_pos = self.last_position()
-            else:
+            elif two_step_tolerance:
                 # We've seen a decrease. Consider moving just one extra step.
                 if self._can_keep_moving(lens_pos, direction):
                     self._walk_fine(direction, 1)
@@ -154,6 +155,11 @@ class Simulator(object):
                     # Backtrack and stop.
                     self._walk_fine(rev_direction, 1)
                     break
+            else:
+                # Backtrack and stop.
+                self._walk_fine(rev_direction, 1)
+                break
+
         return lens_pos
 
     def _go_to_max(self, lens_positions):
@@ -445,7 +451,7 @@ def benchmark_scenes(params, scenes):
 
         data_rows.append((scene.name, 
             "%d" % t_pos, "%d" % f_pos, "%d" % t_neg, "%d" % f_neg,
-            "%.1f" % perct, "%d" % steps, "%.1f" % avg_distance))
+            "%.1f" % perct, "%.1f" % steps, "%.1f" % avg_distance))
 
     # No need to calculate the average with only one scene.
     if len(scenes) > 1:
