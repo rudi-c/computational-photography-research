@@ -97,9 +97,8 @@ cat $WEKA_OUT | ./$PARSER > /tmp/tree_action.json
 #     | ./$PARSER > /tmp/tree_action.json
 
 arg1="--left-right-tree=/tmp/tree_leftright.json "
-arg2="--first-size-tree=/tmp/tree_firstsize.json "
-arg3="--action-tree=/tmp/tree_action.json "
-treeargs=$arg1$arg2$arg3
+arg2="--action-tree=/tmp/tree_action.json "
+treeargs=$arg1$arg2
 
 if [ "$backlash" = true ]; then
     arg=" --backlash"

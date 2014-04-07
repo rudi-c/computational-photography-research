@@ -25,7 +25,6 @@ class BenchmarkParameters(object):
 
     def __init__(self):
         self.left_right_tree = None
-        self.first_size_tree = None
         self.action_tree = None
         self.step_size = 1
         self.perfect_classification = None
@@ -34,7 +33,6 @@ class BenchmarkParameters(object):
     def missing_params(self):
         """Returns whether enough parameters have been set for simulation."""
         missing_trees = (self.left_right_tree is None or 
-                         self.first_size_tree is None or
                          self.action_tree is None)
         return self.perfect_classification is None and missing_trees
 
@@ -533,7 +531,6 @@ def print_script_usage():
     print >> sys.stderr, \
         """Script usage : ./benchmark.py 
            --left-right-tree=<decision tree for deciding left vs right>
-           --first-size-tree=<decision tree for deciding first coarse vs fine>
            --action-tree=<decision tree for deciding action to take>]
            [-d, --double-step <double step size used>]
            [--backlash <simulate backlash noise>]
@@ -545,7 +542,7 @@ def main(argv):
     # Parse script arguments
     try:
         opts, _ = getopt.getopt(argv, "d:uo",
-            ["left-right-tree=", "first-size-tree=",
+            ["left-right-tree=",
              "action-tree=", "double-step", "backlash",
              "specific-scene=", "perfect-file=",
              "use-only="])
@@ -564,9 +561,6 @@ def main(argv):
             use_only_file = arg
         elif opt == "--left-right-tree":
             params.left_right_tree = evaluatetree.read_decision_tree(
-                arg, featuresfirststep.all_features_dict())
-        elif opt == "--first-size-tree":
-            params.first_size_tree = evaluatetree.read_decision_tree(
                 arg, featuresfirststep.all_features_dict())
         elif opt == "--action-tree":
             params.action_tree = evaluatetree.read_decision_tree(
