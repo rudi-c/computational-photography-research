@@ -12,13 +12,15 @@ import random
 import featuresturn     
 import featuresfirststep
 import rtools
+from cameramodel import CameraModel
 from coarsefine import *
 from direction import Direction
 from featuresfirststep import first_three_lens_pos
 from scene import Scene, load_scenes
 
 seed = 1
-maximum_backlash = 3
+simulate_backlash = True
+simulate_noise = True
 two_step_tolerance = False
 
 class BenchmarkParameters(object):
@@ -38,139 +40,64 @@ class BenchmarkParameters(object):
 
     def initial_pos_range(self, scene):
         """Possible values for the initial lens position."""
-        return range(2 * self.step_size, scene.step_count)
+        return range(0, scene.step_count - 2 * self.step_size)
         
 
 class Simulator(object):
 
     def __init__(self, params, scene, initial_pos):
-        self.params = params
         self.scene = scene
+        self.params = params
         self.initial_pos = initial_pos
         self.status = "none"
-        self.visited_positions = []
-        self.backlash_count = 0
+
+        self.camera = CameraModel(scene, initial_pos,
+            simulate_backlash=simulate_backlash,
+            simulate_noise=simulate_noise)
+
         if params.perfect_classification is None:
             self.perfect_classification = None
         else:
             self.perfect_classification = \
                 params.perfect_classification[scene.filename]
 
-    def _clamp_to_scene(self, lens_pos):
-        return max(0, min(self.scene.step_count - 1, lens_pos))
-
-    def _walk_left_fine(self, count=1):
-        """Take a number of fine steps towards the left (far focus)."""
-        for _ in range(count):
-            self.visited_positions.append(
-                self._clamp_to_scene(self.last_position() - 1))
-
-    def _walk_left_coarse(self, count=1, backlash_amount=0):
-        """Take a number of coarse steps towards the left (far focus)."""
-        for _ in range(count):
-            self.visited_positions.append(self._clamp_to_scene(
-                self.last_position() - (8 + backlash_amount)))
-
-    def _walk_right_fine(self, count=1):
-        """Take a number of fine steps towards the right (far focus)."""
-        for _ in range(count):
-            self.visited_positions.append(
-                self._clamp_to_scene(self.last_position() + 1))
-
-    def _walk_right_coarse(self, count=1, backlash_amount=0):
-        """Take a number of coarse steps towards the right (far focus)."""
-        for _ in range(count):
-            self.visited_positions.append(self._clamp_to_scene(
-                self.last_position() + (8 + backlash_amount)))
-
-    def _walk_fine(self, direction, count=1):
-        """Take a number of fine steps in a given direction."""
-        if direction.is_left():
-            self._walk_left_fine(count)
-        else:
-            self._walk_right_fine(count)
-
-    def _walk_coarse(self, direction, count=1, backlash=False):
-        """Take a number of coarse steps in a given direction. If backlash
-        is set to true, the first coarse step will move by a random number of
-        lens positions."""
-        assert maximum_backlash < 8
-        if count <= 0:
-            return
-        if backlash:
-            backlash_amount = random.randint(-maximum_backlash, 
-                                             maximum_backlash)
-            if direction.is_left():
-                self._walk_left_coarse(1, backlash_amount)
-                self._walk_left_coarse(count - 1)
-            else:
-                self._walk_right_coarse(1, backlash_amount)
-                self._walk_right_coarse(count - 1)
-        else:
-            if direction.is_left():
-                self._walk_left_coarse(count)
-            else:
-                self._walk_right_coarse(count)
-
-    def _max_among(self, lens_positions):
-        """Return the largest focus value among a set of lens positions."""
-        return max(lens_positions, 
-                   key=(lambda pos : self.scene.fvalues[pos]))
-
-    def _can_keep_moving(self, lens_pos, direction):
-        """Whether it is possible to keep moving in the given direction at
-        the current lens position (checks for edges)."""
-        return ((0 < self.last_position() or direction.is_right()) and
-                (self.last_position() < self.scene.step_count - 1
-                 or direction.is_left()))
-
-    def _do_local_search(self, lens_pos, direction, rev_direction):
+    def _do_local_search(self, direction, rev_direction):
         """Perform a local search (incremental hillclimbing in a 
         given direction). The hillclimbing has a tolerance of two steps.
         i.e., Up to two steps that don't increase the focus value can be taken
         before we stop climbing."""
-        while self._can_keep_moving(lens_pos, direction):
-            self._walk_fine(direction, 1)
-            if (self.scene.fvalues[self.last_position()] >
-                self.scene.fvalues[lens_pos]):
-                # We've seen an increase by moving one extra step, so
-                # keep moving.
-                lens_pos = self.last_position()
-            elif two_step_tolerance:
-                # We've seen a decrease. Consider moving just one extra step.
-                if self._can_keep_moving(lens_pos, direction):
-                    self._walk_fine(direction, 1)
-                    if (self.scene.fvalues[self.last_position()] >
-                        self.scene.fvalues[lens_pos]):
-                        # We've seen an increase by moving one extra step, so
-                        # keep moving.
-                        lens_pos = self.last_position()
-                    else:
-                        # Backtrack and stop.
-                        self._walk_fine(rev_direction, 2)
+        while not self.camera.will_hit_edge(direction):
+            prev_fmeasure = self.camera.last_fmeasure()
+            self.camera.move_fine(direction)
+
+            if self.camera.last_fmeasure() < prev_fmeasure:
+                if (two_step_tolerance and 
+                    not self.camera.will_hit_edge(direction)):
+                    # We've seen a decrease. Consider moving one extra step.
+                    prev_fmeasure = self.camera.last_fmeasure()
+                    self.camera.move_fine(direction)
+
+                    if (self.camera.last_fmeasure() < prev_fmeasure):
+                        # Seen a decrease again, backtrack and stop.
+                        self.camera.move_fine(rev_direction, 2)
                         break
                 else:
                     # Backtrack and stop.
-                    self._walk_fine(rev_direction, 1)
+                    self.camera.move_fine(rev_direction)
                     break
-            else:
-                # Backtrack and stop.
-                self._walk_fine(rev_direction, 1)
-                break
 
-        return lens_pos
-
-    def _go_to_max(self, lens_positions):
+    def _go_to_max(self):
         """Return to the location of the largest focus value seen so far and
         perform a local search to find the exact location of the peak."""
-        current_pos = self.last_position()
-        maximum_pos = self._max_among(self.visited_positions)
+        current_pos = self.camera.last_position()
+        maximum_pos = max(self.camera.visited_positions,
+            key=(lambda pos : self.camera.get_fvalue(pos)))
 
         if maximum_pos < current_pos:
             direction = Direction("left")
         elif maximum_pos > current_pos:
             direction = Direction("right")
-        elif current_pos < self.visited_positions[-2]:
+        elif current_pos < self.camera.visited_positions[-2]:
             direction = Direction("left")
         else:
             direction = Direction("right")
@@ -181,35 +108,23 @@ class Simulator(object):
         distance = abs(current_pos - maximum_pos)
         coarse_steps = distance / 8
 
-        # Since we are turning around, we simulate backlash.
-        self._walk_coarse(direction, coarse_steps, self.params.backlash)
+        self.camera.move_coarse(direction, coarse_steps)
 
         # Keep going in fine steps to see if we can find a higher position.
-        start_pos = self.last_position()
-        maximum_pos = self._do_local_search(
-            start_pos, direction, rev_direction)
-        self.backlash_count += 1
+        start_pos = self.camera.last_position()
+        self._do_local_search(direction, rev_direction)
 
         # If we didn't move further, we might want to look in the other
         # direction too.
-        if start_pos == maximum_pos:
-            maximum_pos = self._do_local_search(
-                self.last_position(), rev_direction, direction)
-            self.backlash_count += 1
+        if start_pos == self.camera.last_position():
+            self._do_local_search(rev_direction, direction)
 
         self.status = "foundmax"
 
-    def _go_back_to_start(self, distance, direction):
-        """Go back to where we were initially at the start of the sweep,
-        using only coarse steps. It's fine if we don't quite reach it.
-        """
-        coarse_steps = distance / 8
-        # Since we are turning around, we simulate backlash.
-        self._walk_coarse(direction, coarse_steps, self.params.backlash)
-
-    def _get_first_direction(self, initial_positions):
+    def _get_first_direction(self):
         """Direction in which we should start sweeping initially."""
-        first, second, third = self.scene.get_focus_values(initial_positions)
+        first, second, third = self.camera.get_fvalues(
+            self.camera.visited_positions[-3:])
         norm_lens_pos = float(self.initial_pos) / (self.scene.step_count - 1)
 
         evaluator = featuresfirststep.firststep_feature_evaluator(
@@ -217,53 +132,37 @@ class Simulator(object):
         return Direction(evaluatetree.evaluate_tree(
             self.params.left_right_tree, evaluator))
 
-    def _can_keep_sweeping(self, direction, current_pos):
-        """Whether it's possible to take more steps in the given direction."""
-        if direction.is_left():
-            return 0 < current_pos
-        else:
-            return current_pos < self.scene.step_count - 1
-
-    def _sweep(self, direction, initial_position):
+    def _sweep(self, direction):
         """Sweep the lens in one direction and return a
-        tuple (success state, positions visited) along the way.
+        tuple (success state, number of steps taken) along the way.
         """
-        visited_positions = []
-        focus_measures = [ self.scene.fvalues[initial_position] ]
-        smallest = min(self.scene.fvalues)
+        initial_position = self.camera.last_position()
+        sweep_fvalues = [ self.camera.last_fmeasure() ]
 
-        current_pos = initial_position
-
-        while self._can_keep_sweeping(direction, current_pos):
+        while not self.camera.will_hit_edge(direction):
             # Move the lens forward.
-            current_pos = self._clamp_to_scene(current_pos + direction * 8)
-            visited_positions.append(current_pos)
-
-            # Measure the focus at the current lens possible. Simulate
-            # a bit of noise that could occur in practice due to camera shake,
-            # etc.
-            focus_measures.append(self.scene.fvalues[current_pos] + 
-                random.random() * 0.05 * smallest)
+            self.camera.move_coarse(direction)
+            sweep_fvalues.append(self.camera.last_fmeasure())
 
             # Take at least two steps before we allow turning back.
-            if len(focus_measures) < 3:
+            if len(sweep_fvalues) < 3:
                 continue
        
             if self.perfect_classification is None:
                 # Obtain the ML classification at the new lens position.
                 evaluator = featuresturn.action_feature_evaluator(
-                    focus_measures, self.scene.step_count)
+                    sweep_fvalues, self.scene.step_count)
                 classification = evaluatetree.evaluate_tree(
                     self.params.action_tree, evaluator)
             else:
                 key = featuresturn.make_key(str(direction), initial_position, 
-                                            current_pos)
+                                            self.camera.last_position())
                 classification = self.perfect_classification[key]
 
             if classification != "continue":
                 assert (classification == "turn_peak" or
                         classification == "backtrack")
-                return classification, visited_positions
+                return classification, len(sweep_fvalues) - 1
 
         # We've reached an edge, but the decision tree still does not want
         # to turn back, so what do we do now?
@@ -271,37 +170,28 @@ class Simulator(object):
         # introduce a condition manually. It's a bit ad-hoc, but we really need
         # to be able to handle this case robustly, as there are lot of cases
         # (i.e., landscape shots) where peaks will be at the edge.
-        min_val = min(self.scene.get_focus_values(
-            self.visited_positions + visited_positions))
-        max_val = max(self.scene.get_focus_values(
-            self.visited_positions + visited_positions))
+        min_val = min(self.camera.get_fvalues(self.camera.visited_positions))
+        max_val = max(self.camera.get_fvalues(self.camera.visited_positions))
         if float(min_val) / max_val > 0.8:
-            return "backtrack", visited_positions
+            return "backtrack", len(sweep_fvalues) - 1
         else:
-            return "turn_peak", visited_positions
+            return "turn_peak", len(sweep_fvalues) - 1
 
 
-    def _backtrack(self, current_lens_pos, previous_direction):
+    def _backtrack(self, previous_direction, step_count):
         """From the current lens position, go back to the lens position we
         were at before and look on the other side."""
 
         new_direction = previous_direction.reverse()
 
         # Go back to where we started.
-        distance_from_initial = abs(self.initial_pos - current_lens_pos)
-
-        self._go_back_to_start(distance_from_initial, 
-            new_direction)
-        initial_position = self.last_position()
+        self.camera.move_coarse(new_direction, step_count)
 
         # Sweep again the other way.
-        result, positions = self._sweep(new_direction, initial_position)
-
-        self.visited_positions.extend(positions)
+        result, step_count = self._sweep(new_direction)
 
         if result == "turn_peak":
-            self._go_to_max(positions)
-            self.backlash_count += 1
+            self._go_to_max()
         elif result == "backtrack":
             # If we need to backtrack a second time, we failed.
             self.status = "failed"
@@ -311,58 +201,49 @@ class Simulator(object):
     def evaluate(self):
         """For every scene and every lens position, run a simulation and
         store the statistics."""
-        initial_positions = first_three_lens_pos(self.initial_pos, 
-                                                 self.params.step_size)
 
-        # The first 3 positions (first 2 steps) count as visited.
-        self.visited_positions.extend(initial_positions)
+        # Take the first two steps, as to get three focus measures with which
+        # to decide which direction to sweep.
+        self.camera.move_fine(Direction("right"), 2)
 
         # Decide initial direction in which to look.
-        direction = self._get_first_direction(initial_positions)
-        if direction.is_left():
-            initial_positions.reverse()
-            self.backlash_count += 1
-
-        result, positions = self._sweep(direction, initial_positions[-1])
-
-        self.visited_positions.extend(positions)
+        direction = self._get_first_direction()
+            
+        # Search in that direction.
+        result, step_count = self._sweep(direction)
 
         if result == "turn_peak":
-            self._go_to_max(self.visited_positions)
-            self.backlash_count += 1
+            self._go_to_max()
         elif result == "backtrack":
-            self._backtrack(self.last_position(), direction)
-            self.backlash_count += 1
+            self._backtrack(direction, step_count)
         else:
             assert False
-
-    def last_position(self):
-        """Last visited lens position - i.e., current position."""
-        return self.visited_positions[-1]
 
     def is_true_positive(self):
         """Whether a peak was found and the peak is close to a real peak."""
         return (self.status == "foundmax" and 
-                self.scene.distance_to_closest_peak(self.last_position()) <= 1)
+                self.scene.distance_to_closest_peak(
+                    self.camera.last_position()) <= 1)
 
     def is_false_positive(self):
         """Whether a peak was found and the peak not close to a real peak."""
         return (self.status == "foundmax" and 
-                self.scene.distance_to_closest_peak(self.last_position()) > 1)
+                self.scene.distance_to_closest_peak(
+                    self.camera.last_position()) > 1)
 
     def is_true_negative(self):
         """Whether we failed to find a peak and we didn't come 
         close to a real peak."""
         return (self.status == "failed" and 
                 all(self.scene.distance_to_closest_peak(pos) > 1
-                    for pos in self.visited_positions))
+                    for pos in self.camera.visited_positions))
 
     def is_false_negative(self):
         """Whether we failed to find a peak but we did come 
         close to a real peak."""
         return (self.status == "failed" and 
                 any(self.scene.distance_to_closest_peak(pos) <= 1
-                    for pos in self.visited_positions))
+                    for pos in self.camera.visited_positions))
 
     def get_evaluation(self):
         """Return whether a simulation for this scene starting at the given
@@ -399,16 +280,16 @@ def benchmark_scene(params, scene, steps_count_list, backlash_count_list):
     t_neg = sum(evaluator.is_false_positive() for evaluator in evaluators)
     f_pos = sum(evaluator.is_true_negative() for evaluator in evaluators)
     f_neg = sum(evaluator.is_false_negative() for evaluator in evaluators)
-    total_steps = sum(len(evaluator.visited_positions) 
+    total_steps = sum(len(evaluator.camera.visited_positions) 
                       for evaluator in evaluators)
     avg_distance = sum(scene.distance_to_closest_peak(initial_pos)
                        for initial_pos in params.initial_pos_range(scene))
     avg_distance = float(avg_distance) / len(params.initial_pos_range(scene))
 
     steps_count_list.extend(
-        [len(evaluator.visited_positions) for evaluator in evaluators])
+        [len(evaluator.camera.visited_positions) for evaluator in evaluators])
     backlash_count_list.extend(
-        [evaluator.backlash_count for evaluator in evaluators])
+        [evaluator.camera.backlash_count for evaluator in evaluators])
 
     return (t_pos, t_neg, f_pos, f_neg, 
             float(total_steps) / len(evaluators), avg_distance)
@@ -490,9 +371,9 @@ def benchmark_specific(params, scenes, specific_scene):
                 evaluator.evaluate()
 
                 print_R_script(scene, initial_pos, 
-                    evaluator.visited_positions,
+                    evaluator.camera.visited_positions,
                     evaluator.get_evaluation(),
-                    evaluator.last_position())
+                    evaluator.camera.last_position())
 
 
 def print_R_script(scene, lens_pos, visited_positions, evaluation, result):
@@ -557,6 +438,7 @@ def main(argv):
     for opt, arg in opts:
         if opt in ("-d", "--double-step"):
             params.step_size = 2
+            raise Exception("Simulator does not support double step size yet.")
         elif opt in ("-uo", "--use-only"):
             use_only_file = arg
         elif opt == "--left-right-tree":
