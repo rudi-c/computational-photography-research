@@ -31,6 +31,9 @@ class Direction(object):
                 self._string_direction == other or
                 str(self) == str(other))
 
+    def __ne__(self, other):
+        return not self == other
+
     def __repr__(self):
         return self._string_direction
 
