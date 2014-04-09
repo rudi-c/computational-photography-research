@@ -1,7 +1,12 @@
 #!/usr/bin/python
 
 import coarsefine
-from scene import load_scenes
+from cameramodel import CameraModel
+from direction   import Direction
+from scene       import load_scenes
+
+simulate_backlash = True
+simulate_noise = True
 
 def print_aligned_data_rows(rows):
     """Print rows of data such that each column is aligned."""
@@ -70,65 +75,63 @@ def search_simple(scenes):
     print "# Simple search"
     step_size = 8
 
+    data_rows = []
+
     for scene in scenes:
         success_count = 0
-        total_count = 0
-        initial_positions = range(step_size, scene.step_count)
-        for ini_pos in initial_positions:
-            step_count = 1
-            if scene.fvalues[ini_pos] < scene.fvalues[ini_pos - step_size]:
-                lens_pos = ini_pos - step_size
-                max_pos = 0 # default maximum found is at the edge, if we
-                            # didn't find anything during the sweep
-                # Sweep left
-                while lens_pos > 0:
-                    step_count += 1
-                    new_pos = max(0, lens_pos - step_size)
-                    if scene.fvalues[new_pos] < scene.fvalues[lens_pos] * 0.9:
-                        lens_pos = new_pos
-                        # Found peak, go back the other way until we found a max
-                        while lens_pos < scene.step_count - 1:
-                            step_count += 1
-                            lens_pos += 1
-                            if (scene.fvalues[lens_pos] < 
-                                scene.fvalues[lens_pos - 1]):
-                                step_count += 1
-                                max_pos = lens_pos - 1
-                                break
-                        # Stop searching
-                        break
-                    lens_pos = new_pos
+        total_step_count = 0
+
+        initial_positions = range(0, scene.step_count - step_size)
+        for initial_position in initial_positions:
+            camera = CameraModel(scene, initial_position,
+                simulate_backlash=simulate_backlash, 
+                simulate_noise=simulate_noise)
+
+            first_measure = camera.last_fmeasure()
+            camera.move_coarse(Direction("right"))
+
+            # Determine whether to start moving left or right.
+            if camera.last_fmeasure() < first_measure:
+                direction = Direction("left")
             else:
-                lens_pos = ini_pos
-                # default maximum found is at the edge, if we
-                # didn't find anything during the sweep
-                max_pos = scene.step_count - 1 
-                # Sweep right
-                while lens_pos < scene.step_count - 1:
-                    step_count += 1
-                    new_pos = min(scene.step_count - 1, lens_pos + step_size)
-                    if scene.fvalues[new_pos] < scene.fvalues[lens_pos] * 0.9:
-                        lens_pos = new_pos
-                        # Found peak, go back the other way until we found a max
-                        while lens_pos > 0:
-                            step_count += 1
-                            lens_pos -= 1
-                            if (scene.fvalues[lens_pos] < 
-                                scene.fvalues[lens_pos + 1]):
-                                step_count += 1
-                                max_pos = lens_pos + 1
-                                break
-                        # Stop searching
-                        break
-                    lens_pos = new_pos
+                direction = Direction("right")
 
-            if scene.distance_to_closest_peak(max_pos) <= 1:
-                total_count += step_count
+            # If the first step decreases focus value, switch direction.
+            # This is a simple backtracking, basically.
+            first_measure = camera.last_fmeasure()
+            camera.move_coarse(direction)
+            if camera.last_fmeasure() < first_measure:
+                direction = direction.reverse()
+
+            # Sweep
+            max_value = camera.last_fmeasure()
+            while not camera.will_hit_edge(direction):
+                camera.move_coarse(direction)
+                max_value = max(max_value, camera.last_fmeasure())
+
+                # Have we found a peak?
+                if camera.last_fmeasure() < max_value * 0.9:
+                    # Hillclimb until we're back at the peak.
+                    while not camera.will_hit_edge(direction.reverse()):
+                        prev_measure = camera.last_fmeasure()
+                        camera.move_fine(direction.reverse())
+                        if prev_measure > camera.last_fmeasure():
+                            camera.move_fine(direction)
+                            break
+                    # Stop searching
+                    break
+
+            # Record if we succeeded.
+            if scene.distance_to_closest_peak(camera.last_position()) <= 1:
                 success_count += 1
+            total_step_count += camera.steps_taken
 
-        print "%s | %.2f | %.1f" % (scene.filename, 
-            float(success_count) / len(initial_positions),
-            float(total_count) / success_count)
+        line = (scene.name, 
+                "%.1f" % (float(success_count) / len(initial_positions) * 100), 
+                "%.1f" % (float(total_step_count) / len(initial_positions)))
+        data_rows.append(line)
+
+    print_aligned_data_rows(data_rows)
 
 
 def search_sweep(scenes, always_coarse):
@@ -258,7 +261,9 @@ def search_camera(scenes):
 
 
 def main():
-    scenes = load_scenes(folder="lowlightgaussraw/")
+    scenes = load_scenes(folder="focusraw/",
+        excluded_scenes=["cat.txt", "moon.txt", 
+                         "projector2.txt", "projector3.txt"])
     search_perfect(scenes)
     print "\n"
     search_simple(scenes)
