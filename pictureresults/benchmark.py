@@ -413,6 +413,7 @@ def print_script_usage():
         """Script usage : ./benchmark.py 
            --left-right-tree=<decision tree for deciding left vs right>
            --action-tree=<decision tree for deciding action to take>]
+           [-ll, --low-light <evaluate low light benchmarks>]
            [-d, --double-step <double step size used>]
            [--backlash <simulate backlash noise>]
            [--specific-scene=<a scene's filename, will print R script]
@@ -422,8 +423,8 @@ def print_script_usage():
 def main(argv):
     # Parse script arguments
     try:
-        opts, _ = getopt.getopt(argv, "d:uo",
-            ["left-right-tree=",
+        opts, _ = getopt.getopt(argv, "d:uo:ll",
+            ["left-right-tree=", "lowlight"
              "action-tree=", "double-step", "backlash",
              "specific-scene=", "perfect-file=",
              "use-only="])
@@ -434,6 +435,7 @@ def main(argv):
     params = BenchmarkParameters()
     specific_scene = None
     use_only_file = None
+    scenes_folder = "focusraw/"
 
     for opt, arg in opts:
         if opt in ("-d", "--double-step"):
@@ -441,6 +443,8 @@ def main(argv):
             raise Exception("Simulator does not support double step size yet.")
         elif opt in ("-uo", "--use-only"):
             use_only_file = arg
+        elif opt == "--lowlight":
+            scenes_folder = "lowlightraw/"
         elif opt == "--left-right-tree":
             params.left_right_tree = evaluatetree.read_decision_tree(
                 arg, featuresfirststep.all_features_dict())
@@ -464,7 +468,7 @@ def main(argv):
         print_script_usage()
         sys.exit(2)
 
-    scenes = load_scenes(folder="focusraw/",
+    scenes = load_scenes(folder=scenes_folder,
         excluded_scenes=["cat.txt", "moon.txt", 
                          "projector2.txt", "projector3.txt"])
     if use_only_file:

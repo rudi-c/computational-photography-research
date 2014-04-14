@@ -1,5 +1,8 @@
 #!/usr/bin/python
 
+import getopt
+import sys
+
 import coarsefine
 from cameramodel import CameraModel
 from direction   import Direction
@@ -259,9 +262,30 @@ def search_camera(scenes):
     print_aligned_data_rows(data_rows)
 
 
+def print_script_usage():
+    print >> sys.stderr, \
+        """Script usage : ./benchmark.py 
+           [-ll, --low-light <evaluate low light benchmarks>]"""
 
-def main():
-    scenes = load_scenes(folder="focusraw/",
+
+def main(argv):
+    # Parse script arguments
+    try:
+        opts, _ = getopt.getopt(argv, "", [ "lowlight" ])
+    except getopt.GetoptError:
+        print_script_usage()
+        sys.exit(2)
+
+    scenes_folder = "focusraw/"
+
+    for opt, arg in opts:
+        if opt == "--lowlight":
+            scenes_folder = "lowlightraw/"
+        else:
+            print_script_usage()
+            sys.exit(2)
+
+    scenes = load_scenes(folder=scenes_folder,
         excluded_scenes=["cat.txt", "moon.txt", 
                          "projector2.txt", "projector3.txt"])
     search_perfect(scenes)
@@ -275,4 +299,4 @@ def main():
     search_camera(scenes)
 
 
-main()
+main(sys.argv[1:])
