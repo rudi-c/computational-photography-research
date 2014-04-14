@@ -74,11 +74,16 @@ def search_perfect(scenes):
                              float(total_count) / len(initial_positions))
 
 
-def search_simple(scenes):
+def search_simple(scenes, scene_to_print):
     print "# Simple search"
     step_size = 8
 
     data_rows = []
+
+    # Redirect stdout to a file for printing R script.
+    orig_stdout = sys.stdout
+    file_to_print = open("comparison.R", "w+")
+    sys.stdout = file_to_print
 
     for scene in scenes:
         success_count = 0
@@ -114,25 +119,37 @@ def search_simple(scenes):
 
                 # Have we found a peak?
                 if camera.last_fmeasure() < max_value * 0.9:
-                    # Hillclimb until we're back at the peak.
-                    while not camera.will_hit_edge(direction.reverse()):
-                        prev_measure = camera.last_fmeasure()
-                        camera.move_fine(direction.reverse())
-                        if prev_measure > camera.last_fmeasure():
-                            camera.move_fine(direction)
-                            break
                     # Stop searching
+                    break
+                    
+            # Hillclimb until we're back at the peak.
+            while not camera.will_hit_edge(direction.reverse()):
+                prev_measure = camera.last_fmeasure()
+                camera.move_fine(direction.reverse())
+                if prev_measure > camera.last_fmeasure():
+                    camera.move_fine(direction)
                     break
 
             # Record if we succeeded.
             if scene.distance_to_closest_peak(camera.last_position()) <= 1:
                 success_count += 1
+                evaluation = "succeeded"
+            else:
+                evaluation = "failed"
+            
+            if scene.filename == scene_to_print:
+                camera.print_script(evaluation)
+
             total_step_count += camera.steps_taken
 
         line = (scene.name, 
                 "%.1f" % (float(success_count) / len(initial_positions) * 100), 
                 "%.1f" % (float(total_step_count) / len(initial_positions)))
         data_rows.append(line)
+
+    # Restore original stdout
+    sys.stdout = orig_stdout
+    file_to_print.close()
 
     print_aligned_data_rows(data_rows)
 
@@ -265,22 +282,29 @@ def search_camera(scenes):
 def print_script_usage():
     print >> sys.stderr, \
         """Script usage : ./benchmark.py 
-           [-ll, --low-light <evaluate low light benchmarks>]"""
+           [--low-light <evaluate low light benchmarks>]
+           [--specific-scene=<a scene's filename, will print R script,
+                              but only for "search simple"> ]
+        """
 
 
 def main(argv):
     # Parse script arguments
     try:
-        opts, _ = getopt.getopt(argv, "", [ "lowlight" ])
+        opts, _ = getopt.getopt(argv, "", [ "lowlight", "low-light",
+                                            "scene-to-print=" ])
     except getopt.GetoptError:
         print_script_usage()
         sys.exit(2)
 
+    scene_to_print = None
     scenes_folder = "focusraw/"
 
     for opt, arg in opts:
-        if opt == "--lowlight":
+        if opt in ("--lowlight", "--low-light"):
             scenes_folder = "lowlightraw/"
+        if opt == "--scene-to-print":
+            scene_to_print = arg
         else:
             print_script_usage()
             sys.exit(2)
@@ -290,7 +314,7 @@ def main(argv):
                          "projector2.txt", "projector3.txt"])
     search_perfect(scenes)
     print "\n"
-    search_simple(scenes)
+    search_simple(scenes, scene_to_print)
     print "\n"
     search_sweep(scenes, False)
     print "\n"

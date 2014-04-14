@@ -6,8 +6,11 @@ The camera also knows which direction in which it is headed. If a coarse step
 is taken in the opposite backlash, backlash has the option to be simulated.
 
 The camera model can also simulate measurement noise.
+
+The camera model is one-use.
 """
 
+import rtools
 from scene      import Scene
 from direction  import Direction
 from random     import random, randint
@@ -93,6 +96,35 @@ class CameraModel(object):
         return ((self.position <= 0 and direction.is_left()) or        
                 (self.position >= self.scene.step_count - 1 and 
                     direction.is_right()))
+
+    def print_script(self, evaluation):
+        """Print an R script that shows the movement of the lens in this
+        particular simulation."""
+
+        assert evaluation in ("true positive", "false positive", 
+                              "true negative", "false negative",
+                              "succeeded", "failed")
+
+        print "# %s at %d, %s\n" % (self.scene.filename, 
+                                    self.visited_positions[0], evaluation)
+
+        # Some R functions for plotting.
+        rtools.print_set_window_division(1, 1)
+        print "library(scales)" # for alpha blending
+
+        rtools.print_plot_focus_measures(self.scene.fvalues, show_grid=True)
+
+        xs = self.visited_positions
+        ys = [ float(i) / max(10, len(self.visited_positions))
+               for i in range(0, len(self.visited_positions)) ]
+
+        rtools.print_plot_point_pairs(xs, ys, 25, "blue", "blue", True)
+
+        result = self.last_position()
+        if result >= 0:
+            print "segments(%d, 0.0, %d, 1.0)" % (result, result)
+
+        print "\n# Plot me!\n"
 
     def last_position(self):
         """Return the last visited lens position."""

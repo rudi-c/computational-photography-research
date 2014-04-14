@@ -370,32 +370,7 @@ def benchmark_specific(params, scenes, specific_scene):
                 evaluator = Simulator(params, scene, initial_pos)
                 evaluator.evaluate()
 
-                print_R_script(scene, initial_pos, 
-                    evaluator.camera.visited_positions,
-                    evaluator.get_evaluation(),
-                    evaluator.camera.last_position())
-
-
-def print_R_script(scene, lens_pos, visited_positions, evaluation, result):
-
-    print "# %s at %d, %s\n" % (scene.filename, lens_pos, evaluation)
-
-    # Some R functions for plotting.
-    rtools.print_set_window_division(1, 1)
-    print "library(scales)" # for alpha blending
-
-    rtools.print_plot_focus_measures(scene.fvalues, show_grid=True)
-
-    xs = visited_positions
-    ys = [ float(i) / max(10, len(visited_positions))
-           for i in range(0, len(visited_positions)) ]
-
-    rtools.print_plot_point_pairs(xs, ys, 25, "blue", "blue", True)
-
-    if result >= 0:
-        print "segments(%d, 0.0, %d, 1.0)" % (result, result)
-
-    print "\n# Plot me!\n"
+                evaluator.camera.print_script(evaluator.get_evaluation())
 
 
 def load_classifications(filename):
@@ -413,7 +388,7 @@ def print_script_usage():
         """Script usage : ./benchmark.py 
            --left-right-tree=<decision tree for deciding left vs right>
            --action-tree=<decision tree for deciding action to take>]
-           [-ll, --low-light <evaluate low light benchmarks>]
+           [--low-light <evaluate low light benchmarks>]
            [-d, --double-step <double step size used>]
            [--backlash <simulate backlash noise>]
            [--specific-scene=<a scene's filename, will print R script]
@@ -423,8 +398,8 @@ def print_script_usage():
 def main(argv):
     # Parse script arguments
     try:
-        opts, _ = getopt.getopt(argv, "d:uo:ll",
-            ["left-right-tree=", "lowlight"
+        opts, _ = getopt.getopt(argv, "d:uo",
+            ["left-right-tree=", "lowlight", "low-light",
              "action-tree=", "double-step", "backlash",
              "specific-scene=", "perfect-file=",
              "use-only="])
@@ -443,7 +418,7 @@ def main(argv):
             raise Exception("Simulator does not support double step size yet.")
         elif opt in ("-uo", "--use-only"):
             use_only_file = arg
-        elif opt == "--lowlight":
+        elif opt in ("--lowlight", "--low-light"):
             scenes_folder = "lowlightraw/"
         elif opt == "--left-right-tree":
             params.left_right_tree = evaluatetree.read_decision_tree(
