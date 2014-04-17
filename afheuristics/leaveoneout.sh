@@ -37,5 +37,6 @@ for file in \
     ubuntu.txt \
     vase.txt
 do
-    ./benchmark.sh -lv $file --backlash
+    ./makeactiontree.sh -lv $file
+    ./benchmark.sh -lv $file --simulate-errors
 done
