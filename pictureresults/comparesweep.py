@@ -4,10 +4,12 @@ import getopt
 import sys
 
 import coarsefine
+import random
 from cameramodel import CameraModel
 from direction   import Direction
 from scene       import load_scenes
 
+seed = 1
 simulate_backlash = True
 simulate_noise = True
 
@@ -85,6 +87,8 @@ def search_simple(scenes, scene_to_print):
     file_to_print = open("comparison.R", "w+")
     sys.stdout = file_to_print
 
+    total_success = 0
+
     for scene in scenes:
         success_count = 0
         total_step_count = 0
@@ -142,16 +146,19 @@ def search_simple(scenes, scene_to_print):
 
             total_step_count += camera.steps_taken
 
+        success = float(success_count) / len(initial_positions) * 100
         line = (scene.name, 
-                "%.1f" % (float(success_count) / len(initial_positions) * 100), 
+                "%.1f" % success, 
                 "%.1f" % (float(total_step_count) / len(initial_positions)))
         data_rows.append(line)
+        total_success += success
 
     # Restore original stdout
     sys.stdout = orig_stdout
     file_to_print.close()
 
     print_aligned_data_rows(data_rows)
+    print "average success : %.1f" % (total_success / len(scenes))
 
 
 def search_sweep(scenes, always_coarse):
@@ -292,6 +299,7 @@ def main(argv):
     # Parse script arguments
     try:
         opts, _ = getopt.getopt(argv, "", [ "lowlight", "low-light",
+                                            "lowlightgauss", "low-light-gauss",
                                             "scene-to-print=" ])
     except getopt.GetoptError:
         print_script_usage()
@@ -303,15 +311,20 @@ def main(argv):
     for opt, arg in opts:
         if opt in ("--lowlight", "--low-light"):
             scenes_folder = "lowlightraw/"
-        if opt == "--scene-to-print":
+        elif opt in ("--lowlightgauss", "--low-light-gauss"):
+            scenes_folder = "lowlightgaussraw/"
+        elif opt == "--scene-to-print":
             scene_to_print = arg
         else:
             print_script_usage()
             sys.exit(2)
 
+    random.seed(seed)
+
     scenes = load_scenes(folder=scenes_folder,
         excluded_scenes=["cat.txt", "moon.txt", 
                          "projector2.txt", "projector3.txt"])
+
     search_perfect(scenes)
     print "\n"
     search_simple(scenes, scene_to_print)

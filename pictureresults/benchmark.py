@@ -400,6 +400,7 @@ def main(argv):
     try:
         opts, _ = getopt.getopt(argv, "d:uo",
             ["left-right-tree=", "lowlight", "low-light",
+             "lowlightgauss", "low-light-gauss",
              "action-tree=", "double-step", "backlash",
              "specific-scene=", "perfect-file=",
              "use-only="])
@@ -420,6 +421,8 @@ def main(argv):
             use_only_file = arg
         elif opt in ("--lowlight", "--low-light"):
             scenes_folder = "lowlightraw/"
+        elif opt in ("--lowlightgauss", "--low-light-gauss"):
+            scenes_folder = "lowlightgaussraw/"
         elif opt == "--left-right-tree":
             params.left_right_tree = evaluatetree.read_decision_tree(
                 arg, featuresfirststep.all_features_dict())
