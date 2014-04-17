@@ -19,8 +19,6 @@ from featuresfirststep import first_three_lens_pos
 from scene import Scene, load_scenes
 
 seed = 1
-simulate_backlash = True
-simulate_noise = True
 two_step_tolerance = False
 
 class BenchmarkParameters(object):
@@ -31,6 +29,7 @@ class BenchmarkParameters(object):
         self.step_size = 1
         self.perfect_classification = None
         self.backlash = False
+        self.noise = False
 
     def missing_params(self):
         """Returns whether enough parameters have been set for simulation."""
@@ -52,8 +51,8 @@ class Simulator(object):
         self.status = "none"
 
         self.camera = CameraModel(scene, initial_pos,
-            simulate_backlash=simulate_backlash,
-            simulate_noise=simulate_noise)
+            simulate_backlash=self.params.backlash,
+            simulate_noise=self.params.noise)
 
         if params.perfect_classification is None:
             self.perfect_classification = None
@@ -401,7 +400,7 @@ def main(argv):
         opts, _ = getopt.getopt(argv, "d:uo",
             ["left-right-tree=", "lowlight", "low-light",
              "lowlightgauss", "low-light-gauss",
-             "action-tree=", "double-step", "backlash",
+             "action-tree=", "double-step", "backlash", "noise",
              "specific-scene=", "perfect-file=",
              "use-only="])
     except getopt.GetoptError:
@@ -435,6 +434,8 @@ def main(argv):
             params.perfect_classification = load_classifications(arg)
         elif opt == "--backlash":
             params.backlash = True
+        elif opt == "--noise":
+            params.noise = True
         else:
             print_script_usage()
             sys.exit(2)
