@@ -1,0 +1,135 @@
+|-------------------------------------|
+| Folders                             |
+|-------------------------------------|
+
+focusmeasures : Focus values calculated with squared gradient and normalized
+                to [0, 1]
+focusraw : Focus measures calculated with squared gradient, not normalized.
+lowlightnorm : Focus measures for low-light scenes calculated with squared
+               gradient, normalized to [0, 1]
+lowlightraw  : Focus measures for low-light scenes calculated with squared
+               gradient, not normalized
+lowlightgaussnorm : Focus measures for low-light scenes calculated with first
+                    order Gaussian derivative, normalized to [0, 1]
+lowlightgaussraw  : Focus measures for low-light scenes calculated with first
+                    order Gaussian derivative, not normalized
+old : Some old files that are no longer used.
+
+
+|-------------------------------------|
+| Reproducing results.                |
+|-------------------------------------|
+
+The autofocus algorithm, as described in the accompanying paper, is composed
+of the following :
+- A control algorithm, which can be represented as a state machine. This
+  algorithm basically performs a coarse-to-fine hill-climbing search. It will:
+  1) Take two steps, decide on which direction to search.
+  2) Take coarse steps in that direction.
+  3) Optional : Backtrack and look the other way.
+  4) Turn around and switch to find steps to find the peak (incremental
+     hill-climbing).
+- A decision tree (refered to as T_alpha in the paper) which decides which
+  way to search in (step 1)
+- A decision tree (refered to as T_beta in the paper) which decides when to
+  backtrack and when to turn around and switch to find steps (step 2-4)
+
+
+> Generate a file with the maxima in the focus measure curve of every scene :
+
+./findmax.sh
+
+> Generate training data and training the decision tree T_alpha, use :
+
+./makeleftrighttree.sh
+
+> This generates a set of .arff files (training data) and .txt files (weka
+  training output) in the folder "results/"
+
+> Generate training data and training the decision tree T_beta, use :
+
+./makeactiontree.sh
+
+> This simulates searches in all scenes, generate a .arff file (training data),
+  and a .txt file (weka training output) in the folder "results/"
+
+> To benchmark the performance of the algorithm, while simulating sources
+  of error such as backlash and noise :
+
+./benchmark.sh --simulate-errors
+
+> To benchmark the performance of the algorithm, using leave-one-out
+  cross-validation :
+
+./leaveoneout.sh
+
+> To benchmark the performance of this algorithm on low-light scenes using
+  the squared gradient focus measure (performance should be bad)
+
+./benchmark.sh --simulate-errors --lowlight
+
+> To benchmark the performance of this algorithm on low-light scenes using
+  the first order Gaussian derivative focus measure (performance improves)
+
+./benchmark.sh --simulate-errors --lowlightgauss
+
+|-------------------------------------|
+| Summary of reproducing results      |
+|-------------------------------------|
+./findmax.sh
+./makeleftrighttree.sh
+./makeactiontree.sh
+./benchmark.sh --simulate-errors
+./leaveoneout.sh
+./benchmark.sh --simulate-errors --lowlight
+./benchmark.sh --simulate-errors --lowlightgauss
+
+
+|-------------------------------------|
+| For testing purposes                |
+|-------------------------------------|
+
+For benchmarking outside of the benchmark script (benchmark.sh), you need to
+set the $treeargs variable first.
+
+e.g.
+arg1="--left-right-tree=/tmp/tree_leftright.json "
+arg2="--action-tree=/tmp/tree_action.json "
+treeargs="$arg1$arg2 --backlash --noise"
+
+To simulate with perfect knowledge (the correct classification at every step) :
+./makeperfectaction.py > perfect.json
+./benchmark.py $treeargs --perfect-file=perfect.json
+
+To simulate only a particular scene and print an R script which can be used
+to visualize what's happening :
+./benchmark.py $treeargs --specific-scene=somebenchmark.txt
+
+
+|-------------------------------------|
+| Terminology notes.                  |
+|-------------------------------------|
+
+Terminology might be bit weird sometimes, due to various changes that have
+occured over time.
+
+- The paper usually uses the terms "near focus" or "far focus" while the code
+  usually uses the terms "left" and "right". These are the same (near focus
+  in the focus measures curve is on the left).
+
+- The term "focus measure" often refers to both the function applied to an
+  image to obtain a degree of focus AND the actual value obtained. The term
+  "focus value" refers to the actually value obtained. These two terms are
+  often used interchangeably and it should be clear from context which one
+  is which.
+
+- The code uses the term "turn to peak" or "turn_peak" to refer to the state
+  transition where the lens goes back to the position where the focus value
+  was highest and switches from coarse steps to fine steps. In the paper,
+  this state transition is referred to as "success".
+
+- The decision tree "T_alpha" in the paper is often referred to as "leftright"
+  tree in the code (because it determines whether to look left or right).
+  The features needed to train this decision tree are often referred to as
+  "firststep" features because they depend on the focus values obtained in
+  the first 1-2 steps.
