@@ -63,7 +63,6 @@ for file in \
 	projector2.txt \
 	projector3.txt \
 	screws1.txt \
-	screws2.txt \
 	whiteboard1.txt \
 	whiteboard2.txt \
 	whiteboard3.txt
@@ -71,3 +70,7 @@ do
 	echo $file >> $maximaFile
 	./localMax.exe < lowlightgaussnorm/$file >> $maximaFile
 done
+
+# For screws2.txt, localmax misses two maxima.
+echo screws2.txt >> $maximaFile
+echo " "`./localMax.exe < lowlightgaussnorm/screws2.txt`" 75 97" >> $maximaFile

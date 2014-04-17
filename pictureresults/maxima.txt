@@ -84,11 +84,11 @@ projector3.txt
  0 42 46 52 57 61 66 72 81 84 90 94 101 118 124 134 137 141 151 155 160
 screws1.txt
  29 74
-screws2.txt
- 31
 whiteboard1.txt
  156
 whiteboard2.txt
  152
 whiteboard3.txt
  152
+screws2.txt
+  31 75 97
