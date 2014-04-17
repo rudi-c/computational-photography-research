@@ -13,7 +13,9 @@ the output of running localMax.exe
 from scene import load_scenes
 
 def main():
-    scenes = load_scenes()
+    scenes_folder = "focusraw/"
+    scenes = load_scenes(folder=scenes_folder,
+        excluded_scenes=["cat.txt", "moon.txt"])
 
     xs = []
     ys = []
