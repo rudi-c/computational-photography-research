@@ -114,7 +114,7 @@ def main(argv):
     # to be filters for features.
     for arg in argv:
         if arg == "--three-measures":
-            features = featuresfirststep.measure_features
+            features = featuresfirststep.three_measure_features
         elif arg == "--all-features":
             features = featuresfirststep.all_features
         elif arg == "--highest":

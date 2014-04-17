@@ -248,13 +248,6 @@ def other_features(filters=None):
 
 ### Convenience function to return groups of features ###
 
-def measure_features(filters=None):
-    """Returns an array of (attribute name, attribute range, function)"""
-    if filters is None:
-        filters = []
-    return two_measure_features(filters) + three_measure_features(filters)
-
-
 def all_features(filters=None):
     """Returns an array of (attribute name, attribute range, function)"""
     if filters is None:
