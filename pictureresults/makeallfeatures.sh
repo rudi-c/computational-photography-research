@@ -43,7 +43,7 @@ do
     filtered=results/${training_data}_filtered.arff
     feature_select $data $filtered
     java -cp $CP weka.classifiers.trees.J48 \
-        -t $filtered -C 0.25 -M 6 > results/${training_data}_weka.txt
+        -t $filtered -C 0.25 -M 512 > results/${training_data}_weka.txt
 done
 
 # # After running the output of the above in weka's feature selection
