@@ -126,6 +126,18 @@ treeargs="$arg1$arg2 --backlash --noise"
 
 ./benchmark.py $treeargs --specific-scene=somebenchmark.txt
 
+> To get statistics such as P(nearest peak is to the left | lens position)
+
+./makestatistics.py
+
+> To visualize the correct classification (continue, backtrack, turn_peak)
+  for every starting position at every step.
+
+./plotaction.py
+
+> Visualization tools of ml classifications :
+
+./visualize.sh
 
 |-------------------------------------|
 | Terminology notes.                  |
