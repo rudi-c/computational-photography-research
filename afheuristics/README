@@ -76,6 +76,7 @@ of the following :
 |-------------------------------------|
 | Summary of reproducing results      |
 |-------------------------------------|
+
 ./findmax.sh
 ./makeleftrighttree.sh
 ./makeactiontree.sh
@@ -84,25 +85,45 @@ of the following :
 ./benchmark.sh --simulate-errors --lowlight
 ./benchmark.sh --simulate-errors --lowlightgauss
 
+|-------------------------------------|
+| Comparing with previous work        |
+|-------------------------------------|
+
+> Run various different peak search algorithms on the regular dataset.
+
+./comparework.py
+
+> Run various different peak search algorithms on the low-light scenes using
+  the squared gradient (performance should be bad).
+
+./comparework.py --lowlight
+
+> Run various different peak search algorithms on the low-light scenes using
+  the squared gradient (performance should improve).
+
+./comparework.py --lowlightgauss
+
 
 |-------------------------------------|
 | For testing purposes                |
 |-------------------------------------|
 
-For benchmarking outside of the benchmark script (benchmark.sh), you need to
-set the $treeargs variable first.
+For benchmarking outside of the benchmark script (benchmark.sh), it is 
+convenient to set the $treeargs variable first.
 
 e.g.
 arg1="--left-right-tree=/tmp/tree_leftright.json "
 arg2="--action-tree=/tmp/tree_action.json "
 treeargs="$arg1$arg2 --backlash --noise"
 
-To simulate with perfect knowledge (the correct classification at every step) :
+> To simulate with perfect knowledge (the correct classification at every step):
+
 ./makeperfectaction.py > perfect.json
 ./benchmark.py $treeargs --perfect-file=perfect.json
 
-To simulate only a particular scene and print an R script which can be used
-to visualize what's happening :
+> To simulate only a particular scene and print an R script which can be used
+  to visualize what's happening :
+
 ./benchmark.py $treeargs --specific-scene=somebenchmark.txt
 
 

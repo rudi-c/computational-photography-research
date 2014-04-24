@@ -1,4 +1,6 @@
 #!/usr/bin/python
+"""Runs a set of peak search algorithms on our scenes.
+"""
 
 import getopt
 import sys
@@ -22,15 +24,25 @@ def print_aligned_data_rows(rows):
 
 
 def search_perfect(scenes):
-    print "# Perfect search"
+    print (">>> Perfect local search"
+           "Assumes perfect information. Start at any lens position and take"
+           "coarse steps in the direction of the closest peak until the lens"
+           "is within 10 lens positions of a peak. Then, switch to fine steps."
+           "When the lens has passed the peak four lens positions ago, turn"
+           "around and go to the peak.")
+
+    data_rows = [("filename", "steps")]
 
     for scene in scenes:
         total_count = 0
         initial_positions = range(2, scene.step_count)
+
+        # Perform a search for each initial starting position.
         for ini_pos in initial_positions:
             step_count = 2
             lens_pos = ini_pos
             passed_peak = False
+
             if (scene.distance_to_closest_left_peak(ini_pos) <
                 scene.distance_to_closest_right_peak(ini_pos)):
                 # Sweep left
@@ -72,15 +84,24 @@ def search_perfect(scenes):
 
             total_count += step_count
 
-        print "%s | %.1f" % (scene.filename, 
-                             float(total_count) / len(initial_positions))
+        average = float(total_count) / len(initial_positions)
+        data_rows.append((scene.filename, "%.1f" % average))
+
+    print_aligned_data_rows(data_rows)
 
 
-def search_simple(scenes, scene_to_print):
-    print "# Simple search"
+def search_standard(scenes, scene_to_print):
+    print ("Perform a standard hill-climbing search, where coarse steps are"
+           "taken until some stopping condition occurs, at which point the"
+           "movement is reversed, at which point fine steps are taken to"
+           "maximize the focus value. This is the method described in [He2003]"
+           "and [Li2005].\n"
+           "To visualize the steps taken for simulation of a specific scene,"
+           "use the command-line argument --scene-to-print=something.txt")
+
     step_size = 8
 
-    data_rows = []
+    data_rows = [("filename", "steps")]
 
     # Redirect stdout to a file for printing R script.
     orig_stdout = sys.stdout
@@ -162,14 +183,15 @@ def search_simple(scenes, scene_to_print):
 
 
 def search_sweep(scenes, always_coarse):
-    print "# Sweep and stop search"
+    print ("Search for a peak by sweeping from the first lens position, stop"
+            "when a peak is found.")
 
     if always_coarse:
-        print "# Always coarse"
+        print "Sweeping is done with coarse steps only."
     else:
-        print "# Use heuristics"
+        print "Sweeping is done using ml-based heuristics."
 
-    data_rows = []
+    data_rows = [("filename", "status", "steps")]
 
     for scene in scenes:
         last_step_coarse = True
@@ -237,11 +259,14 @@ def search_sweep(scenes, always_coarse):
     print_aligned_data_rows(data_rows)
 
 
-def search_camera(scenes):
-    print "# Camera search"
+def search_full(scenes):
+    print ("Perform a full sweep of coarse steps accross all the lens"
+           "positions, the go to the position where the focus value was"
+           "highest and do a local search.")
+
     sweep_steps = 19
 
-    data_rows = []
+    data_rows = [("filename", "status", "steps")]
 
     for scene in scenes:
         # The camera does a full sweep.
@@ -327,13 +352,13 @@ def main(argv):
 
     search_perfect(scenes)
     print "\n"
-    search_simple(scenes, scene_to_print)
+    search_standard(scenes, scene_to_print)
     print "\n"
     search_sweep(scenes, False)
     print "\n"
     search_sweep(scenes, True)
     print "\n"
-    search_camera(scenes)
+    search_full(scenes)
 
 
 main(sys.argv[1:])
