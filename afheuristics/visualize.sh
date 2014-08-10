@@ -1,4 +1,10 @@
-PARSER="../../weka-json-parser/parsej48.py"
+PARSER="parsej48.py"
+
+if [ ! -f $PARSER ]; then
+    echo "Parser for weka file not found!"
+    echo "See https://github.com/rudi-c/weka-json-parser"
+    exit
+fi
 
 left_right_classifier=nearest
 
@@ -6,15 +12,10 @@ left_right_tree=/tmp/left_right_tree.json
 first_step_tree=/tmp/first_step_tree.json
 
 ./$PARSER results/nearestall_weka.txt > $left_right_tree
-./$PARSER results/firstsize_weka.txt  > $first_step_tree
-
-./makegroundtruthcomparison.py -t $left_right_tree \
-                               -c $left_right_classifier > ground.R
 
 # Empty what's in the file previously (we need to do that because
 # we will be appending to the file multiple times)
 cat /dev/null > left_right_classification.R
-cat /dev/null > first_step_classification.R
 cat /dev/null > stepsizes.R
 
 for file in \
@@ -55,7 +56,5 @@ for file in \
 do
     ./plotleftright.py -s $file -t $left_right_tree \
         -c $left_right_classifier >> left_right_classification.R
-    ./plotfirstsize.py -s $file -t $first_step_tree \
-        >> first_step_classification.R
     ./plotfullsweep.py -s $file >> stepsizes.R
 done
