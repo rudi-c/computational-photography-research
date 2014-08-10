@@ -109,6 +109,8 @@ def load_scenes(excluded_scenes=None, folder=None):
                if f.endswith(".txt")
                if os.path.isfile(folder + "/" + f)
                if not f in excluded_scenes ]
+    scenes.sort(key = lambda scene: scene.filename)
+    
     load_maxima(scenes)
     return scenes
 
