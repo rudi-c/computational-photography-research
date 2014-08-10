@@ -9,7 +9,7 @@ The output is an R script for plotting the results.
 import getopt
 import sys
 
-from scene import Scene, load_maxima
+from scene import Scene, load_scene
 import evaluatetree
 import featuresfirststep
 import rtools
@@ -74,8 +74,7 @@ def main(argv):
 
     for opt, arg in opts:
         if opt in ("-s", "--scene"):
-            scene = Scene(arg)
-            load_maxima([scene])
+            scene = load_scene(arg)
         elif opt in ("-t", "--tree"):
             tree = evaluatetree.read_decision_tree(arg, features)
         elif opt in ("-c", "--classifier"):

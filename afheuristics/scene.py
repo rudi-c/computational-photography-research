@@ -91,10 +91,25 @@ class Scene(object):
 
         self.__load_from_file(folder)
 
+def load_scene(scene_file, folder=None):
+    """Loads a scene (sets of pictures at every lens position). 
+    Expects a folder focusraw/ and a file maxima.txt to exist in the 
+    same directory if no folder is specified.
+    """
+    if folder is None:
+        folder = SCENES_FOLDER
+
+    if not os.path.isdir(folder):
+        raise IOError("Scenes folder \"%s\" folder not found." % folder)
+
+    scene = Scene(scene_file, folder)
+    load_maxima([scene])
+    return scene
 
 def load_scenes(excluded_scenes=None, folder=None):
-    """Loads scenes (sets of pictures at every lens position). Expects a folder
-    focusraw/ and a file maxima.txt to exist in the same directory.
+    """Loads scenes (sets of pictures at every lens position). 
+    Expects a folder focusraw/ and a file maxima.txt to exist in the 
+    same directory if no folder is specified.
     """
     if excluded_scenes is None:
         excluded_scenes = []

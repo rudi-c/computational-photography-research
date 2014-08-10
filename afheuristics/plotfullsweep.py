@@ -11,7 +11,7 @@ import sys
 
 import coarsefine
 import rtools
-from scene import Scene, load_maxima
+from scene import Scene, load_scene
 
 
 def simulate(scene):
@@ -95,8 +95,7 @@ def main(argv):
 
     for opt, arg in opts:
         if opt in ("-s", "--scene"):
-            scene = Scene(arg)
-            load_maxima([scene])
+            scene = load_scene(arg)
 
     if scene is None:
         print_script_usage()
