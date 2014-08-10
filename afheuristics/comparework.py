@@ -24,12 +24,12 @@ def print_aligned_data_rows(rows):
 
 
 def search_perfect(scenes):
-    print (">>> Perfect local search"
-           "Assumes perfect information. Start at any lens position and take"
-           "coarse steps in the direction of the closest peak until the lens"
-           "is within 10 lens positions of a peak. Then, switch to fine steps."
-           "When the lens has passed the peak four lens positions ago, turn"
-           "around and go to the peak.")
+    print (">>> Perfect local search\n"
+           "Assumes perfect information. Start at any lens position and take\n"
+           "coarse steps in the direction of the closest peak until the lens\n"
+           "is within 10 lens positions of a peak. Then, switch to fine steps.\n"
+           "When the lens has passed the peak four lens positions ago, turn\n"
+           "around and go to the peak.\n")
 
     data_rows = [("filename", "steps")]
 
@@ -91,12 +91,12 @@ def search_perfect(scenes):
 
 
 def search_standard(scenes, scene_to_print):
-    print ("Perform a standard hill-climbing search, where coarse steps are"
-           "taken until some stopping condition occurs, at which point the"
-           "movement is reversed, at which point fine steps are taken to"
-           "maximize the focus value. This is the method described in [He2003]"
-           "and [Li2005].\n"
-           "To visualize the steps taken for simulation of a specific scene,"
+    print ("Perform a standard hill-climbing search, where coarse steps are\n"
+           "taken until some stopping condition occurs, at which point the\n"
+           "movement is reversed, at which point fine steps are taken to\n"
+           "maximize the focus value. This is the method described in\n"
+           "[He2003] and [Li2005].\n\n"
+           "To visualize the steps taken for simulation of a specific scene,\n"
            "use the command-line argument --scene-to-print=something.txt")
 
     step_size = 8
@@ -183,7 +183,7 @@ def search_standard(scenes, scene_to_print):
 
 
 def search_sweep(scenes, always_coarse):
-    print ("Search for a peak by sweeping from the first lens position, stop"
+    print ("Search for a peak by sweeping from the first lens position, stop\n"
             "when a peak is found.")
 
     if always_coarse:
@@ -260,9 +260,9 @@ def search_sweep(scenes, always_coarse):
 
 
 def search_full(scenes):
-    print ("Perform a full sweep of coarse steps accross all the lens"
-           "positions, the go to the position where the focus value was"
-           "highest and do a local search.")
+    print ("Perform a full sweep of coarse steps accross all the lens\n"
+           "positions, the go to the position where the focus value was\n"
+           "highest and do a local search.\n")
 
     sweep_steps = 19
 
