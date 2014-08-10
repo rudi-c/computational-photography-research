@@ -101,7 +101,7 @@ def search_standard(scenes, scene_to_print):
 
     step_size = 8
 
-    data_rows = [("filename", "steps")]
+    data_rows = [("filename", "success %", "steps")]
 
     # Redirect stdout to a file for printing R script.
     orig_stdout = sys.stdout
