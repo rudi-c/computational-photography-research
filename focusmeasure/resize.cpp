@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <iostream>
 
-#include "ImageTools.h"
+#include "imageTools.h"
 
 using namespace std;
 
@@ -25,7 +25,7 @@ main( int argc, char *argv[] )
     int newW = (int)(w * scale);
     int newH = (int)(h * scale);
 
-    for( int i = 2; i < argc; i++ ) 
+    for( int i = 2; i < argc; i++ )
     {
         uchar * buffer = new uchar[n];
         char * inputName = argv[i];
