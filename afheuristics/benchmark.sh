@@ -1,7 +1,13 @@
 #!/bin/bash
 # Generate decision trees with Weka and evaluate their effectiveness.
 
-CP="$CLASSPATH:/usr/share/java/weka-3.6.6.jar"
+JAR="/usr/share/java/weka-3.6.10.jar"
+
+if [ ! -f $JAR ]; then
+    echo "ERROR: Weka not found at "$JAR
+    exit
+fi
+
 PARSER="parsej48.py"
 
 WEKA_LEFTRIGHT="results/nearest3_weka.txt"

@@ -3,7 +3,14 @@
 # obtain a classifier which determines whether to search left or right
 # (near focus or far focus).
 
-CP="$CLASSPATH:/usr/share/java/weka-3.6.6.jar"
+JAR="/usr/share/java/weka-3.6.10.jar"
+
+if [ ! -f $JAR ]; then
+    echo "ERROR: Weka not found at "$JAR
+    exit
+fi
+
+CP="$CLASSPATH:"$JAR
 MIN_INSTANCES_PER_LEAF=512
 
 function feature_select {

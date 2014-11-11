@@ -1,4 +1,16 @@
 |-------------------------------------|
+| Prereqs                             |
+|-------------------------------------|
+
+You need to have Weka installed. On Ubuntu,
+sudo apt-get install weka
+
+This should add weka to /usr/share/java. Check the version number! The
+downloaded version might be more recent than the version referenced in the
+scripts (you should do a `grep weka *.sh` to make sure the versions are
+up to date).
+
+|-------------------------------------|
 | Folders                             |
 |-------------------------------------|
 
@@ -108,7 +120,7 @@ of the following :
 | For testing purposes                |
 |-------------------------------------|
 
-For benchmarking outside of the benchmark script (benchmark.sh), it is 
+For benchmarking outside of the benchmark script (benchmark.sh), it is
 convenient to set the $treeargs variable first.
 
 e.g.

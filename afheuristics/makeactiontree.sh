@@ -7,7 +7,15 @@
 # -as / --attribute-select  to perform attribute/feature selection
 # -ds / --discretize        to discretize the numerical attributes
 
-CP="$CLASSPATH:/usr/share/java/weka-3.6.6.jar"
+JAR="/usr/share/java/weka-3.6.10.jar"
+
+if [ ! -f $JAR ]; then
+    echo "ERROR: Weka not found at "$JAR
+    exit
+fi
+
+CP="$CLASSPATH:"$JAR
+
 WEKA_OUT="results/weka_out.txt"
 ACTION_ARFF="results/action.arff"
 MIN_INSTANCES_PER_LEAF=512
